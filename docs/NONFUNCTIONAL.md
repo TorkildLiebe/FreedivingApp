@@ -33,6 +33,6 @@
 - Basic alerting for failures
 
 ## UX / Accessibility
-- Mobile-first, responsive
+- Mobile-only (React Native)
 - WCAG AA compliance baseline
 - Clear loading + error states

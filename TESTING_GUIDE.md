@@ -257,7 +257,7 @@ Automated checks run at different stages:
 
 **Pre-commit** (runs on every commit):
 - Prevents direct commits to `main` branch
-- Lints backend, mobile, and web
+- Lints backend and mobile
 - Type checks all packages
 
 **Pre-push** (runs before `git push`):

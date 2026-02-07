@@ -1,6 +1,6 @@
 # DiveFreely-Alpha
 
-A mobile-first dive spot and report platform for Norway, with collaborative dive data sharing.
+A mobile dive spot and report platform for Norway, with collaborative dive data sharing.
 
 ## Project Structure
 
@@ -8,7 +8,7 @@ A mobile-first dive spot and report platform for Norway, with collaborative dive
 DiveFreely-Alpha/
 ├── apps/
 │   ├── backend/          # NestJS API with Prisma & Supabase
-│   ├── mobile/           # React Native mobile app (Expo)
+│   └── mobile/           # React Native mobile app (Expo)
 ├── packages/
 │   └── shared/           # Shared types, DTOs, and utilities
 ├── docs/                 # Architecture & domain documentation
@@ -74,9 +74,6 @@ DiveFreely-Alpha/
 
    # Terminal 2: Mobile
    pnpm dev:mobile
-
-   # Terminal 3: Web (optional)
-   pnpm dev:web
    ```
 
 ## Available Commands
@@ -101,7 +98,6 @@ pnpm prisma:migrate  # Run database migrations
 pnpm dev:mobile      # Start Expo dev server
 pnpm mobile:ios      # Open iOS simulator
 pnpm mobile:android  # Open Android emulator
-pnpm mobile:web      # Open in web browser
 pnpm lint:mobile     # Lint mobile code
 pnpm type-check      # TypeScript type checking
 npx uri-scheme open exp://localhost:8081/--/login --ios # Force to open sitemap in simulator
