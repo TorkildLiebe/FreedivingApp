@@ -9,7 +9,6 @@ DiveFreely-Alpha/
 ├── apps/
 │   ├── backend/          # NestJS API with Prisma & Supabase
 │   ├── mobile/           # React Native mobile app (Expo)
-│   └── web/              # Next.js web application
 ├── packages/
 │   └── shared/           # Shared types, DTOs, and utilities
 ├── docs/                 # Architecture & domain documentation
@@ -32,14 +31,6 @@ DiveFreely-Alpha/
 - **Navigation**: Expo Router
 - **State**: TanStack Query + Zustand
 - **Maps**: react-native-maps (Norgeskart)
-
-### Web
-- **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript
-- **UI Library**: Material-UI (MUI)
-- **State**: TanStack Query
-- **Maps**: react-leaflet
-- **Styling**: Emotion (CSS-in-JS)
 
 ## Quick Start
 
@@ -76,14 +67,7 @@ DiveFreely-Alpha/
    # Update .env with Supabase anon key from step 2
    ```
 
-5. **Set up web**:
-   ```bash
-   cd apps/web
-   cp .env.example .env.local
-   # Update .env.local with Supabase anon key from step 2
-   ```
-
-6. **Run development servers**:
+5. **Run development servers**:
    ```bash
    # Terminal 1: Backend
    pnpm dev:backend
@@ -123,15 +107,6 @@ pnpm type-check      # TypeScript type checking
 npx uri-scheme open exp://localhost:8081/--/login --ios # Force to open sitemap in simulator
 ```
 
-### Web
-```bash
-pnpm dev:web         # Start Next.js dev server
-pnpm build:web       # Build web app for production
-pnpm lint:web        # Lint web code
-pnpm lint:fix:web    # Lint and fix web code
-pnpm type-check:web  # TypeScript type checking for web
-```
-
 ## Documentation
 
 - **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System architecture and technical decisions
@@ -155,9 +130,6 @@ After running `pnpm dev:infra`:
 After running `pnpm dev:backend`:
 - **Backend API**: http://localhost:3000
 - **API Docs**: http://localhost:3000/api (Swagger/OpenAPI)
-
-After running `pnpm dev:web`:
-- **Web App**: http://localhost:3001
 
 ## Architecture Principles
 
