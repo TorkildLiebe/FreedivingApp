@@ -1,0 +1,23 @@
+{
+  "name": "freediving-app",
+  "private": true,
+  "scripts": {
+    "dev:backend": "pnpm --filter backend run start:dev",
+    "dev:mobile": "pnpm --filter mobile run start",
+    "dev:infra": "supabase start",
+    "test:backend": "pnpm --filter backend run test",
+    "test:backend:e2e": "pnpm --filter backend run test:e2e",
+    "lint:backend": "pnpm --filter backend run lint",
+    "lint:mobile": "pnpm --filter mobile run lint",
+    "lint": "pnpm lint:backend && pnpm lint:mobile",
+    "lint:fix": "pnpm --filter backend run lint:fix && pnpm --filter mobile run lint:fix",
+    "prisma:generate": "pnpm --filter backend exec prisma generate",
+    "prisma:migrate": "pnpm --filter backend exec prisma migrate dev",
+    "prisma:studio": "pnpm --filter backend exec prisma studio",
+    "prisma:validate": "pnpm --filter backend exec prisma validate"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@9.15.4"
+}

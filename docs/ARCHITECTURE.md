@@ -30,6 +30,7 @@
 - **Framework:** NestJS (Fastify)  
 - **Database:** Supabase Postgres (local via `supabase start`) with **PostGIS**  
 - **ORM:** Prisma  
+- **Mobile:** React Native with Expo
 - **Auth:** Supabase Auth (JWT/OIDC) + backend JWT verification (jose/JWKS)  
 - **Object storage:** Supabase Storage (pre‑signed uploads)  
 - **Maps (client):** Norgeskart WMTS (later; outside MVP backend scope)  
