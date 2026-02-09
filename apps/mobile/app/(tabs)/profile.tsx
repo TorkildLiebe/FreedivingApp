@@ -1,10 +1,16 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useAuth } from '@/contexts/auth-context';
 
 export default function ProfileScreen() {
+  const { session, signOut } = useAuth();
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Profile</Text>
-      <Text style={styles.subtitle}>Your profile will appear here</Text>
+      <Text style={styles.subtitle}>{session?.user?.email}</Text>
+      <TouchableOpacity style={styles.button} onPress={signOut}>
+        <Text style={styles.buttonText}>Sign Out</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -23,5 +29,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginTop: 8,
+  },
+  button: {
+    marginTop: 24,
+    backgroundColor: '#e74c3c',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
