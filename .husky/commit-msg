@@ -1,0 +1,22 @@
+# Read commit message
+commit_msg=$(cat "$1")
+
+# Conventional commit pattern: type(scope)?: description
+# or: type#issue: description (our custom format)
+pattern="^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)#[0-9]+: .{1,100}"
+
+if ! echo "$commit_msg" | grep -qE "$pattern"; then
+  echo "❌ Invalid commit message format!"
+  echo ""
+  echo "Commit message must contain type and issue number:"
+  echo "  type#issue: description"
+  echo ""
+  echo "Types: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert"
+  echo ""
+  echo "Examples:"
+  echo "  fix#123: resolve login bug"
+  echo ""
+  exit 1
+fi
+
+echo "✅ Commit message format valid"

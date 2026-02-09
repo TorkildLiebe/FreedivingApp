@@ -1,0 +1,19 @@
+echo "🚀 Running pre-push checks..."
+echo ""
+
+# Run comprehensive CI checks before pushing
+echo "🧪 Running CI test suite (this may take a few minutes)..."
+bash scripts/test-before-pr.sh
+
+if [ $? -eq 0 ]; then
+  echo ""
+  echo "✅ All pre-push checks passed! Pushing to remote..."
+  exit 0
+else
+  echo ""
+  echo "❌ Pre-push checks failed!"
+  echo ""
+  echo "Please fix the issues above before pushing."
+  echo "Tip: Run 'pnpm test:ci' to test locally before committing."
+  exit 1
+fi
