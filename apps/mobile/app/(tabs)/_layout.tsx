@@ -26,6 +26,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Map',
+          headerShown: false,
           tabBarIcon: ({ color }) => <TabBarIcon name="map" color={color} />,
         }}
       />

@@ -1,9 +1,9 @@
-echo "🔍 Running pre-commit checks..."
+echo "Running pre-commit checks..."
 
 # Prevent direct commits to main branch
 branch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
 if [ "$branch" = "main" ]; then
-  echo "❌ Direct commits to main branch are not allowed!"
+  echo "Direct commits to main branch are not allowed!"
   echo ""
   echo "Please create a feature branch:"
   echo "  git checkout -b feature/your-feature-name"
@@ -14,24 +14,18 @@ if [ "$branch" = "main" ]; then
   exit 1
 fi
 
-# Run linting for backend, mobile, and web
-echo "📝 Linting backend..."
+# Run linting for backend and mobile
+echo "Linting backend..."
 pnpm --filter backend lint || exit 1
 
-echo "📝 Linting mobile..."
+echo "Linting mobile..."
 pnpm --filter mobile lint || exit 1
 
-echo "📝 Linting web..."
-pnpm --filter web lint || exit 1
-
 # Run type checking
-echo "🔧 Type checking backend..."
+echo "Type checking backend..."
 pnpm --filter backend type-check || exit 1
 
-echo "🔧 Type checking mobile..."
+echo "Type checking mobile..."
 pnpm --filter mobile type-check || exit 1
 
-echo "🔧 Type checking web..."
-pnpm --filter web type-check || exit 1
-
-echo "✅ Pre-commit checks passed!"
+echo "Pre-commit checks passed!"

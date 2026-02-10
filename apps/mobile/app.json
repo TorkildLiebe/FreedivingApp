@@ -14,7 +14,10 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "We use your location to show your position on the map and find nearby dive spots."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -30,7 +33,14 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "@maplibre/maplibre-react-native",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "We use your location to show your position on the map and find nearby dive spots."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
