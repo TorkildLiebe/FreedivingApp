@@ -1,9 +1,9 @@
-import type { ComponentType } from 'react';
+import type { ForwardRefExoticComponent, RefAttributes } from 'react';
 import { Platform } from 'react-native';
 import type { MapViewHandle, MapViewProps } from './map-view-types';
 
 type MapViewModule = {
-  MapView: ComponentType<MapViewProps>;
+  MapView: ForwardRefExoticComponent<MapViewProps & RefAttributes<MapViewHandle>>;
 };
 
 const mapViewModule: MapViewModule =

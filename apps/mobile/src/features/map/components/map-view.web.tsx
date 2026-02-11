@@ -1,24 +1,14 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { spotsToGeoJSON } from '@/src/features/map/utils/spots-to-geojson';
 import type { MapViewHandle, MapViewProps } from './map-view-types';
-import type { SpotSummary } from '@/src/features/map/types';
 
 export type { MapViewHandle };
 
-function createSpotMarkerElement(): HTMLDivElement {
-  const el = document.createElement('div');
-  Object.assign(el.style, {
-    width: '14px',
-    height: '14px',
-    borderRadius: '50%',
-    backgroundColor: '#E8632B',
-    border: '2px solid #fff',
-    boxShadow: '0 0 4px rgba(0,0,0,0.3)',
-    cursor: 'pointer',
-  });
-  return el;
-}
+const SPOTS_SOURCE = 'spots-source';
+const CLUSTER_LAYER = 'spot-clusters';
+const UNCLUSTERED_LAYER = 'spot-unclustered';
 
 export const MapView = forwardRef<MapViewHandle, MapViewProps>(
   function MapView(
@@ -28,7 +18,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<maplibregl.Map | null>(null);
     const userMarkerRef = useRef<maplibregl.Marker | null>(null);
-    const spotMarkersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
+    const sourceReadyRef = useRef(false);
     const onRegionDidChangeRef = useRef(onRegionDidChange);
     onRegionDidChangeRef.current = onRegionDidChange;
 
@@ -44,6 +34,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
       });
 
       mapRef.current = map;
+      sourceReadyRef.current = false;
 
       map.on('moveend', () => {
         const cb = onRegionDidChangeRef.current;
@@ -57,25 +48,104 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
         });
       });
 
-      // Fire initial bounds after load
       map.on('load', () => {
-        const cb = onRegionDidChangeRef.current;
-        if (!cb) return;
-        const bounds = map.getBounds();
-        cb({
-          latMin: bounds.getSouth(),
-          latMax: bounds.getNorth(),
-          lonMin: bounds.getWest(),
-          lonMax: bounds.getEast(),
+        // Add clustering source
+        map.addSource(SPOTS_SOURCE, {
+          type: 'geojson',
+          data: spotsToGeoJSON(spots ?? []),
+          cluster: true,
+          clusterRadius: 50,
+          clusterMaxZoom: 14,
         });
+
+        // Cluster circles
+        map.addLayer({
+          id: CLUSTER_LAYER,
+          type: 'circle',
+          source: SPOTS_SOURCE,
+          filter: ['has', 'point_count'],
+          paint: {
+            'circle-color': '#E8632B',
+            'circle-radius': [
+              'step',
+              ['get', 'point_count'],
+              18,
+              10,
+              22,
+              50,
+              28,
+            ],
+            'circle-opacity': 0.85,
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#fff',
+          },
+        });
+
+        // Unclustered individual spots
+        map.addLayer({
+          id: UNCLUSTERED_LAYER,
+          type: 'circle',
+          source: SPOTS_SOURCE,
+          filter: ['!', ['has', 'point_count']],
+          paint: {
+            'circle-color': '#E8632B',
+            'circle-radius': 7,
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#fff',
+          },
+        });
+
+        sourceReadyRef.current = true;
+
+        // Click cluster → zoom to expand
+        map.on('click', CLUSTER_LAYER, (e) => {
+          const features = map.queryRenderedFeatures(e.point, {
+            layers: [CLUSTER_LAYER],
+          });
+          if (!features.length) return;
+          const clusterId = features[0].properties?.cluster_id;
+          const source = map.getSource(SPOTS_SOURCE) as maplibregl.GeoJSONSource;
+          source.getClusterExpansionZoom(clusterId).then((zoom) => {
+            const coords = (features[0].geometry as GeoJSON.Point).coordinates;
+            map.easeTo({
+              center: coords as [number, number],
+              zoom,
+              duration: 500,
+            });
+          });
+        });
+
+        // Cursor changes
+        map.on('mouseenter', CLUSTER_LAYER, () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', CLUSTER_LAYER, () => {
+          map.getCanvas().style.cursor = '';
+        });
+        map.on('mouseenter', UNCLUSTERED_LAYER, () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', UNCLUSTERED_LAYER, () => {
+          map.getCanvas().style.cursor = '';
+        });
+
+        // Fire initial bounds
+        const cb = onRegionDidChangeRef.current;
+        if (cb) {
+          const bounds = map.getBounds();
+          cb({
+            latMin: bounds.getSouth(),
+            latMax: bounds.getNorth(),
+            lonMin: bounds.getWest(),
+            lonMax: bounds.getEast(),
+          });
+        }
       });
 
-      const currentSpotMarkers = spotMarkersRef.current;
       return () => {
         userMarkerRef.current?.remove();
         userMarkerRef.current = null;
-        currentSpotMarkers.forEach((m) => m.remove());
-        currentSpotMarkers.clear();
+        sourceReadyRef.current = false;
         map.remove();
         mapRef.current = null;
       };
@@ -109,36 +179,17 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
       }
     }, [location]);
 
-    // Update spot markers
+    // Update spots source data
     useEffect(() => {
+      if (!sourceReadyRef.current) return;
       const map = mapRef.current;
       if (!map) return;
-
-      const currentIds = new Set((spots ?? []).map((s) => s.id));
-      const existingMarkers = spotMarkersRef.current;
-
-      // Remove markers no longer in spots
-      existingMarkers.forEach((marker, id) => {
-        if (!currentIds.has(id)) {
-          marker.remove();
-          existingMarkers.delete(id);
-        }
-      });
-
-      // Add or update markers
-      (spots ?? []).forEach((spot: SpotSummary) => {
-        if (existingMarkers.has(spot.id)) return;
-
-        const el = createSpotMarkerElement();
-        const marker = new maplibregl.Marker({ element: el })
-          .setLngLat([spot.centerLon, spot.centerLat])
-          .setPopup(
-            new maplibregl.Popup({ offset: 12 }).setText(spot.title),
-          )
-          .addTo(map);
-
-        existingMarkers.set(spot.id, marker);
-      });
+      const source = map.getSource(SPOTS_SOURCE) as
+        | maplibregl.GeoJSONSource
+        | undefined;
+      if (source) {
+        source.setData(spotsToGeoJSON(spots ?? []));
+      }
     }, [spots]);
 
     useImperativeHandle(ref, () => ({
