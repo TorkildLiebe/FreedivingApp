@@ -14,10 +14,14 @@
     "prisma:generate": "pnpm --filter backend exec prisma generate",
     "prisma:migrate": "pnpm --filter backend exec prisma migrate dev",
     "prisma:studio": "pnpm --filter backend exec prisma studio",
-    "prisma:validate": "pnpm --filter backend exec prisma validate"
+    "prisma:validate": "pnpm --filter backend exec prisma validate",
+    "prepare": "husky"
   },
   "engines": {
     "node": ">=22"
   },
-  "packageManager": "pnpm@9.15.4"
+  "packageManager": "pnpm@9.15.4",
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
 }

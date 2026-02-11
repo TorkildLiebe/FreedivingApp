@@ -2,8 +2,10 @@ echo "🚀 Running pre-push checks..."
 echo ""
 
 # Run comprehensive CI checks before pushing
-echo "🧪 Running CI test suite (this may take a few minutes)..."
-bash scripts/test-before-pr.sh
+echo "🧪 Running CI checks (this may take a few minutes)..."
+pnpm lint
+pnpm --filter backend test
+pnpm --filter mobile test
 
 if [ $? -eq 0 ]; then
   echo ""

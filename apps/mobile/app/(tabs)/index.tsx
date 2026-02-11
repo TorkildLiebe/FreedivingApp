@@ -1,10 +1,60 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Alert, StyleSheet, Text, View } from 'react-native';
+import {
+  createMapStyle,
+  DEFAULT_CENTER,
+  DEFAULT_ZOOM,
+  TILE_URLS,
+  type MapLayer,
+} from '@/constants/map';
+import { useLocation } from '@/hooks/use-location';
+import { MapFloatingButton } from '@/components/map-floating-button';
+import { MapView, type MapViewHandle } from '@/components/map-view';
 
 export default function MapScreen() {
+  const { location } = useLocation();
+  const mapRef = useRef<MapViewHandle>(null);
+  const [activeLayer, setActiveLayer] = useState<MapLayer>('topo');
+
+  const center = location ?? DEFAULT_CENTER;
+
+  function handleCenterOnMe() {
+    if (!location) {
+      Alert.alert(
+        'Location unavailable',
+        'Enable location permissions in your device settings to use this feature.',
+      );
+      return;
+    }
+    mapRef.current?.flyTo(location, 14);
+  }
+
+  function handleToggleLayer() {
+    setActiveLayer((prev) => (prev === 'topo' ? 'nautical' : 'topo'));
+  }
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Map</Text>
-      <Text style={styles.subtitle}>Dive spots will appear here</Text>
+      <MapView
+        ref={mapRef}
+        styleJSON={JSON.stringify(createMapStyle(TILE_URLS[activeLayer]))}
+        center={center}
+        zoom={DEFAULT_ZOOM}
+        location={location}
+      />
+      <View style={styles.attribution}>
+        <Text style={styles.attributionText}>{'\u00A9'} Kartverket</Text>
+      </View>
+      <MapFloatingButton
+        onPress={handleToggleLayer}
+        iconName="globe"
+        style={styles.layerButton}
+      />
+      <MapFloatingButton
+        onPress={handleCenterOnMe}
+        iconName="crosshairs"
+        style={styles.centerButton}
+      />
     </View>
   );
 }
@@ -12,16 +62,28 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  attribution: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 8,
+  attributionText: {
+    fontSize: 11,
+    color: '#333',
+  },
+  layerButton: {
+    position: 'absolute',
+    bottom: 80,
+    right: 16,
+  },
+  centerButton: {
+    position: 'absolute',
+    bottom: 24,
+    right: 16,
   },
 });
