@@ -30,7 +30,7 @@ Implementation-focused quality attributes for development.
 
 ## Testing
 
-- **Goal:** 70% code coverage for domain and use-case logic
+- **Goal:** 80% code coverage for domain and use-case logic
 - **Unit tests:** Domain validations, invariants
 - **Integration tests:** Endpoints with test database (auth, CRUD, permissions)
 - **CI pipeline:** Lint, test, coverage on each commit/PR

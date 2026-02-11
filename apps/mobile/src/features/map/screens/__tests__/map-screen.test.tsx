@@ -18,10 +18,6 @@ jest.mock('@/src/features/map/hooks/use-spots', () => ({
   useSpots: () => ({ spots: [], isLoading: false, error: null }),
 }));
 
-jest.mock('@/components/useColorScheme', () => ({
-  useColorScheme: () => 'light',
-}));
-
 jest.mock('@/src/features/map/components/map-view', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { View } = require('react-native');
@@ -36,7 +32,7 @@ jest.mock('@/src/features/map/components/map-view', () => {
 });
 
 // eslint-disable-next-line import/first
-import MapScreen from '@/app/(app)/(tabs)/index';
+import MapScreen from '@/src/features/map/screens/map-screen';
 
 describe('MapScreen', () => {
   it('renders MapView component', () => {

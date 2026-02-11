@@ -11,10 +11,6 @@ jest.mock('@expo/vector-icons/FontAwesome', () => {
   };
 });
 
-jest.mock('@/components/useColorScheme', () => ({
-  useColorScheme: () => 'light',
-}));
-
 describe('MapFloatingButton', () => {
   it('renders without crashing', () => {
     const { toJSON } = render(

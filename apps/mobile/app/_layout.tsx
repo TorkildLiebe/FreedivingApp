@@ -8,9 +8,9 @@ import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { useColorScheme } from 'react-native';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider, useAuth } from '@/src/features/auth/context/auth-context';
 
 export {

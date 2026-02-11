@@ -1,8 +1,8 @@
 import { StyleSheet, TouchableOpacity, type ViewStyle } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { useColorScheme } from 'react-native';
 
 import Colors from '@/src/shared/theme/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
 
 interface MapFloatingButtonProps {
   onPress: () => void;
