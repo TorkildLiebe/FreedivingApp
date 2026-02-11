@@ -1,6 +1,6 @@
-# Quality Requirements (MVP)
+# Quality & Operations (MVP)
 
-Implementation-focused quality attributes for development.
+Implementation-focused quality attributes, operations, and compliance.
 
 ---
 
@@ -52,3 +52,63 @@ Implementation-focused quality attributes for development.
 - **Mobile performance:** Small payloads, thumbnailed images
 - **Feedback:** Quick API responses, optimistic UI updates
 - **Favorites:** Lightweight, private bookmark mechanism
+
+---
+
+## Performance
+
+- Fast startup (<2s client load)
+- Backend API avg <300ms
+- Optimize DB queries + caching
+
+---
+
+## Reliability
+
+- >99% uptime target (MVP: 99% acceptable)
+- Graceful error handling + retries
+- Auto-reconnect for network ops
+- Offline: NOT supported in MVP (online-only)
+
+---
+
+## Scalability
+
+- Horizontal scaling via Supabase/Edge Functions
+- Stateless services preferred
+- Async background jobs for heavy ops
+
+---
+
+## Observability & Logging
+
+- Console logging for events/errors (structured logging future)
+- **Never log:** passwords, JWTs, personal data, pre-signed URLs
+- Log slow queries; use Postgres EXPLAIN if needed
+- Error + performance metrics; basic alerting for failures
+
+---
+
+## Rate Limiting
+
+- Default: 60 requests/minute per IP (adjustable)
+- Prevent brute-force, spam, credential stuffing
+
+---
+
+## Compliance (GDPR)
+
+- Minimal data: email for login, alias/avatar only
+- Deletion: manual admin deletion (anonymizes contributions)
+- Export: not in MVP; structured data enables future export
+- Kartverket map tiles attributed in app
+
+---
+
+## Accessibility
+
+- Mobile-only (React Native)
+- WCAG AA compliance baseline
+- Clear loading + error states
+
+*Last updated: February 2026*

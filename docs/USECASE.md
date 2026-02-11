@@ -159,4 +159,4 @@ Operational flows. Validation in **DOMAIN.md §2**. Errors in **DOMAIN.md §3**.
 
 **Output**: An array of dive spot objects that the user has favorited.  
 
-*Last updated: November 2025 (MVP use cases)*
+*Last updated: February 2026*

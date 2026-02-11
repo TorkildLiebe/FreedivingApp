@@ -1,11 +1,14 @@
+## Project Overview
+This is a freediving app using Expo (React Native + Web), NestJS with Fastify, TypeScript throughout, and pnpm as the package manager. Always ensure changes work on BOTH native and web platforms.
+
 ## Documentation Context
-- **Features/use cases** → `USECASE.md` (operational flows)
-- **Validation/business rules** → `DOMAIN.md §2` (entities, invariants, errors)
-- **Module structure** → `ARCHITECTURE.md §3-4` (vertical slices, folder layout)
-- **Testing/security** → `QUALITY.md` (70% coverage goal, validation, error handling)
-- **Operations/compliance** → `OPERATIONS.md` (logging, monitoring, GDPR)
-- **Workflow** → `CONTRIBUTING.md` (branch/commit conventions)
-- **Product scope** → `VISION.md` (MVP boundaries)
+- **Features/use cases** -> `USECASE.md` (operational flows)
+- **Validation/business rules** -> `DOMAIN.md` (entities, invariants, errors)
+- **Module structure** -> `ARCHITECTURE.md` (vertical slices, folder layout)
+- **Quality/security/ops** -> `QUALITY.md` (testing, security, logging, GDPR)
+- **Workflow** -> `CONTRIBUTING.md` (branch/commit conventions)
+- **Product scope** -> `VISION.md` (MVP boundaries)
+- **Feature tracking** -> GitHub Project Board (implemented vs. planned)
 
 ## Architecture Patterns
 - **Vertical slices** (ARCHITECTURE.md §3): features self-contained in `/apps/backend/src/modules/<feature>/`
@@ -22,6 +25,12 @@
 - **Transactions:** Use Prisma `$transaction` for multi-step writes
 - **DTOs:** class-validator decorators; ValidationPipe with `whitelist: true`
 - **Repositories:** One per entity in module; inject PrismaService
+
+## Backend (NestJS)
+When adding NestJS modules or features, always check: 1) Required packages are installed (e.g., @fastify/cors), 2) Module dependencies are imported (e.g., UsersModule in any module using UsersService), 3) Auth guards handle both dev bypass AND real JWT tokens.
+
+## Testing
+Jest is configured with pnpm workspaces. Known issues: pnpm transform patterns need special handling, and Jest 30 sandboxing can conflict with Expo. If tests fail on transforms or sandboxing, check jest.config.ts transformIgnorePatterns and sandbox settings first.
 
 ## File Naming
 - Files: kebab-case (`dive-spot.service.ts`)
@@ -51,6 +60,9 @@
     - Acceptance criterias
     - Tests to create
     - run tests, linting and spellcheking at the end of each test
+
+## Pre-completion Checklist
+Always run `pnpm test`, `pnpm lint`, and `pnpm tsc --noEmit` before considering a task complete. Verify the app works on web (`pnpm expo start --web`) in addition to native.
 
 ## Response Formatting
 

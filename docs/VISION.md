@@ -33,4 +33,4 @@ A living map of Norwegian freediving where:
 - **Multilingual UI**: interface supports English and Norwegian (user can choose preferred language).
 - **Out of scope**: social feed, chat, realtime tracking, global “latest” feed, admin UI.
 
-*Last updated: October 2025*
+*Last updated: February 2026*
