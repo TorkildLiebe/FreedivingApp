@@ -22,39 +22,47 @@ export function useLocation(): UseLocationResult {
     let mounted = true;
 
     async function startTracking() {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
 
-      if (status !== 'granted') {
+        if (status !== 'granted') {
+          if (mounted) {
+            setError('Location permission denied');
+            setIsLoading(false);
+          }
+          return;
+        }
+
+        const current = await Location.getCurrentPositionAsync({});
         if (mounted) {
-          setError('Location permission denied');
+          setLocation({ lat: current.coords.latitude, lng: current.coords.longitude });
           setIsLoading(false);
         }
-        return;
-      }
 
-      const current = await Location.getCurrentPositionAsync({});
-      if (mounted) {
-        setLocation({ lat: current.coords.latitude, lng: current.coords.longitude });
-        setIsLoading(false);
-      }
+        const sub = await Location.watchPositionAsync(
+          { accuracy: Location.Accuracy.Balanced, distanceInterval: 10 },
+          (pos) => {
+            if (mounted) {
+              setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+            }
+          },
+        );
 
-      const sub = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.Balanced, distanceInterval: 10 },
-        (pos) => {
-          if (mounted) {
-            setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-          }
-        },
-      );
-
-      if (mounted) {
-        subscriptionRef.current = sub;
-      } else {
-        sub.remove();
+        if (mounted) {
+          subscriptionRef.current = sub;
+        } else {
+          sub.remove();
+        }
+      } catch (err) {
+        if (mounted) {
+          const message = err instanceof Error ? err.message : String(err);
+          setError(`Location unavailable: ${message}`);
+          setIsLoading(false);
+        }
       }
     }
 
-    startTracking();
+    void startTracking();
 
     return () => {
       mounted = false;

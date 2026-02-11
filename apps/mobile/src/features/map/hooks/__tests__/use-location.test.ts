@@ -88,4 +88,25 @@ describe('useLocation', () => {
     unmount();
     expect(removeMock).toHaveBeenCalled();
   });
+
+  it('handles geolocation errors without unhandled rejection', async () => {
+    mockLocation.requestForegroundPermissionsAsync.mockResolvedValue({
+      status: Location.PermissionStatus.GRANTED,
+      granted: true,
+      canAskAgain: true,
+      expires: 'never',
+    });
+    mockLocation.getCurrentPositionAsync.mockRejectedValue(
+      new Error('GeolocationPositionError'),
+    );
+
+    const { result } = renderHook(() => useLocation());
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.location).toBeNull();
+    expect(result.current.error).toContain('Location unavailable');
+  });
 });
