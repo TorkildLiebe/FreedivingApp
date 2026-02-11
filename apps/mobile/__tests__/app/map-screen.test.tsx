@@ -10,11 +10,11 @@ jest.mock('@expo/vector-icons/FontAwesome', () => {
   };
 });
 
-jest.mock('@/hooks/use-location', () => ({
+jest.mock('@/src/features/map/hooks/use-location', () => ({
   useLocation: () => ({ location: null, error: null, isLoading: false }),
 }));
 
-jest.mock('@/hooks/use-spots', () => ({
+jest.mock('@/src/features/map/hooks/use-spots', () => ({
   useSpots: () => ({ spots: [], isLoading: false, error: null }),
 }));
 
@@ -22,7 +22,7 @@ jest.mock('@/components/useColorScheme', () => ({
   useColorScheme: () => 'light',
 }));
 
-jest.mock('@/components/map-view', () => {
+jest.mock('@/src/features/map/components/map-view', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { View } = require('react-native');
   // eslint-disable-next-line @typescript-eslint/no-require-imports

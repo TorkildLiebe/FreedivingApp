@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { apiFetch } from '@/services/api';
-import type { BBox, ListSpotsResponse, SpotSummary } from '@/types/spot';
+import { apiFetch } from '@/src/infrastructure/api/client';
+import type { BBox, ListSpotsResponse, SpotSummary } from '@/src/features/map/types';
 
 function bboxToKey(bbox: BBox): string {
   return `${bbox.latMin.toFixed(4)},${bbox.latMax.toFixed(4)},${bbox.lonMin.toFixed(4)},${bbox.lonMax.toFixed(4)}`;

@@ -1,4 +1,4 @@
-import type { SpotSummary, BBox } from '@/types/spot';
+import type { SpotSummary, BBox } from '@/src/features/map/types';
 
 export interface MapViewProps {
   styleJSON: string;

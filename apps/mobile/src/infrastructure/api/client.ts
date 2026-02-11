@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from '@/src/infrastructure/supabase/client';
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';

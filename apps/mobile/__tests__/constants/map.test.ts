@@ -1,4 +1,4 @@
-import { createMapStyle, DEFAULT_CENTER, DEFAULT_ZOOM, TILE_URLS } from '@/constants/map';
+import { createMapStyle, DEFAULT_CENTER, DEFAULT_ZOOM, TILE_URLS } from '@/src/features/map/constants/map';
 
 describe('map constants', () => {
   it('has correct default center (Oslo)', () => {

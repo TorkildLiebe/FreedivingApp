@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { MapViewHandle, MapViewProps } from './map-view-types';
-import type { SpotSummary } from '@/types/spot';
+import type { SpotSummary } from '@/src/features/map/types';
 
 export type { MapViewHandle };
 
