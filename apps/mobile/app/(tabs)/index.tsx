@@ -8,13 +8,17 @@ import {
   type MapLayer,
 } from '@/constants/map';
 import { useLocation } from '@/hooks/use-location';
+import { useSpots } from '@/hooks/use-spots';
 import { MapFloatingButton } from '@/components/map-floating-button';
 import { MapView, type MapViewHandle } from '@/components/map-view';
+import type { BBox } from '@/types/spot';
 
 export default function MapScreen() {
   const { location } = useLocation();
   const mapRef = useRef<MapViewHandle>(null);
   const [activeLayer, setActiveLayer] = useState<MapLayer>('topo');
+  const [bbox, setBbox] = useState<BBox | null>(null);
+  const { spots } = useSpots(bbox);
 
   const center = location ?? DEFAULT_CENTER;
 
@@ -41,6 +45,8 @@ export default function MapScreen() {
         center={center}
         zoom={DEFAULT_ZOOM}
         location={location}
+        spots={spots}
+        onRegionDidChange={setBbox}
       />
       <View style={styles.attribution}>
         <Text style={styles.attributionText}>{'\u00A9'} Kartverket</Text>

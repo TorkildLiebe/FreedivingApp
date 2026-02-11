@@ -5,6 +5,7 @@ import {
 } from '@nestjs/platform-fastify';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { DomainExceptionFilter } from './common/filters';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -20,7 +21,9 @@ async function bootstrap() {
     }),
   );
 
-  app.enableCors();
+  app.useGlobalFilters(new DomainExceptionFilter());
+
+  app.enableCors({ origin: true });
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }

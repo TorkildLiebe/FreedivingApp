@@ -14,6 +14,10 @@ jest.mock('@/hooks/use-location', () => ({
   useLocation: () => ({ location: null, error: null, isLoading: false }),
 }));
 
+jest.mock('@/hooks/use-spots', () => ({
+  useSpots: () => ({ spots: [], isLoading: false, error: null }),
+}));
+
 jest.mock('@/components/useColorScheme', () => ({
   useColorScheme: () => 'light',
 }));

@@ -31,5 +31,41 @@ model User {
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
+  spots DiveSpot[]
+
   @@map("users")
+}
+
+model DiveSpot {
+  id                  String    @id @default(uuid()) @db.Uuid
+  title               String    @db.VarChar(80)
+  description         String    @default("") @db.VarChar(2000)
+  centerLat           Float     @map("center_lat")
+  centerLon           Float     @map("center_lon")
+  createdById         String    @map("created_by_id") @db.Uuid
+  accessInfo          String?   @map("access_info") @db.VarChar(1000)
+  shareUrl            String?   @map("share_url")
+  shareableAccessInfo Boolean?  @map("shareable_access_info")
+  isDeleted           Boolean   @default(false) @map("is_deleted")
+  deletedAt           DateTime? @map("deleted_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  createdBy        User              @relation(fields: [createdById], references: [id])
+  parkingLocations ParkingLocation[]
+
+  @@index([isDeleted, centerLat, centerLon])
+  @@map("dive_spots")
+}
+
+model ParkingLocation {
+  id     String  @id @default(uuid()) @db.Uuid
+  lat    Float
+  lon    Float
+  label  String? @db.VarChar(100)
+  spotId String  @map("spot_id") @db.Uuid
+
+  spot DiveSpot @relation(fields: [spotId], references: [id])
+
+  @@map("parking_locations")
 }
