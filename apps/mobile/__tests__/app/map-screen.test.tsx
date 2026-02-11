@@ -1,6 +1,15 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
 
+jest.mock('@expo/vector-icons/FontAwesome', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const React = require('react');
+  return {
+    __esModule: true,
+    default: (props: any) => React.createElement('FontAwesome', props),
+  };
+});
+
 jest.mock('@/hooks/use-location', () => ({
   useLocation: () => ({ location: null, error: null, isLoading: false }),
 }));

@@ -2,6 +2,15 @@ import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { MapFloatingButton } from '@/components/map-floating-button';
 
+jest.mock('@expo/vector-icons/FontAwesome', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const React = require('react');
+  return {
+    __esModule: true,
+    default: (props: any) => React.createElement('FontAwesome', props),
+  };
+});
+
 jest.mock('@/components/useColorScheme', () => ({
   useColorScheme: () => 'light',
 }));
