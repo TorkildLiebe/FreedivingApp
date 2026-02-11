@@ -41,6 +41,15 @@ describe('AuthGuard', () => {
     return { ctx, request };
   };
 
+  // Helper to create a fake JWT with a given payload
+  function fakeJwt(payload: Record<string, unknown>): string {
+    const header = Buffer.from(
+      JSON.stringify({ alg: 'HS256', typ: 'JWT' }),
+    ).toString('base64url');
+    const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    return `${header}.${body}.fake-signature`;
+  }
+
   beforeEach(() => {
     jwtVerify = {
       verify: jest.fn(),
@@ -156,8 +165,54 @@ describe('AuthGuard', () => {
       expect(request.user?.role).toBe('admin');
     });
 
-    it('should throw when x-dev-user-id missing in dev bypass', async () => {
+    it('should throw when no x-dev-user-id and no Bearer token', async () => {
       const { ctx } = createMockContext();
+
+      await expect(guard.canActivate(ctx)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should decode Bearer JWT without verification in dev mode', async () => {
+      usersService.getOrCreate.mockResolvedValue(mockUser);
+      const token = fakeJwt({ sub: 'ext-1', email: 'test@example.com' });
+
+      const { ctx, request } = createMockContext({
+        authorization: `Bearer ${token}`,
+      });
+
+      const result = await guard.canActivate(ctx);
+
+      expect(result).toBe(true);
+      expect(jwtVerify.verify).not.toHaveBeenCalled();
+      expect(usersService.getOrCreate).toHaveBeenCalledWith(
+        'ext-1',
+        'test@example.com',
+      );
+      expect(request.user).toEqual({
+        userId: 'uuid-1',
+        externalId: 'ext-1',
+        email: 'test@example.com',
+        role: 'user',
+      });
+    });
+
+    it('should throw when dev JWT has no sub claim', async () => {
+      const token = fakeJwt({ email: 'test@example.com' });
+
+      const { ctx } = createMockContext({
+        authorization: `Bearer ${token}`,
+      });
+
+      await expect(guard.canActivate(ctx)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw on malformed dev JWT', async () => {
+      const { ctx } = createMockContext({
+        authorization: 'Bearer not-a-jwt',
+      });
 
       await expect(guard.canActivate(ctx)).rejects.toThrow(
         UnauthorizedException,

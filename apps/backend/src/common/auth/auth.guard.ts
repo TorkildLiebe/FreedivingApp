@@ -27,7 +27,20 @@ export class AuthGuard implements CanActivate {
     const request = ctx.switchToHttp().getRequest<AuthRequest>();
 
     if (this.isDevBypass()) {
-      return this.handleDevBypass(request);
+      const devUserId = request.headers['x-dev-user-id'];
+      if (devUserId) {
+        return this.handleDevBypass(request, devUserId);
+      }
+
+      // In dev mode, decode JWT without JWKS verification
+      const token = this.extractToken(request);
+      if (token) {
+        return this.handleDevJwt(request, token);
+      }
+
+      throw new UnauthorizedException(
+        'Dev bypass: provide x-dev-user-id header or Authorization Bearer token',
+      );
     }
 
     const token = this.extractToken(request);
@@ -71,15 +84,11 @@ export class AuthGuard implements CanActivate {
     );
   }
 
-  private async handleDevBypass(request: AuthRequest): Promise<boolean> {
-    const devUserId = request.headers['x-dev-user-id'];
+  private async handleDevBypass(
+    request: AuthRequest,
+    devUserId: string,
+  ): Promise<boolean> {
     const devRole = request.headers['x-dev-role'] ?? 'user';
-
-    if (!devUserId)
-      throw new UnauthorizedException(
-        'Dev bypass: x-dev-user-id header required',
-      );
-
     const user = await this.usersService.getOrCreate(devUserId);
 
     request.user = {
@@ -89,5 +98,35 @@ export class AuthGuard implements CanActivate {
       role: devRole,
     };
     return true;
+  }
+
+  private async handleDevJwt(
+    request: AuthRequest,
+    token: string,
+  ): Promise<boolean> {
+    try {
+      const payloadB64 = token.split('.')[1];
+      if (!payloadB64) throw new Error('Malformed token');
+      const payload = JSON.parse(
+        Buffer.from(payloadB64, 'base64url').toString(),
+      ) as { sub?: string; email?: string };
+
+      const sub = payload.sub;
+      if (!sub) throw new UnauthorizedException('Token missing sub claim');
+
+      const user = await this.usersService.getOrCreate(sub, payload.email);
+
+      request.user = {
+        userId: user.id,
+        externalId: user.externalId,
+        email: user.email ?? undefined,
+        role: user.role,
+      };
+      return true;
+    } catch (error) {
+      if (error instanceof UnauthorizedException) throw error;
+      this.logger.warn(`Dev JWT decode failed: ${error}`);
+      throw new UnauthorizedException('Invalid token');
+    }
   }
 }

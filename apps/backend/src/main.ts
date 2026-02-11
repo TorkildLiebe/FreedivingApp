@@ -23,7 +23,7 @@ async function bootstrap() {
 
   app.useGlobalFilters(new DomainExceptionFilter());
 
-  app.enableCors();
+  app.enableCors({ origin: true });
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
