@@ -1,7 +1,7 @@
 # DiveFreely – Architecture (MVP)
 
-**Status:** Draft for MVP  
-**Focus:** Simple, feature-based backend and mobile architecture  
+**Status:** Draft for MVP
+**Focus:** Simple, feature-based backend and mobile architecture
 **Principle:** Keep dependencies replaceable (DB, Auth, Storage) without touching domain logic
 
 ---
@@ -24,17 +24,17 @@
 
 ## 2) Technologies
 
-- **Language:** TypeScript  
-- **Package manager:** pnpm  
-- **Runtime:** Node.js  
-- **Framework:** NestJS (Fastify)  
-- **Database:** Supabase Postgres (local via `supabase start`) with **PostGIS**  
-- **ORM:** Prisma  
+- **Language:** TypeScript
+- **Package manager:** pnpm
+- **Runtime:** Node.js
+- **Framework:** NestJS (Fastify)
+- **Database:** Supabase Postgres (local via `supabase start`) with **PostGIS**
+- **ORM:** Prisma
 - **Mobile:** React Native with Expo
-- **Auth:** Supabase Auth (JWT/OIDC) + backend JWT verification (jose/JWKS)  
-- **Object storage:** Supabase Storage (pre‑signed uploads)  
-- **Maps (client):** Norgeskart WMTS (later; outside MVP backend scope)  
-- **Docs:** Swagger/OpenAPI  
+- **Auth:** Supabase Auth (JWT/OIDC) + backend JWT verification (jose/JWKS)
+- **Object storage:** Supabase Storage (pre-signed uploads)
+- **Maps (client):** MapLibre GL with Kartverket WMTS tiles
+- **Docs:** Swagger/OpenAPI
 - **Testing:** Jest (unit + light e2e with Supertest)
 
 ---
@@ -58,7 +58,7 @@ Domain logic independent of NestJS/Prisma. Clear separation enables module evolu
 
 DB/Auth/Storage replaceable via interfaces. No direct infrastructure imports in domain/use-case code.
 
-**Examples:** Supabase Postgres → any Postgres | Supabase Auth → OIDC JWT provider | Supabase Storage → S3-compatible service
+**Examples:** Supabase Postgres -> any Postgres | Supabase Auth -> OIDC JWT provider | Supabase Storage -> S3-compatible service
 
 ---
 
@@ -68,38 +68,43 @@ DB/Auth/Storage replaceable via interfaces. No direct infrastructure imports in 
 apps/backend/
   src/
     modules/
+      health/
+        health.controller.ts
+        health.module.ts
       spots/
-        spots.controller.ts
-        spots.service.ts          # Use-case logic
-        spots.repository.ts       # Prisma queries
+        spots.controller.ts        # GET /spots (bbox), GET /spots/:id
+        spots.service.ts
+        spots.repository.ts
+        spots.module.ts
         dto/
-      reports/
-        reports.controller.ts
-        reports.service.ts
-        reports.repository.ts
-        dto/
+          list-spots-by-bbox-query.dto.ts
+          list-spots-response.dto.ts
+          spot-detail-response.dto.ts
+          spot-summary-response.dto.ts
+          parking-location-response.dto.ts
       users/
-        users.controller.ts
+        users.controller.ts        # GET /users/me
         users.service.ts
+        users.repository.ts
+        users.module.ts
         dto/
-      photos/
-        photos.controller.ts
-        photos.service.ts
-        photos.repository.ts
-        dto/
-      uploads/
-        uploads.controller.ts
+          get-me-response.dto.ts
     common/
-      auth/                       # Guards, JWT verifier
-      errors/                     # Domain exceptions
-      utils/                      # Geo calculations
+      auth/                        # AuthGuard, JWT verifier, CurrentUser decorator
+      errors/                      # DomainError, InvalidBBoxError, SpotNotFoundError
+      filters/                     # DomainExceptionFilter
+    prisma/
+      prisma.service.ts
+      prisma.module.ts
     main.ts
     app.module.ts
   prisma/
-    schema.prisma
+    schema.prisma                  # Models: User, DiveSpot, ParkingLocation
     migrations/
     seed.ts
 ```
+
+> **Not yet implemented:** reports/, photos/, uploads/ modules (see USECASE.md for specs).
 
 ---
 
@@ -108,7 +113,7 @@ apps/backend/
 - **Authentication (AuthN):**
   - Frontend gets a **Supabase access token**.
   - Backend verifies JWT via **JWKS** (`jose`) using `AUTH_JWKS_URL`, `AUTH_ISSUER`.
-  - On first verified call: **getOrCreate User** (`sub` from JWT → `User.externalId` in DB).
+  - On first verified call: **getOrCreate User** (`sub` from JWT -> `User.externalId` in DB).
 
 - **Authorization (AuthZ):**
   - Roles: `user`, `moderator`, `admin`.
@@ -117,7 +122,7 @@ apps/backend/
   - Favorites (personal list) are only accessible to the owning user.
 
 - **Dev/CI Bypass:**
-  - `AUTH_DEV_BYPASS=true` (and `NODE_ENV` in {development,test}) → accept `x-dev-user-id` / `x-dev-role` headers for local testing.
+  - `AUTH_DEV_BYPASS=true` (and `NODE_ENV` in {development,test}) -> accept `x-dev-user-id` / `x-dev-role` headers for local testing.
 
 ---
 
@@ -127,14 +132,14 @@ apps/backend/
   - Start with: `supabase start`
   - Services: Postgres (`54322`), Auth (`54321`), Storage (`54323`)
 - **Migrations:** `supabase db reset` or `pnpm prisma:migrate`
-- **Environment (.env):** see `NONFUNCTIONAL.md` and `.env.example`
+- **Environment (.env):** see `.env.example`
 
 ---
 
 ## 8) API Design
 
 - **Unversioned for MVP** (we will add `/v1` prefix when making it public).
-- **OpenAPI** documentation is auto‑generated; DTOs reflect `DOMAIN.md` invariants.
+- **OpenAPI** documentation is auto-generated; DTOs reflect `DOMAIN.md` invariants.
 - Minimal payloads for map endpoints (e.g. BBOX listing returns only id/title/center).
 
 ---
@@ -148,7 +153,7 @@ apps/backend/
 - Keep reusable/shared code in `src/shared/*`.
 - Platform details are adapter-like: `.native.tsx` / `.web.tsx` at feature/shared boundaries.
 
-### 9.2 Target Mobile Folder Structure
+### 9.2 Mobile Folder Structure
 
 ```
 apps/mobile/
@@ -157,13 +162,12 @@ apps/mobile/
     (auth)/
       _layout.tsx
       login.tsx
-      signup.tsx
     (app)/
       _layout.tsx
       (tabs)/
         _layout.tsx
-        map.tsx
-        profile.tsx
+        index.tsx                    # -> MapScreen
+        profile.tsx                  # -> ProfileScreen
     +not-found.tsx
     +html.tsx
 
@@ -173,11 +177,12 @@ apps/mobile/
         context/auth-context.tsx
         screens/login-screen.tsx
         screens/profile-screen.tsx
-        services/auth-service.ts
       map/
         screens/map-screen.tsx
         components/map-view.native.tsx
         components/map-view.web.tsx
+        components/map-view.ts       # platform barrel
+        components/map-view-types.ts
         components/map-floating-button.tsx
         hooks/use-location.ts
         hooks/use-spots.ts
@@ -185,10 +190,7 @@ apps/mobile/
         types.ts
 
     shared/
-      ui/                            # generic UI primitives
-      theme/                         # colors, spacing, typography
-      lib/                           # generic helpers
-      types/                         # cross-feature types
+      theme/Colors.ts
 
     infrastructure/
       api/client.ts                  # authenticated fetch wrapper
@@ -202,21 +204,6 @@ apps/mobile/
 - `src/infrastructure/*` must not import from `app/*` or feature screen components.
 - Avoid cross-feature imports except through explicit shared contracts (types/utilities).
 
-### 9.4 Current-to-Target Mapping (Incremental)
-- `app/login.tsx` -> move screen UI to `src/features/auth/screens/login-screen.tsx`, keep route as thin wrapper.
-- `app/(tabs)/index.tsx` -> move screen UI to `src/features/map/screens/map-screen.tsx`, keep route as thin wrapper.
-- `contexts/auth-context.tsx` -> `src/features/auth/context/auth-context.tsx`.
-- `hooks/use-location.ts` + `hooks/use-spots.ts` -> `src/features/map/hooks/*`.
-- `components/map-*` + `constants/map.ts` + `types/spot.ts` -> `src/features/map/*`.
-- `services/api.ts` + `services/supabase.ts` -> `src/infrastructure/*`.
-- Remove Expo starter leftovers (`app/modal.tsx`, template-only components) once not needed.
-
-### 9.5 Migration Strategy
-- **Phase 1 (No behavior change):** create `src/` tree, move files, keep route wrappers.
-- **Phase 2:** split route groups to `(auth)` and `(app)` and keep auth gating in layout.
-- **Phase 3:** clean template artifacts and unused dependencies.
-- **Phase 4:** enforce boundaries via lint/import rules and keep tests aligned per feature.
-
 ---
 
-*Last updated: February 11, 2026*
+*Last updated: February 2026*

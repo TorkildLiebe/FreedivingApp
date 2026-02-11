@@ -1,9 +1,8 @@
 # CONTRIBUTING
 
 ## Workflow
-- **Branches:**  
-  - `main`: stable  
-  - `dev`: integration  
+- **Branches:**
+  - `main`: stable
   - `feat/<scope>`, `fix/<scope>`, `chore/<scope>`
 - **Commits:**  
   - Conventional: `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`  

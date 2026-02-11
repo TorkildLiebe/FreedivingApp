@@ -115,3 +115,5 @@ Operational flows in **USECASE.md**:
 - Reports: Create, Update, AddPhoto
 - Favorites: Add, Remove, List
 - Profiles: GetMe, GetUserProfile, UpdateMyProfile, CreateUploadUrl
+
+*Last updated: February 2026*
