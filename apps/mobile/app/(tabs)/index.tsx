@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import {
   createMapStyle,
   DEFAULT_CENTER,
@@ -9,20 +9,11 @@ import {
 } from '@/constants/map';
 import { useLocation } from '@/hooks/use-location';
 import { MapFloatingButton } from '@/components/map-floating-button';
+import { MapView, type MapViewHandle } from '@/components/map-view';
 
-function MapPlaceholder() {
-  return (
-    <View style={styles.placeholder}>
-      <Text style={styles.placeholderText}>Map is not supported on web</Text>
-    </View>
-  );
-}
-
-function NativeMap() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const MapLibreGL = require('@maplibre/maplibre-react-native');
+export default function MapScreen() {
   const { location } = useLocation();
-  const cameraRef = useRef<any>(null);
+  const mapRef = useRef<MapViewHandle>(null);
   const [activeLayer, setActiveLayer] = useState<MapLayer>('topo');
 
   const center = location ?? DEFAULT_CENTER;
@@ -35,11 +26,7 @@ function NativeMap() {
       );
       return;
     }
-    cameraRef.current?.setCamera({
-      centerCoordinate: [location.lng, location.lat],
-      zoomLevel: 14,
-      animationDuration: 1000,
-    });
+    mapRef.current?.flyTo(location, 14);
   }
 
   function handleToggleLayer() {
@@ -48,29 +35,13 @@ function NativeMap() {
 
   return (
     <View style={styles.container}>
-      <MapLibreGL.MapView
-        key={activeLayer}
-        style={styles.map}
+      <MapView
+        ref={mapRef}
         styleJSON={JSON.stringify(createMapStyle(TILE_URLS[activeLayer]))}
-        logoEnabled={false}
-        attributionEnabled={false}
-      >
-        <MapLibreGL.Camera
-          ref={cameraRef}
-          defaultSettings={{
-            centerCoordinate: [center.lng, center.lat],
-            zoomLevel: DEFAULT_ZOOM,
-          }}
-        />
-        {location && (
-          <MapLibreGL.PointAnnotation
-            id="user-location"
-            coordinate={[location.lng, location.lat]}
-          >
-            <View style={styles.userDot} />
-          </MapLibreGL.PointAnnotation>
-        )}
-      </MapLibreGL.MapView>
+        center={center}
+        zoom={DEFAULT_ZOOM}
+        location={location}
+      />
       <View style={styles.attribution}>
         <Text style={styles.attributionText}>{'\u00A9'} Kartverket</Text>
       </View>
@@ -88,37 +59,9 @@ function NativeMap() {
   );
 }
 
-export default function MapScreen() {
-  if (Platform.OS === 'web') {
-    return <MapPlaceholder />;
-  }
-
-  return <NativeMap />;
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  map: {
-    flex: 1,
-  },
-  placeholder: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  placeholderText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  userDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#007AFF',
-    borderWidth: 3,
-    borderColor: '#fff',
   },
   attribution: {
     position: 'absolute',
