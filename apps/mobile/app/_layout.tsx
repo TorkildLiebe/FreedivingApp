@@ -19,7 +19,7 @@ export {
 } from 'expo-router';
 
 export const unstable_settings = {
-  initialRouteName: '(tabs)',
+  initialRouteName: '(app)',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -56,12 +56,12 @@ function AuthRedirect({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isLoading) return;
 
-    const inLogin = segments[0] === 'login';
+    const inAuth = segments[0] === '(auth)' || segments[0] === 'login';
 
-    if (!session && !inLogin) {
+    if (!session && !inAuth) {
       router.replace('/login');
-    } else if (session && inLogin) {
-      router.replace('/(tabs)');
+    } else if (session && inAuth) {
+      router.replace('/(app)/(tabs)');
     }
   }, [session, isLoading, segments, router]);
 
@@ -78,9 +78,8 @@ function RootLayoutNav() {
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <AuthRedirect>
           <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="login" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="(app)" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           </Stack>
         </AuthRedirect>
       </ThemeProvider>

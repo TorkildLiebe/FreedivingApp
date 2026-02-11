@@ -36,7 +36,7 @@ jest.mock('@/src/features/map/components/map-view', () => {
 });
 
 // eslint-disable-next-line import/first
-import MapScreen from '@/app/(tabs)/index';
+import MapScreen from '@/app/(app)/(tabs)/index';
 
 describe('MapScreen', () => {
   it('renders MapView component', () => {
