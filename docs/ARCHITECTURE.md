@@ -1,7 +1,7 @@
 # DiveFreely – Architecture (MVP)
 
 **Status:** Draft for MVP  
-**Focus:** Simple, feature-based backend first; mobile later  
+**Focus:** Simple, feature-based backend and mobile architecture  
 **Principle:** Keep dependencies replaceable (DB, Auth, Storage) without touching domain logic
 
 ---
@@ -62,7 +62,7 @@ DB/Auth/Storage replaceable via interfaces. No direct infrastructure imports in 
 
 ---
 
-## 5) Module & Folder Structure
+## 5) Backend Module & Folder Structure
 
 ```
 apps/backend/
@@ -139,4 +139,84 @@ apps/backend/
 
 ---
 
-*Last updated: October 2025*
+## 9) Mobile Architecture (Expo Router + Feature Modules)
+
+### 9.1 Mobile Principles
+- Use **Expo Router** for navigation and route composition only.
+- Keep route files in `app/` thin: compose screens, no heavy data logic.
+- Organize mobile code by **feature** under `src/features/*`.
+- Keep reusable/shared code in `src/shared/*`.
+- Platform details are adapter-like: `.native.tsx` / `.web.tsx` at feature/shared boundaries.
+
+### 9.2 Target Mobile Folder Structure
+
+```
+apps/mobile/
+  app/                               # Expo Router routes only
+    _layout.tsx
+    (auth)/
+      _layout.tsx
+      login.tsx
+      signup.tsx
+    (app)/
+      _layout.tsx
+      (tabs)/
+        _layout.tsx
+        map.tsx
+        profile.tsx
+    +not-found.tsx
+    +html.tsx
+
+  src/
+    features/
+      auth/
+        context/auth-context.tsx
+        screens/login-screen.tsx
+        screens/profile-screen.tsx
+        services/auth-service.ts
+      map/
+        screens/map-screen.tsx
+        components/map-view.native.tsx
+        components/map-view.web.tsx
+        components/map-floating-button.tsx
+        hooks/use-location.ts
+        hooks/use-spots.ts
+        constants/map.ts
+        types.ts
+
+    shared/
+      ui/                            # generic UI primitives
+      theme/                         # colors, spacing, typography
+      lib/                           # generic helpers
+      types/                         # cross-feature types
+
+    infrastructure/
+      api/client.ts                  # authenticated fetch wrapper
+      supabase/client.ts             # Supabase client setup
+```
+
+### 9.3 Dependency Rules (Mobile)
+- `app/*` can import from `src/features/*`, `src/shared/*`, `src/infrastructure/*`.
+- `src/features/*` can import from `src/shared/*` and `src/infrastructure/*`.
+- `src/shared/*` must not import from `src/features/*`.
+- `src/infrastructure/*` must not import from `app/*` or feature screen components.
+- Avoid cross-feature imports except through explicit shared contracts (types/utilities).
+
+### 9.4 Current-to-Target Mapping (Incremental)
+- `app/login.tsx` -> move screen UI to `src/features/auth/screens/login-screen.tsx`, keep route as thin wrapper.
+- `app/(tabs)/index.tsx` -> move screen UI to `src/features/map/screens/map-screen.tsx`, keep route as thin wrapper.
+- `contexts/auth-context.tsx` -> `src/features/auth/context/auth-context.tsx`.
+- `hooks/use-location.ts` + `hooks/use-spots.ts` -> `src/features/map/hooks/*`.
+- `components/map-*` + `constants/map.ts` + `types/spot.ts` -> `src/features/map/*`.
+- `services/api.ts` + `services/supabase.ts` -> `src/infrastructure/*`.
+- Remove Expo starter leftovers (`app/modal.tsx`, template-only components) once not needed.
+
+### 9.5 Migration Strategy
+- **Phase 1 (No behavior change):** create `src/` tree, move files, keep route wrappers.
+- **Phase 2:** split route groups to `(auth)` and `(app)` and keep auth gating in layout.
+- **Phase 3:** clean template artifacts and unused dependencies.
+- **Phase 4:** enforce boundaries via lint/import rules and keep tests aligned per feature.
+
+---
+
+*Last updated: February 11, 2026*
