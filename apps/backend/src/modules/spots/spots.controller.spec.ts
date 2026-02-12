@@ -22,6 +22,7 @@ describe('SpotsController', () => {
     centerLat: 60,
     centerLon: 5,
     createdById: 'uuid-user-1',
+    creatorDisplayName: null,
     accessInfo: null,
     parkingLocations: [],
     shareUrl: null,

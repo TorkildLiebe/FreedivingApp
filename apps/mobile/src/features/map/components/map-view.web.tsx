@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { spotsToGeoJSON } from '@/src/features/map/utils/spots-to-geojson';
+import { parkingToGeoJSON } from '@/src/features/map/utils/parking-to-geojson';
 import type { MapViewHandle, MapViewProps } from './map-view-types';
 
 export type { MapViewHandle };
@@ -9,10 +10,22 @@ export type { MapViewHandle };
 const SPOTS_SOURCE = 'spots-source';
 const CLUSTER_LAYER = 'spot-clusters';
 const UNCLUSTERED_LAYER = 'spot-unclustered';
+const PARKING_SOURCE = 'parking-source';
+const PARKING_LAYER = 'parking-markers';
 
 export const MapView = forwardRef<MapViewHandle, MapViewProps>(
   function MapView(
-    { styleJSON, center, zoom, location, spots, onRegionDidChange },
+    {
+      styleJSON,
+      center,
+      zoom,
+      location,
+      spots,
+      parkingLocations,
+      onRegionDidChange,
+      onSpotPress,
+      onParkingPress,
+    },
     ref,
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -21,6 +34,12 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
     const sourceReadyRef = useRef(false);
     const onRegionDidChangeRef = useRef(onRegionDidChange);
     onRegionDidChangeRef.current = onRegionDidChange;
+    const onSpotPressRef = useRef(onSpotPress);
+    onSpotPressRef.current = onSpotPress;
+    const onParkingPressRef = useRef(onParkingPress);
+    onParkingPressRef.current = onParkingPress;
+    const parkingLocationsRef = useRef(parkingLocations);
+    parkingLocationsRef.current = parkingLocations;
 
     // Initialize map
     useEffect(() => {
@@ -115,6 +134,18 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
           });
         });
 
+        // Click unclustered spot → notify parent
+        map.on('click', UNCLUSTERED_LAYER, (e) => {
+          const features = map.queryRenderedFeatures(e.point, {
+            layers: [UNCLUSTERED_LAYER],
+          });
+          if (!features.length) return;
+          const spotId = features[0].properties?.id;
+          if (spotId && onSpotPressRef.current) {
+            onSpotPressRef.current(spotId);
+          }
+        });
+
         // Cursor changes
         map.on('mouseenter', CLUSTER_LAYER, () => {
           map.getCanvas().style.cursor = 'pointer';
@@ -191,6 +222,63 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
         source.setData(spotsToGeoJSON(spots ?? []));
       }
     }, [spots]);
+
+    // Update parking markers
+    useEffect(() => {
+      if (!sourceReadyRef.current) return;
+      const map = mapRef.current;
+      if (!map) return;
+
+      const locations = parkingLocations ?? [];
+
+      if (locations.length > 0) {
+        const existingSource = map.getSource(PARKING_SOURCE) as
+          | maplibregl.GeoJSONSource
+          | undefined;
+        if (existingSource) {
+          existingSource.setData(parkingToGeoJSON(locations));
+        } else {
+          map.addSource(PARKING_SOURCE, {
+            type: 'geojson',
+            data: parkingToGeoJSON(locations),
+          });
+          map.addLayer({
+            id: PARKING_LAYER,
+            type: 'circle',
+            source: PARKING_SOURCE,
+            paint: {
+              'circle-color': '#2196F3',
+              'circle-radius': 8,
+              'circle-stroke-width': 2,
+              'circle-stroke-color': '#fff',
+            },
+          });
+          map.on('click', PARKING_LAYER, (e) => {
+            const features = map.queryRenderedFeatures(e.point, {
+              layers: [PARKING_LAYER],
+            });
+            if (!features.length) return;
+            const parkingId = features[0].properties?.id;
+            const cb = onParkingPressRef.current;
+            if (parkingId && cb) {
+              const parking = parkingLocationsRef.current?.find(
+                (p) => p.id === parkingId,
+              );
+              if (parking) cb(parking);
+            }
+          });
+          map.on('mouseenter', PARKING_LAYER, () => {
+            map.getCanvas().style.cursor = 'pointer';
+          });
+          map.on('mouseleave', PARKING_LAYER, () => {
+            map.getCanvas().style.cursor = '';
+          });
+        }
+      } else {
+        if (map.getLayer(PARKING_LAYER)) map.removeLayer(PARKING_LAYER);
+        if (map.getSource(PARKING_SOURCE)) map.removeSource(PARKING_SOURCE);
+      }
+    }, [parkingLocations]);
 
     useImperativeHandle(ref, () => ({
       flyTo(coords, flyZoom = 14) {

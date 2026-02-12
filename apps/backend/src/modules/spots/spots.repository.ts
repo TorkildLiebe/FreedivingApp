@@ -10,6 +10,7 @@ const SPOT_SUMMARY_SELECT = {
 
 const SPOT_DETAIL_INCLUDE = {
   parkingLocations: true,
+  createdBy: { select: { displayName: true } },
 } as const;
 
 @Injectable()

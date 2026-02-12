@@ -7,6 +7,7 @@ export class SpotDetailResponseDto {
   centerLat!: number;
   centerLon!: number;
   createdById!: string;
+  creatorDisplayName!: string | null;
   accessInfo!: string | null;
   parkingLocations!: ParkingLocationResponseDto[];
   shareUrl!: string | null;

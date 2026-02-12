@@ -5,23 +5,45 @@ import {
   useMemo,
   useRef,
 } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { spotsToGeoJSON } from '@/src/features/map/utils/spots-to-geojson';
+import { parkingToGeoJSON } from '@/src/features/map/utils/parking-to-geojson';
 import type { MapViewHandle, MapViewProps } from './map-view-types';
+
+// Try to load MapLibre — will fail in Expo Go (no native module)
+let MapLibreGL: any = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  MapLibreGL = require('@maplibre/maplibre-react-native');
+} catch {
+  // Native module not available (running in Expo Go)
+}
 
 export type { MapViewHandle };
 
 export const MapView = forwardRef<MapViewHandle, MapViewProps>(
   function MapView(
-    { styleJSON, center, zoom, location, spots, onRegionDidChange },
+    {
+      styleJSON,
+      center,
+      zoom,
+      location,
+      spots,
+      parkingLocations,
+      onRegionDidChange,
+      onSpotPress,
+      onParkingPress,
+    },
     ref,
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const MapLibreGL = require('@maplibre/maplibre-react-native');
     const cameraRef = useRef<any>(null);
     const shapeSourceRef = useRef<any>(null);
 
     const geojson = useMemo(() => spotsToGeoJSON(spots ?? []), [spots]);
+    const parkingGeojson = useMemo(
+      () => parkingToGeoJSON(parkingLocations ?? []),
+      [parkingLocations],
+    );
 
     useImperativeHandle(ref, () => ({
       flyTo(coords, flyZoom = 14) {
@@ -50,21 +72,38 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
       [onRegionDidChange],
     );
 
-    const handleShapePress = useCallback(async (event: any) => {
-      const feature = event.features?.[0];
-      if (!feature) return;
+    const handleShapePress = useCallback(
+      async (event: any) => {
+        const feature = event.features?.[0];
+        if (!feature) return;
 
-      if (feature.properties?.cluster) {
-        const expansionZoom =
-          await shapeSourceRef.current?.getClusterExpansionZoom(feature);
-        const [lng, lat] = feature.geometry.coordinates;
-        cameraRef.current?.setCamera({
-          centerCoordinate: [lng, lat],
-          zoomLevel: expansionZoom ?? 14,
-          animationDuration: 500,
-        });
-      }
-    }, []);
+        if (feature.properties?.cluster) {
+          const expansionZoom =
+            await shapeSourceRef.current?.getClusterExpansionZoom(feature);
+          const [lng, lat] = feature.geometry.coordinates;
+          cameraRef.current?.setCamera({
+            centerCoordinate: [lng, lat],
+            zoomLevel: expansionZoom ?? 14,
+            animationDuration: 500,
+          });
+        } else if (feature.properties?.id && onSpotPress) {
+          onSpotPress(feature.properties.id);
+        }
+      },
+      [onSpotPress],
+    );
+
+    if (!MapLibreGL?.MapView) {
+      return (
+        <View style={styles.fallback}>
+          <Text style={styles.fallbackTitle}>Map unavailable</Text>
+          <Text style={styles.fallbackText}>
+            MapLibre native module is not available in Expo Go.{'\n'}
+            Create a development build to use the map.
+          </Text>
+        </View>
+      );
+    }
 
     return (
       <MapLibreGL.MapView
@@ -128,6 +167,31 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
             }}
           />
         </MapLibreGL.ShapeSource>
+        {parkingLocations && parkingLocations.length > 0 && (
+          <MapLibreGL.ShapeSource
+            id="parking-source"
+            shape={parkingGeojson}
+            onPress={(event: any) => {
+              const feature = event.features?.[0];
+              if (feature?.properties?.id && onParkingPress) {
+                const parking = parkingLocations.find(
+                  (p) => p.id === feature.properties.id,
+                );
+                if (parking) onParkingPress(parking);
+              }
+            }}
+          >
+            <MapLibreGL.CircleLayer
+              id="parking-markers"
+              style={{
+                circleColor: '#2196F3',
+                circleRadius: 8,
+                circleStrokeWidth: 2,
+                circleStrokeColor: '#fff',
+              }}
+            />
+          </MapLibreGL.ShapeSource>
+        )}
       </MapLibreGL.MapView>
     );
   },
@@ -144,5 +208,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     borderWidth: 3,
     borderColor: '#fff',
+  },
+  fallback: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    padding: 24,
+  },
+  fallbackTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  fallbackText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
