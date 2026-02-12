@@ -13,7 +13,7 @@ export type { MapViewHandle };
 
 export const MapView = forwardRef<MapViewHandle, MapViewProps>(
   function MapView(
-    { styleJSON, center, zoom, location, spots, onRegionDidChange },
+    { styleJSON, center, zoom, location, spots, onRegionDidChange, onSpotPress },
     ref,
   ) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -50,21 +50,26 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
       [onRegionDidChange],
     );
 
-    const handleShapePress = useCallback(async (event: any) => {
-      const feature = event.features?.[0];
-      if (!feature) return;
+    const handleShapePress = useCallback(
+      async (event: any) => {
+        const feature = event.features?.[0];
+        if (!feature) return;
 
-      if (feature.properties?.cluster) {
-        const expansionZoom =
-          await shapeSourceRef.current?.getClusterExpansionZoom(feature);
-        const [lng, lat] = feature.geometry.coordinates;
-        cameraRef.current?.setCamera({
-          centerCoordinate: [lng, lat],
-          zoomLevel: expansionZoom ?? 14,
-          animationDuration: 500,
-        });
-      }
-    }, []);
+        if (feature.properties?.cluster) {
+          const expansionZoom =
+            await shapeSourceRef.current?.getClusterExpansionZoom(feature);
+          const [lng, lat] = feature.geometry.coordinates;
+          cameraRef.current?.setCamera({
+            centerCoordinate: [lng, lat],
+            zoomLevel: expansionZoom ?? 14,
+            animationDuration: 500,
+          });
+        } else if (feature.properties?.id && onSpotPress) {
+          onSpotPress(feature.properties.id);
+        }
+      },
+      [onSpotPress],
+    );
 
     return (
       <MapLibreGL.MapView

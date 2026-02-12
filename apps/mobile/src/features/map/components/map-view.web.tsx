@@ -12,7 +12,7 @@ const UNCLUSTERED_LAYER = 'spot-unclustered';
 
 export const MapView = forwardRef<MapViewHandle, MapViewProps>(
   function MapView(
-    { styleJSON, center, zoom, location, spots, onRegionDidChange },
+    { styleJSON, center, zoom, location, spots, onRegionDidChange, onSpotPress },
     ref,
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -21,6 +21,8 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
     const sourceReadyRef = useRef(false);
     const onRegionDidChangeRef = useRef(onRegionDidChange);
     onRegionDidChangeRef.current = onRegionDidChange;
+    const onSpotPressRef = useRef(onSpotPress);
+    onSpotPressRef.current = onSpotPress;
 
     // Initialize map
     useEffect(() => {
@@ -113,6 +115,18 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
               duration: 500,
             });
           });
+        });
+
+        // Click unclustered spot → notify parent
+        map.on('click', UNCLUSTERED_LAYER, (e) => {
+          const features = map.queryRenderedFeatures(e.point, {
+            layers: [UNCLUSTERED_LAYER],
+          });
+          if (!features.length) return;
+          const spotId = features[0].properties?.id;
+          if (spotId && onSpotPressRef.current) {
+            onSpotPressRef.current(spotId);
+          }
         });
 
         // Cursor changes

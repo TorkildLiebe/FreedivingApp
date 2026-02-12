@@ -7,6 +7,7 @@ export interface MapViewProps {
   location: { lat: number; lng: number } | null;
   spots?: SpotSummary[];
   onRegionDidChange?: (bbox: BBox) => void;
+  onSpotPress?: (spotId: string) => void;
 }
 
 export interface MapViewHandle {
