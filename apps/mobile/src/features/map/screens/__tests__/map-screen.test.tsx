@@ -42,8 +42,13 @@ jest.mock('@/src/features/map/components/spot-detail-sheet', () => {
   const mockReact = require('react');
   return {
     __esModule: true,
-    SpotDetailSheet: (props: any) =>
-      mockReact.createElement(View, { testID: 'spot-detail-sheet', ...props }),
+    SpotDetailSheet: mockReact.forwardRef((props: any, ref: any) => {
+      mockReact.useImperativeHandle(ref, () => ({ minimize: jest.fn() }));
+      return mockReact.createElement(View, {
+        testID: 'spot-detail-sheet',
+        ...props,
+      });
+    }),
   };
 });
 

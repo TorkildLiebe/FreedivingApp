@@ -12,12 +12,16 @@ import { useSpots } from '@/src/features/map/hooks/use-spots';
 import { useSpotDetail } from '@/src/features/map/hooks/use-spot-detail';
 import { MapFloatingButton } from '@/src/features/map/components/map-floating-button';
 import { MapView, type MapViewHandle } from '@/src/features/map/components/map-view';
-import { SpotDetailSheet } from '@/src/features/map/components/spot-detail-sheet';
+import {
+  SpotDetailSheet,
+  type SpotDetailSheetHandle,
+} from '@/src/features/map/components/spot-detail-sheet';
 import type { BBox, ParkingLocation } from '@/src/features/map/types';
 
 export default function MapScreen() {
   const { location } = useLocation();
   const mapRef = useRef<MapViewHandle>(null);
+  const sheetRef = useRef<SpotDetailSheetHandle>(null);
   const [activeLayer, setActiveLayer] = useState<MapLayer>('topo');
   const [bbox, setBbox] = useState<BBox | null>(null);
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
@@ -47,7 +51,7 @@ export default function MapScreen() {
 
   const handleParkingPress = useCallback((parking: ParkingLocation) => {
     mapRef.current?.flyTo({ lat: parking.lat, lng: parking.lon }, 16);
-    setSelectedSpotId(null);
+    sheetRef.current?.minimize();
   }, []);
 
   const handleSheetDismiss = useCallback(() => {
@@ -82,6 +86,7 @@ export default function MapScreen() {
         style={styles.centerButton}
       />
       <SpotDetailSheet
+        ref={sheetRef}
         spot={spot}
         isLoading={isSpotLoading}
         onDismiss={handleSheetDismiss}

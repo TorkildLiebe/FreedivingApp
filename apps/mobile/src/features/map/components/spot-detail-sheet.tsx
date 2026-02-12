@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+} from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
@@ -19,16 +26,24 @@ interface SpotDetailSheetProps {
   onParkingPress: (parking: ParkingLocation) => void;
 }
 
-export function SpotDetailSheet({
-  spot,
-  isLoading,
-  onDismiss,
-  onParkingPress,
-}: SpotDetailSheetProps) {
+export interface SpotDetailSheetHandle {
+  minimize: () => void;
+}
+
+export const SpotDetailSheet = forwardRef<
+  SpotDetailSheetHandle,
+  SpotDetailSheetProps
+>(function SpotDetailSheet({ spot, isLoading, onDismiss, onParkingPress }, ref) {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const snapPoints = useMemo(() => ['25%', '50%', '90%'], []);
+
+  useImperativeHandle(ref, () => ({
+    minimize() {
+      bottomSheetRef.current?.snapToIndex(0);
+    },
+  }));
 
   useEffect(() => {
     if (spot || isLoading) {
@@ -59,9 +74,8 @@ export function SpotDetailSheet({
       backgroundStyle={{ backgroundColor: colors.background }}
       handleIndicatorStyle={{ backgroundColor: colors.text, opacity: 0.3 }}
     >
-      <BottomSheetScrollView
-        style={[styles.content, { backgroundColor: colors.background }]}
-      >
+      {/* Fixed header: title + creator */}
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
         {isLoading && !spot ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.tint} />
@@ -71,87 +85,101 @@ export function SpotDetailSheet({
             <Text style={[styles.title, { color: colors.text }]}>
               {spot.title}
             </Text>
-            <Text style={[styles.creator, { color: colors.text, opacity: 0.6 }]}>
+            <Text
+              style={[styles.creator, { color: colors.text, opacity: 0.6 }]}
+            >
               {spot.creatorDisplayName ?? 'Anonymous'}
             </Text>
-
-            {spot.description ? (
-              <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  Description
-                </Text>
-                <Text style={[styles.body, { color: colors.text }]}>
-                  {spot.description}
-                </Text>
-              </View>
-            ) : null}
-
-            {spot.accessInfo ? (
-              <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  Access Info
-                </Text>
-                <Text style={[styles.body, { color: colors.text }]}>
-                  {spot.accessInfo}
-                </Text>
-              </View>
-            ) : null}
-
-            {spot.parkingLocations.length > 0 ? (
-              <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  Parking
-                </Text>
-                {spot.parkingLocations.map((parking) => (
-                  <TouchableOpacity
-                    key={parking.id}
-                    style={[
-                      styles.parkingItem,
-                      { borderColor: colors.text, borderOpacity: 0.1 },
-                    ]}
-                    onPress={() => onParkingPress(parking)}
-                    activeOpacity={0.7}
-                  >
-                    <FontAwesome
-                      name="map-marker"
-                      size={16}
-                      color="#2196F3"
-                    />
-                    <Text style={[styles.parkingLabel, { color: colors.text }]}>
-                      {parking.label ?? `Parking (${parking.lat.toFixed(4)}, ${parking.lon.toFixed(4)})`}
-                    </Text>
-                    <FontAwesome
-                      name="chevron-right"
-                      size={12}
-                      color={colors.text}
-                      style={{ opacity: 0.4 }}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ) : null}
-
-            <View style={styles.section}>
-              <Text style={[styles.meta, { color: colors.text, opacity: 0.5 }]}>
-                Created {new Date(spot.createdAt).toLocaleDateString()}
-              </Text>
-              {spot.createdAt !== spot.updatedAt ? (
-                <Text
-                  style={[styles.meta, { color: colors.text, opacity: 0.5 }]}
-                >
-                  Updated {new Date(spot.updatedAt).toLocaleDateString()}
-                </Text>
-              ) : null}
-            </View>
           </>
         ) : null}
-      </BottomSheetScrollView>
+      </View>
+
+      {/* Scrollable content */}
+      {spot ? (
+        <BottomSheetScrollView
+          style={[styles.scrollContent, { backgroundColor: colors.background }]}
+        >
+          {spot.description ? (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Description
+              </Text>
+              <Text style={[styles.body, { color: colors.text }]}>
+                {spot.description}
+              </Text>
+            </View>
+          ) : null}
+
+          {spot.accessInfo ? (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Access Info
+              </Text>
+              <Text style={[styles.body, { color: colors.text }]}>
+                {spot.accessInfo}
+              </Text>
+            </View>
+          ) : null}
+
+          {spot.parkingLocations.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Parking
+              </Text>
+              {spot.parkingLocations.map((parking) => (
+                <TouchableOpacity
+                  key={parking.id}
+                  style={[
+                    styles.parkingItem,
+                    { borderColor: colors.text, borderOpacity: 0.1 },
+                  ]}
+                  onPress={() => onParkingPress(parking)}
+                  activeOpacity={0.7}
+                >
+                  <FontAwesome name="map-marker" size={16} color="#2196F3" />
+                  <Text style={[styles.parkingLabel, { color: colors.text }]}>
+                    {parking.label ??
+                      `Parking (${parking.lat.toFixed(4)}, ${parking.lon.toFixed(4)})`}
+                  </Text>
+                  <FontAwesome
+                    name="chevron-right"
+                    size={12}
+                    color={colors.text}
+                    style={{ opacity: 0.4 }}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : null}
+
+          <View style={styles.section}>
+            <Text
+              style={[styles.meta, { color: colors.text, opacity: 0.5 }]}
+            >
+              Created {new Date(spot.createdAt).toLocaleDateString()}
+            </Text>
+            {spot.createdAt !== spot.updatedAt ? (
+              <Text
+                style={[styles.meta, { color: colors.text, opacity: 0.5 }]}
+              >
+                Updated {new Date(spot.updatedAt).toLocaleDateString()}
+              </Text>
+            ) : null}
+          </View>
+        </BottomSheetScrollView>
+      ) : null}
     </BottomSheet>
   );
-}
+});
 
 const styles = StyleSheet.create({
-  content: {
+  header: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 40,
   },
