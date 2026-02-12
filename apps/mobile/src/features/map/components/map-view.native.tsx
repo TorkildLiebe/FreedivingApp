@@ -5,10 +5,19 @@ import {
   useMemo,
   useRef,
 } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { spotsToGeoJSON } from '@/src/features/map/utils/spots-to-geojson';
 import { parkingToGeoJSON } from '@/src/features/map/utils/parking-to-geojson';
 import type { MapViewHandle, MapViewProps } from './map-view-types';
+
+// Try to load MapLibre — will fail in Expo Go (no native module)
+let MapLibreGL: any = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  MapLibreGL = require('@maplibre/maplibre-react-native');
+} catch {
+  // Native module not available (running in Expo Go)
+}
 
 export type { MapViewHandle };
 
@@ -27,8 +36,6 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
     },
     ref,
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const MapLibreGL = require('@maplibre/maplibre-react-native');
     const cameraRef = useRef<any>(null);
     const shapeSourceRef = useRef<any>(null);
 
@@ -85,6 +92,18 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
       },
       [onSpotPress],
     );
+
+    if (!MapLibreGL?.MapView) {
+      return (
+        <View style={styles.fallback}>
+          <Text style={styles.fallbackTitle}>Map unavailable</Text>
+          <Text style={styles.fallbackText}>
+            MapLibre native module is not available in Expo Go.{'\n'}
+            Create a development build to use the map.
+          </Text>
+        </View>
+      );
+    }
 
     return (
       <MapLibreGL.MapView
@@ -189,5 +208,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     borderWidth: 3,
     borderColor: '#fff',
+  },
+  fallback: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    padding: 24,
+  },
+  fallbackTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  fallbackText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
