@@ -71,7 +71,10 @@ describe('SpotsRepository', () => {
 
       expect(prisma.diveSpot.findFirst).toHaveBeenCalledWith({
         where: { id: 'uuid-1', isDeleted: false },
-        include: { parkingLocations: true },
+        include: {
+          parkingLocations: true,
+          createdBy: { select: { displayName: true } },
+        },
       });
     });
 

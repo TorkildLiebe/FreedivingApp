@@ -17,6 +17,7 @@ describe('SpotsService', () => {
     centerLat: 60.123456,
     centerLon: 5.123456,
     createdById: 'uuid-user-1',
+    createdBy: { displayName: 'TestUser' },
     accessInfo: 'Park at the pier',
     shareUrl: null,
     shareableAccessInfo: null,
@@ -141,6 +142,7 @@ describe('SpotsService', () => {
         centerLat: 60.123456,
         centerLon: 5.123456,
         createdById: 'uuid-user-1',
+        creatorDisplayName: 'TestUser',
         accessInfo: 'Park at the pier',
         parkingLocations: [
           {

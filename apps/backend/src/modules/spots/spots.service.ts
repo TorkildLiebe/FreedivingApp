@@ -57,6 +57,7 @@ export class SpotsService {
       centerLat: spot.centerLat,
       centerLon: spot.centerLon,
       createdById: spot.createdById,
+      creatorDisplayName: spot.createdBy.displayName,
       accessInfo: spot.accessInfo,
       parkingLocations: spot.parkingLocations.map((p) => ({
         id: p.id,
