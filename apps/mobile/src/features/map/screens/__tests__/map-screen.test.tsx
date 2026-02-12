@@ -18,6 +18,10 @@ jest.mock('@/src/features/map/hooks/use-spots', () => ({
   useSpots: () => ({ spots: [], isLoading: false, error: null }),
 }));
 
+jest.mock('@/src/features/map/hooks/use-spot-detail', () => ({
+  useSpotDetail: () => ({ spot: null, isLoading: false, error: null }),
+}));
+
 jest.mock('@/src/features/map/components/map-view', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { View } = require('react-native');
@@ -28,6 +32,18 @@ jest.mock('@/src/features/map/components/map-view', () => {
     MapView: mockReact.forwardRef((props: any, ref: any) =>
       mockReact.createElement(View, { testID: 'map-view', ref, ...props }),
     ),
+  };
+});
+
+jest.mock('@/src/features/map/components/spot-detail-sheet', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { View } = require('react-native');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const mockReact = require('react');
+  return {
+    __esModule: true,
+    SpotDetailSheet: (props: any) =>
+      mockReact.createElement(View, { testID: 'spot-detail-sheet', ...props }),
   };
 });
 
@@ -51,5 +67,17 @@ describe('MapScreen', () => {
     expect(mapView.props.styleJSON).toContain('kartverket');
     expect(mapView.props.zoom).toBe(10);
     expect(mapView.props.center).toEqual({ lat: 59.9139, lng: 10.7522 });
+  });
+
+  it('passes onSpotPress and onParkingPress to MapView', () => {
+    const { getByTestId } = render(<MapScreen />);
+    const mapView = getByTestId('map-view');
+    expect(mapView.props.onSpotPress).toBeInstanceOf(Function);
+    expect(mapView.props.onParkingPress).toBeInstanceOf(Function);
+  });
+
+  it('renders SpotDetailSheet', () => {
+    const { getByTestId } = render(<MapScreen />);
+    expect(getByTestId('spot-detail-sheet')).toBeTruthy();
   });
 });

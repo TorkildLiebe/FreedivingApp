@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import {
   createMapStyle,
@@ -9,16 +9,20 @@ import {
 } from '@/src/features/map/constants/map';
 import { useLocation } from '@/src/features/map/hooks/use-location';
 import { useSpots } from '@/src/features/map/hooks/use-spots';
+import { useSpotDetail } from '@/src/features/map/hooks/use-spot-detail';
 import { MapFloatingButton } from '@/src/features/map/components/map-floating-button';
 import { MapView, type MapViewHandle } from '@/src/features/map/components/map-view';
-import type { BBox } from '@/src/features/map/types';
+import { SpotDetailSheet } from '@/src/features/map/components/spot-detail-sheet';
+import type { BBox, ParkingLocation } from '@/src/features/map/types';
 
 export default function MapScreen() {
   const { location } = useLocation();
   const mapRef = useRef<MapViewHandle>(null);
   const [activeLayer, setActiveLayer] = useState<MapLayer>('topo');
   const [bbox, setBbox] = useState<BBox | null>(null);
+  const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
   const { spots } = useSpots(bbox);
+  const { spot, isLoading: isSpotLoading } = useSpotDetail(selectedSpotId);
 
   const center = location ?? DEFAULT_CENTER;
 
@@ -37,6 +41,19 @@ export default function MapScreen() {
     setActiveLayer((prev) => (prev === 'topo' ? 'nautical' : 'topo'));
   }
 
+  const handleSpotPress = useCallback((spotId: string) => {
+    setSelectedSpotId(spotId);
+  }, []);
+
+  const handleParkingPress = useCallback((parking: ParkingLocation) => {
+    mapRef.current?.flyTo({ lat: parking.lat, lng: parking.lon }, 16);
+    setSelectedSpotId(null);
+  }, []);
+
+  const handleSheetDismiss = useCallback(() => {
+    setSelectedSpotId(null);
+  }, []);
+
   return (
     <View style={styles.container}>
       <MapView
@@ -46,7 +63,10 @@ export default function MapScreen() {
         zoom={DEFAULT_ZOOM}
         location={location}
         spots={spots}
+        parkingLocations={spot?.parkingLocations}
         onRegionDidChange={setBbox}
+        onSpotPress={handleSpotPress}
+        onParkingPress={handleParkingPress}
       />
       <View style={styles.attribution}>
         <Text style={styles.attributionText}>{'\u00A9'} Kartverket</Text>
@@ -60,6 +80,12 @@ export default function MapScreen() {
         onPress={handleCenterOnMe}
         iconName="crosshairs"
         style={styles.centerButton}
+      />
+      <SpotDetailSheet
+        spot={spot}
+        isLoading={isSpotLoading}
+        onDismiss={handleSheetDismiss}
+        onParkingPress={handleParkingPress}
       />
     </View>
   );
