@@ -316,7 +316,7 @@ Run: pnpm test:backend && pnpm lint:backend && cd apps/backend && pnpm tsc --noE
 ```markdown
 ---
 name: frontend-feature
-description: Implement a mobile/web feature following Expo Router + feature-based architecture
+description: Implement a native mobile feature following Expo Router + feature-based architecture
 user-invocable: true
 argument-hint: "<feature-name> <description>"
 ---
@@ -343,20 +343,21 @@ Implement the frontend feature described in $ARGUMENTS.
   ├── types.ts          # Feature types
   └── __tests__/        # Tests
   ```
-- Platform-specific: use `.native.tsx` / `.web.tsx` with a router file (`.ts`)
+- Platform-specific: use `.ios.tsx` / `.android.tsx` when iOS/Android behavior differs
 - Auth state: use `useAuth()` from src/features/auth/context/auth-context.tsx
 - API calls: use the Axios client from src/infrastructure/api/client.ts
 - Navigation: use Expo Router's `useRouter()`, `Link`, typed routes
 
 ## Constraints
-- Must work on BOTH native and web (test both)
+- Must work on BOTH iOS and Android (test both platforms)
 - Use the existing Colors theme from src/shared/theme/Colors.ts
 - No new dependencies without justification
 - Accessible: follow WCAG AA baseline
 
 ## Verification
 Run: cd apps/mobile && pnpm test && pnpm lint && pnpm tsc --noEmit
-Test on web: pnpm expo start --web
+Test on iOS: pnpm ios
+Test on Android: pnpm android
 ```
 
 #### 3. Business Rules Auditor
@@ -1233,7 +1234,7 @@ cd apps/backend && pnpm tsc --noEmit
 "Design the component hierarchy for a DiveReport creation form.
 It needs: spot selector, visibility slider (0-60m), current strength (1-5 stars),
 optional rating (1-5), date picker (not future), photo attachments (max 5).
-Must work on both native and web. Follow existing patterns in src/features/map/."
+Must work on both iOS and Android. Follow existing patterns in src/features/map/."
 
 # Don't ask:
 "Make a beautiful UI for reports"

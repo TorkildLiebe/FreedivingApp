@@ -1,77 +1,205 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 ## Project Overview
-This is a freediving app using Expo (React Native + Web), NestJS with Fastify, TypeScript throughout, and pnpm as the package manager. Always ensure changes work on BOTH native and web platforms.
 
-## Documentation Context
-- **Features/use cases** -> `USECASE.md` (operational flows)
-- **Validation/business rules** -> `DOMAIN.md` (entities, invariants, errors)
-- **Module structure** -> `ARCHITECTURE.md` (vertical slices, folder layout)
-- **Quality/security/ops** -> `QUALITY.md` (testing, security, logging, GDPR)
-- **Workflow** -> `CONTRIBUTING.md` (branch/commit conventions)
-- **Product scope** -> `VISION.md` (MVP boundaries)
-- **Feature tracking** -> GitHub Project Board (implemented vs. planned)
+DiveFreely is a mobile dive spot and report platform for Norway. It's a **pnpm monorepo** with three workspaces:
+- `apps/backend` — NestJS API (Fastify adapter) with Prisma ORM and Supabase Postgres+PostGIS
+- `apps/mobile` — React Native app via Expo (Expo Router for navigation)
+- `packages/shared` — Shared types/constants (published as `@freediving/shared`)
+- Important: Expo is native-only (iOS and Android). Web platform is NOT supported.
+- Development: Uses Expo development builds (not Expo Go). Run `pnpm ios` or `pnpm android` to build and launch.
 
-## Architecture Patterns
-- **Vertical slices** (ARCHITECTURE.md §3): features self-contained in `/apps/backend/src/modules/<feature>/`
-- Each module: controllers, DTOs, services, domain, repositories
-- **Ports/adapters** (§4): no direct infrastructure imports in domain/use-case code
+## Commands
+- See @package.json for available pnpm commands
 
-## Error Handling
-- Domain errors → HTTP: 400 (Invalid*), 401 (auth), 403 (Forbidden), 404 (*NotFound*), 409 (Conflict)
-- Use exception filters; never expose stack traces
-- Domain errors in `/common/errors/`; throw from services
 
-## Data Patterns
-- **Soft deletes:** Always filter `isDeleted=false` in queries
-- **Transactions:** Use Prisma `$transaction` for multi-step writes
-- **DTOs:** class-validator decorators; ValidationPipe with `whitelist: true`
-- **Repositories:** One per entity in module; inject PrismaService
+## Architecture
 
-## Backend (NestJS)
-When adding NestJS modules or features, always check: 1) Required packages are installed (e.g., @fastify/cors), 2) Module dependencies are imported (e.g., UsersModule in any module using UsersService), 3) Auth guards handle both dev bypass AND real JWT tokens.
+### Backend — Vertical Slice Modules (`apps/backend/src/modules/`)
 
-## Testing
-Jest is configured with pnpm workspaces. Known issues: pnpm transform patterns need special handling, and Jest 30 sandboxing can conflict with Expo. If tests fail on transforms or sandboxing, check jest.config.ts transformIgnorePatterns and sandbox settings first.
+Each feature is a self-contained NestJS module with: controller → service → repository → DTOs. Current modules: `health`, `spots`, `users`. Domain logic is kept independent of NestJS/Prisma.
 
-## File Naming
-- Files: kebab-case (`dive-spot.service.ts`)
-- Classes: PascalCase (`DiveSpotService`)
-- DTOs: `CreateSpotDto`, `UpdateSpotDto`
+Key infrastructure in `apps/backend/src/common/`:
+- `auth/` — AuthGuard (JWT verification via jose/JWKS), `@CurrentUser()` decorator, dev bypass mode (`AUTH_DEV_BYPASS=true` + `x-dev-user-id`/`x-dev-role` headers)
+- `errors/` — Domain error hierarchy (`DomainError` base, `SpotNotFoundError`, `InvalidBBoxError`)
+- `filters/` — `DomainExceptionFilter` maps domain errors to HTTP responses
 
-## Critical Constraints
-- Spot proximity: 1000m min between centers
-- Parking: max 5, within 5000m of spot, dedupe <2m
+Auth flow: Supabase issues JWT → backend verifies via JWKS → `getOrCreate` User on first call (maps JWT `sub` to `User.externalId`).
+
+### Mobile — Feature-Based (`apps/mobile/src/features/`)
+
+Route files in `app/` are thin wrappers — real logic lives in `src/features/`. Current features: `auth` (login, profile screens, auth context), `map` (map screen, MapLibre components, spot hooks).
+
+**Dependency rules:** `app/` → `features/` → `shared/` / `infrastructure/`. No cross-feature imports. Platform-specific code uses `.ios.tsx` / `.android.tsx` suffixes when needed (iOS vs Android differences).
+
+Maps use **MapLibre GL** with Kartverket WMTS tiles (Norwegian mapping service).
+
+### Database
+
+Prisma schema at `apps/backend/prisma/schema.prisma`. Models: `User`, `DiveSpot` (with PostGIS spatial queries via bbox), `ParkingLocation`. Tables use snake_case mapping (`@@map`).
+
+## Commit Convention
+
+Commits must follow: `type#issue: description`
+- Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`, `build`, `revert`
+- Example: `feat#42: add dive spot detail sheet`
+- Enforced by Husky commit-msg hook
+
+Direct commits to `main` are blocked by the pre-commit hook. Use feature branches: `feat/<scope>`, `fix/<scope>`, `chore/<scope>`.
+
+## Git Hooks (Husky)
+
+- **pre-commit**: Blocks main branch commits, runs lint + type-check for both apps
+- **pre-push**: Runs lint + tests for both apps
+- **commit-msg**: Validates `type#issue: description` format
+
+
+
+## **Project Overview**
+
+DiveFreely is a freediving app for Norway.
+
+**Stack**
+
+- Monorepo (pnpm workspaces)
+- apps/backend — NestJS (Fastify), Prisma, Supabase Postgres + PostGIS
+- apps/mobile — Expo (React Native, Expo Router)
+- packages/shared — shared types/constants (@freediving/shared)
+- TypeScript everywhere
+
+**Hard requirement:** All changes must work on **iOS and Android**.
+
+---
+$ Use @ to refrence the files, they lie under /docs
+## **Source of Truth**
+
+- Use cases / flows → USECASE.md
+- Domain rules / invariants → DOMAIN.md
+- Architecture patterns → ARCHITECTURE.md
+- Quality / security / ops → QUALITY.md
+- Workflow / branching → CONTRIBUTING.md
+- Product scope (MVP limits) → VISION.md
+- Feature status → GitHub Project Board (FreedivingApp Project)
+
+If unsure: check these files before inventing patterns.
+
+---
+
+## **Architecture**
+
+### **Backend (Vertical Slices)**
+
+Location: apps/backend/src/modules/<feature>/
+
+Each feature:
+
+- controller
+- DTOs
+- service (use-case logic)
+- repository
+- domain (no framework deps)
+
+Rules:
+
+- Domain logic independent of NestJS/Prisma
+- No infrastructure imports in domain
+- One repository per entity
+- Use Prisma $transaction for multi-step writes
+- Throw domain errors only (mapped via exception filters)
+
+Auth:
+
+- Supabase JWT → backend verifies via JWKS
+- getOrCreate user on first call
+- Dev bypass supported (AUTH_DEV_BYPASS=true)
+
+---
+
+### **Mobile (Feature-Based)**
+
+- Routes in app/ are thin
+- Real logic in src/features/<feature>/
+- No cross-feature imports
+- Platform-specific: .ios.tsx / .android.tsx for platform differences
+- Maps: MapLibre GL + Kartverket WMTS
+
+Dependency direction:
+
+app/ → features/ → shared/ / infrastructure/
+
+---
+
+## **Critical Domain Constraints**
+
+Enforce strictly:
+
+- Spot proximity ≥ 1000m between centers
+- Parking:
+    - max 5
+    - within 5000m of spot
+    - dedupe < 2m
 - Photos: max 5 per spot/report
-- Report edits: 48h window (owner) or mod/admin bypass
-- Text: no emoji in displayName, title, caption
+- Report edits: 48h (owner), mod/admin bypass
+- No emoji in displayName, title, caption
 
-## Conventions
-- **Conciseness:** Extremely concise; sacrifice grammar for brevity
-- **Communication:** Bullet/numbered lists, short sentences
-- **GitHub:** Use `gh` CLI for issues, PRs, etc. Don't commit or create a PR without my permission.
-- **Commits:** Conventional commits (`feat#123: description`) in imperative tense
-- **Linting:** Lint and lint:fix before each commit
-- **Tests:** Remind to write/update tests (target 80% coverage)
-- **Focus:** Relevant context only; avoid digressions  
+---
 
-### Planning
-- List unresolved questions at end (keep brief)
-- Make the plan multi-phased, each phase must include:
-    - TODO list
-    - Acceptance criterias
-    - Tests to create
-    - run tests, linting and spellcheking at the end of each test
+## **Conventions**
 
-## Pre-completion Checklist
-Always run `pnpm test`, `pnpm lint`, and `pnpm tsc --noEmit` before considering a task complete. Verify the app works on web (`pnpm expo start --web`) in addition to native.
+### **Commits**
 
-## Response Formatting
+Format:
 
-### Prompt Separators
-At the end of every response (when waiting for user input), add a visual separator using repeated emojis:
+type#issue: description
 
-**Separator types by response category:**
-- **✅ Success/Completion**: `✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅`
-- **📋 Planning/Research**: `📋📋📋📋📋📋📋📋📋📋📋📋📋📋📋`
-- **⚠️ Questions/Clarification**: `⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️`
-- **🔧 Technical/Implementation**: `🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧🔧`
-- **❌ Error/Issue**: `❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌`
+Types:
+
+feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert
+
+- Imperative tense
+- No direct commits to main
+- Use feature branches: feat/<scope>, fix/<scope>, etc.
+- Enforced by Husky
+
+### **Before Completing Work**
+
+Always run:
+
+```
+pnpm test
+pnpm lint
+pnpm tsc --noEmit
+```
+
+Also verify:
+
+```
+pnpm ios
+pnpm android
+```
+
+App must function on both iOS and Android.
+
+---
+
+## **Testing**
+
+- Jest with pnpm workspaces
+- Target ≥ 80% coverage
+- Update/add tests for all behavior changes
+- If Jest fails due to transforms/sandboxing, inspect jest.config.ts first
+
+---
+
+## **Development Rules for Claude**
+
+- Be concise
+- Follow existing patterns; do not introduce new architecture
+- Respect vertical slice boundaries
+- Do not commit or create PR without explicit permission
+- Remind about tests when adding logic
+- List unresolved questions briefly at the end when planning
+
+When uncertain: read the relevant .md file before implementing.
