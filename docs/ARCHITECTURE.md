@@ -151,7 +151,7 @@ apps/backend/
 - Keep route files in `app/` thin: compose screens, no heavy data logic.
 - Organize mobile code by **feature** under `src/features/*`.
 - Keep reusable/shared code in `src/shared/*`.
-- Platform details are adapter-like: `.native.tsx` / `.web.tsx` at feature/shared boundaries.
+- Platform details are adapter-like: `.ios.tsx` / `.android.tsx` at feature/shared boundaries when iOS/Android differences exist.
 
 ### 9.2 Mobile Folder Structure
 
@@ -169,7 +169,6 @@ apps/mobile/
         index.tsx                    # -> MapScreen
         profile.tsx                  # -> ProfileScreen
     +not-found.tsx
-    +html.tsx
 
   src/
     features/
@@ -179,9 +178,7 @@ apps/mobile/
         screens/profile-screen.tsx
       map/
         screens/map-screen.tsx
-        components/map-view.native.tsx
-        components/map-view.web.tsx
-        components/map-view.ts       # platform barrel
+        components/map-view.tsx      # Native MapView (iOS + Android)
         components/map-view-types.ts
         components/map-floating-button.tsx
         hooks/use-location.ts

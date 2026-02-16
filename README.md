@@ -26,11 +26,11 @@ DiveFreely-Alpha/
 - **Storage**: Supabase Storage
 
 ### Mobile
-- **Framework**: Expo with React Native
+- **Framework**: Expo with React Native (development builds)
 - **Language**: TypeScript
 - **Navigation**: Expo Router
 - **State**: TanStack Query + Zustand
-- **Maps**: react-native-maps (Norgeskart)
+- **Maps**: MapLibre GL Native (Kartverket WMTS tiles)
 
 ## Quick Start
 
@@ -95,13 +95,14 @@ pnpm prisma:migrate  # Run database migrations
 
 ### Mobile
 ```bash
-pnpm dev:mobile      # Start Expo dev server
-pnpm mobile:ios      # Open iOS simulator
-pnpm mobile:android  # Open Android emulator
+pnpm dev:mobile      # Start Metro bundler
+pnpm ios             # Build and run on iOS simulator (development build)
+pnpm android         # Build and run on Android emulator (development build)
 pnpm lint:mobile     # Lint mobile code
 pnpm type-check      # TypeScript type checking
-npx uri-scheme open exp://localhost:8081/--/login --ios # Force to open sitemap in simulator
 ```
+
+**Note:** The mobile app uses native modules (MapLibre) and requires development builds. Expo Go is not supported.
 
 ## Documentation
 

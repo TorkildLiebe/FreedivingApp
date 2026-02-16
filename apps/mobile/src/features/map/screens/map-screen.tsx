@@ -1,7 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import {
-  createMapStyle,
   DEFAULT_CENTER,
   DEFAULT_ZOOM,
   TILE_URLS,
@@ -62,7 +61,7 @@ export default function MapScreen() {
     <View style={styles.container}>
       <MapView
         ref={mapRef}
-        styleJSON={JSON.stringify(createMapStyle(TILE_URLS[activeLayer]))}
+        tileUrl={TILE_URLS[activeLayer]}
         center={center}
         zoom={DEFAULT_ZOOM}
         location={location}

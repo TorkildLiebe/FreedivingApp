@@ -26,12 +26,16 @@ jest.mock('@maplibre/maplibre-react-native', () => {
       PointAnnotation: create('PointAnnotation'),
       ShapeSource: create('ShapeSource'),
       CircleLayer: create('CircleLayer'),
+      RasterSource: create('RasterSource'),
+      RasterLayer: create('RasterLayer'),
     },
     MapView: create('MapView'),
     Camera: create('Camera'),
     PointAnnotation: create('PointAnnotation'),
     ShapeSource: create('ShapeSource'),
     CircleLayer: create('CircleLayer'),
+    RasterSource: create('RasterSource'),
+    RasterLayer: create('RasterLayer'),
   };
 });
 
@@ -39,7 +43,7 @@ jest.mock('@maplibre/maplibre-react-native', () => {
 import { MapView } from '../map-view';
 
 const defaultProps = {
-  styleJSON: '{"version":8,"sources":{},"layers":[]}',
+  tileUrl: 'https://example.com/tiles/{z}/{y}/{x}.png',
   center: { lat: 59.9, lng: 10.7 },
   zoom: 10,
   location: null,
@@ -99,5 +103,21 @@ describe('MapView.native', () => {
     const { getByTestId } = render(<MapView {...defaultProps} />);
     const source = getByTestId('ShapeSource');
     expect(source.props.shape.features).toHaveLength(0);
+  });
+
+  it('renders RasterSource with correct tile URL template', () => {
+    const { getByTestId } = render(<MapView {...defaultProps} />);
+    const rasterSource = getByTestId('RasterSource');
+    expect(rasterSource.props.id).toBe('kartverket-source');
+    expect(rasterSource.props.tileUrlTemplates).toEqual([
+      'https://example.com/tiles/{z}/{y}/{x}.png',
+    ]);
+    expect(rasterSource.props.tileSize).toBe(256);
+  });
+
+  it('renders RasterLayer inside RasterSource', () => {
+    const { getByTestId } = render(<MapView {...defaultProps} />);
+    const rasterLayer = getByTestId('RasterLayer');
+    expect(rasterLayer.props.id).toBe('kartverket-layer');
   });
 });

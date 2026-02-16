@@ -1,7 +1,7 @@
 import type { SpotSummary, BBox, ParkingLocation } from '@/src/features/map/types';
 
 export interface MapViewProps {
-  styleJSON: string;
+  tileUrl: string;
   center: { lat: number; lng: number };
   zoom: number;
   location: { lat: number; lng: number } | null;
