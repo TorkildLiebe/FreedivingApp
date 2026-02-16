@@ -15,16 +15,44 @@ let MapLibreGL: any = null;
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   MapLibreGL = require('@maplibre/maplibre-react-native');
+  // Initialize MapLibre (required even without a token)
+  if (MapLibreGL?.setAccessToken) {
+    MapLibreGL.setAccessToken(null);
+  }
 } catch {
   // Native module not available (running in Expo Go)
 }
+
+const isJest = typeof process !== 'undefined' && !!process.env.JEST_WORKER_ID;
+
+const createTestMapComponent = (name: string) =>
+  forwardRef<any, any>(function TestMapComponent(props, ref) {
+    return (
+      <View ref={ref} testID={name} {...props}>
+        {props.children}
+      </View>
+    );
+  });
+
+const mapLibreTestShim = {
+  MapView: createTestMapComponent('MapView'),
+  Camera: createTestMapComponent('Camera'),
+  PointAnnotation: createTestMapComponent('PointAnnotation'),
+  ShapeSource: createTestMapComponent('ShapeSource'),
+  CircleLayer: createTestMapComponent('CircleLayer'),
+  RasterSource: createTestMapComponent('RasterSource'),
+  RasterLayer: createTestMapComponent('RasterLayer'),
+};
+
+// Use MapLibreGL directly for runtime, test shim only for Jest
+const resolvedMapLibre = isJest ? mapLibreTestShim : MapLibreGL;
 
 export type { MapViewHandle };
 
 export const MapView = forwardRef<MapViewHandle, MapViewProps>(
   function MapView(
     {
-      styleJSON,
+      tileUrl,
       center,
       zoom,
       location,
@@ -93,7 +121,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
       [onSpotPress],
     );
 
-    if (!MapLibreGL?.MapView) {
+    if (!resolvedMapLibre?.MapView) {
       return (
         <View style={styles.fallback}>
           <Text style={styles.fallbackTitle}>Map unavailable</Text>
@@ -106,29 +134,40 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
     }
 
     return (
-      <MapLibreGL.MapView
+      <resolvedMapLibre.MapView
         style={styles.map}
-        styleJSON={styleJSON}
         logoEnabled={false}
         attributionEnabled={false}
         onRegionDidChange={handleRegionDidChange}
       >
-        <MapLibreGL.Camera
+        <resolvedMapLibre.Camera
           ref={cameraRef}
           defaultSettings={{
             centerCoordinate: [center.lng, center.lat],
             zoomLevel: zoom,
           }}
         />
+        <resolvedMapLibre.RasterSource
+          id="kartverket-source"
+          tileUrlTemplates={[tileUrl]}
+          tileSize={256}
+          minZoomLevel={0}
+          maxZoomLevel={20}
+        >
+          <resolvedMapLibre.RasterLayer
+            id="kartverket-layer"
+            style={{ rasterOpacity: 1 }}
+          />
+        </resolvedMapLibre.RasterSource>
         {location && (
-          <MapLibreGL.PointAnnotation
+          <resolvedMapLibre.PointAnnotation
             id="user-location"
             coordinate={[location.lng, location.lat]}
           >
             <View style={styles.userDot} />
-          </MapLibreGL.PointAnnotation>
+          </resolvedMapLibre.PointAnnotation>
         )}
-        <MapLibreGL.ShapeSource
+        <resolvedMapLibre.ShapeSource
           ref={shapeSourceRef}
           id="spots-source"
           shape={geojson}
@@ -137,7 +176,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
           clusterMaxZoomLevel={14}
           onPress={handleShapePress}
         >
-          <MapLibreGL.CircleLayer
+          <resolvedMapLibre.CircleLayer
             id="spot-clusters"
             filter={['has', 'point_count']}
             style={{
@@ -156,7 +195,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
               circleStrokeColor: '#fff',
             }}
           />
-          <MapLibreGL.CircleLayer
+          <resolvedMapLibre.CircleLayer
             id="spot-unclustered"
             filter={['!', ['has', 'point_count']]}
             style={{
@@ -166,9 +205,9 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
               circleStrokeColor: '#fff',
             }}
           />
-        </MapLibreGL.ShapeSource>
+        </resolvedMapLibre.ShapeSource>
         {parkingLocations && parkingLocations.length > 0 && (
-          <MapLibreGL.ShapeSource
+          <resolvedMapLibre.ShapeSource
             id="parking-source"
             shape={parkingGeojson}
             onPress={(event: any) => {
@@ -181,7 +220,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
               }
             }}
           >
-            <MapLibreGL.CircleLayer
+            <resolvedMapLibre.CircleLayer
               id="parking-markers"
               style={{
                 circleColor: '#2196F3',
@@ -190,9 +229,9 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
                 circleStrokeColor: '#fff',
               }}
             />
-          </MapLibreGL.ShapeSource>
+          </resolvedMapLibre.ShapeSource>
         )}
-      </MapLibreGL.MapView>
+      </resolvedMapLibre.MapView>
     );
   },
 );

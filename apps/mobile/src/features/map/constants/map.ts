@@ -8,32 +8,3 @@ export const TILE_URLS = {
 } as const;
 
 export type MapLayer = keyof typeof TILE_URLS;
-
-interface MapStyleJSON {
-  version: 8;
-  sources: Record<string, unknown>;
-  layers: Record<string, unknown>[];
-}
-
-export function createMapStyle(tileUrl: string): MapStyleJSON {
-  return {
-    version: 8,
-    sources: {
-      kartverket: {
-        type: 'raster',
-        tiles: [tileUrl],
-        tileSize: 256,
-        attribution: '&copy; Kartverket',
-      },
-    },
-    layers: [
-      {
-        id: 'kartverket-tiles',
-        type: 'raster',
-        source: 'kartverket',
-        minzoom: 0,
-        maxzoom: 20,
-      },
-    ],
-  };
-}

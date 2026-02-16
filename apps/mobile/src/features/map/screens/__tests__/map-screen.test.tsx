@@ -69,7 +69,7 @@ describe('MapScreen', () => {
   it('passes correct props to MapView', () => {
     const { getByTestId } = render(<MapScreen />);
     const mapView = getByTestId('map-view');
-    expect(mapView.props.styleJSON).toContain('kartverket');
+    expect(mapView.props.tileUrl).toContain('kartverket');
     expect(mapView.props.zoom).toBe(10);
     expect(mapView.props.center).toEqual({ lat: 59.9139, lng: 10.7522 });
   });
