@@ -7,8 +7,8 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Profile</Text>
-      <Text style={styles.subtitle}>{session?.user?.email}</Text>
-      <TouchableOpacity style={styles.button} onPress={signOut}>
+      <Text testID="profile-email-text" style={styles.subtitle}>{session?.user?.email}</Text>
+      <TouchableOpacity testID="profile-sign-out-button" style={styles.button} onPress={signOut}>
         <Text style={styles.buttonText}>Sign Out</Text>
       </TouchableOpacity>
     </View>

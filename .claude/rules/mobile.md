@@ -31,3 +31,10 @@ For mobile behavior changes:
 - Verify state/network transitions for loading, error, and empty states.
 
 Use risk escalation rules from `.claude/rules/testing.md` for final check scope.
+
+## testID Conventions
+
+- Format: `<feature>-<element>-<type>` (e.g. `auth-email-input`, `map-center-on-me-button`)
+- Add testID to all interactive elements (buttons, inputs, sheets)
+- Used by iOS Simulator Skill for semantic element finding
+- Will be used by Maestro/Detox when added post-MVP
