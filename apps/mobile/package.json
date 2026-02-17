@@ -8,7 +8,9 @@
     "ios": "expo run:ios",
     "lint": "expo lint app src",
     "lint:fix": "expo lint app src --fix",
-    "test": "jest"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

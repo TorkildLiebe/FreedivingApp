@@ -2,14 +2,7 @@ import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import type { SpotDetail } from '@/src/features/map/types';
 
-jest.mock('@expo/vector-icons/FontAwesome', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const React = require('react');
-  return {
-    __esModule: true,
-    default: (props: any) => React.createElement('FontAwesome', props),
-  };
-});
+import '@/src/__tests__/mocks/expo-vector-icons.mock';
 
 jest.mock('@gorhom/bottom-sheet', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
