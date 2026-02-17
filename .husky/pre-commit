@@ -14,6 +14,19 @@ if [ "$branch" = "main" ]; then
   exit 1
 fi
 
+# Warn if current branch has already been merged to main
+CURRENT_BRANCH=$(git branch --show-current)
+if git fetch origin main --quiet 2>/dev/null && git branch -r --merged origin/main 2>/dev/null | grep -q "origin/$CURRENT_BRANCH"; then
+  echo ""
+  echo "⚠️  WARNING: Branch '$CURRENT_BRANCH' appears to already be merged into main!"
+  echo ""
+  echo "You probably want to create a new branch:"
+  echo "  git checkout main && git pull && git checkout -b feat/new-feature"
+  echo ""
+  echo "To proceed anyway: git commit --no-verify"
+  exit 1
+fi
+
 # Run linting for backend and mobile
 echo "Linting backend..."
 pnpm --filter backend lint || exit 1

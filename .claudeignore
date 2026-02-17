@@ -1,1 +1,30 @@
 docs/learning/
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build artifacts
+dist/
+build/
+.expo/
+coverage/
+**/*.tsbuildinfo
+
+# Generated code
+.prisma/client/
+**/.prisma/
+
+# Platform-specific builds
+apps/mobile/ios/build/
+apps/mobile/android/build/
+apps/mobile/ios/Pods/
+
+# Logs and temp
+*.log
+supabase/.temp/
+supabase/.branches/
+
+# Lock files (usually don't need to read)
+pnpm-lock.yaml
+package-lock.json

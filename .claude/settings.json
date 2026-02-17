@@ -1,0 +1,45 @@
+{
+  "enableAllProjectMcpServers": true,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/torkildliebe/FreedivingApp/.claude/hooks/generated-file-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": "/Users/torkildliebe/FreedivingApp/.claude/hooks/smart-test-runner.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/torkildliebe/FreedivingApp/.claude/hooks/commit-quality-gate.sh",
+            "matcher": "git commit"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/torkildliebe/FreedivingApp/.claude/hooks/coverage-reporter.sh"
+          },
+          {
+            "type": "command",
+            "command": "/Users/torkildliebe/FreedivingApp/.claude/hooks/output-summarizer.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
