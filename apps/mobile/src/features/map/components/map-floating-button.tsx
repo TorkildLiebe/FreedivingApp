@@ -8,13 +8,15 @@ interface MapFloatingButtonProps {
   onPress: () => void;
   iconName: React.ComponentProps<typeof FontAwesome>['name'];
   style?: ViewStyle;
+  testID?: string;
 }
 
-export function MapFloatingButton({ onPress, iconName, style }: MapFloatingButtonProps) {
+export function MapFloatingButton({ onPress, iconName, style, testID }: MapFloatingButtonProps) {
   const colorScheme = useColorScheme() ?? 'light';
 
   return (
     <TouchableOpacity
+      testID={testID}
       style={[
         styles.button,
         { backgroundColor: Colors[colorScheme].background },

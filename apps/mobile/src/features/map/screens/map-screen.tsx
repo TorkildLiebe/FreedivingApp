@@ -75,11 +75,13 @@ export default function MapScreen() {
         <Text style={styles.attributionText}>{'\u00A9'} Kartverket</Text>
       </View>
       <MapFloatingButton
+        testID="map-toggle-layer-button"
         onPress={handleToggleLayer}
         iconName="globe"
         style={styles.layerButton}
       />
       <MapFloatingButton
+        testID="map-center-on-me-button"
         onPress={handleCenterOnMe}
         iconName="crosshairs"
         style={styles.centerButton}

@@ -46,3 +46,6 @@ pnpm-debug.log*
 
 # TypeScript
 *.tsbuildinfo
+
+# Claude skills (cloned repos)
+.claude/skills/ios-simulator-skill/

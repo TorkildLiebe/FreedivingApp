@@ -1,5 +1,8 @@
 docs/learning/
 
+# Skills (cloned repos — skill.md is loaded automatically)
+.claude/skills/ios-simulator-skill/
+
 # Dependencies
 node_modules/
 **/node_modules/

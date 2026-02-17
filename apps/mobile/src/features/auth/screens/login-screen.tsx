@@ -42,11 +42,12 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.inner}>
-        <Text style={styles.title}>
+        <Text testID="auth-screen-title" style={styles.title}>
           {isSignUp ? 'Create Account' : 'Sign In'}
         </Text>
 
         <TextInput
+          testID="auth-email-input"
           style={styles.input}
           placeholder="Email"
           value={email}
@@ -57,6 +58,7 @@ export default function LoginScreen() {
         />
 
         <TextInput
+          testID="auth-password-input"
           style={styles.input}
           placeholder="Password"
           value={password}
@@ -66,6 +68,7 @@ export default function LoginScreen() {
         />
 
         <TouchableOpacity
+          testID="auth-submit-button"
           style={styles.button}
           onPress={handleSubmit}
           disabled={loading}
@@ -79,7 +82,7 @@ export default function LoginScreen() {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)}>
+        <TouchableOpacity testID="auth-toggle-mode-button" onPress={() => setIsSignUp(!isSignUp)}>
           <Text style={styles.toggleText}>
             {isSignUp
               ? 'Already have an account? Sign In'

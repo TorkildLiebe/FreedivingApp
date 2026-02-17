@@ -82,7 +82,7 @@ export const SpotDetailSheet = forwardRef<
           </View>
         ) : spot ? (
           <>
-            <Text style={[styles.title, { color: colors.text }]}>
+            <Text testID="spot-detail-title" style={[styles.title, { color: colors.text }]}>
               {spot.title}
             </Text>
             <Text
