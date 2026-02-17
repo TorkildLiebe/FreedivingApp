@@ -3,6 +3,11 @@ set -euo pipefail
 
 cd /Users/torkildliebe/FreedivingApp
 
+# Only run on git commit commands (safety check in case matcher doesn't filter)
+if [[ "${TOOL_INPUT:-}" != *"git commit"* ]] 2>/dev/null; then
+  exit 0
+fi
+
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
 if [[ -z "$STAGED_FILES" ]]; then
   echo "⚠️  No files staged" >&2
