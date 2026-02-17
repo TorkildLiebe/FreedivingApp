@@ -1,14 +1,28 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { plainToInstance } from 'class-transformer';
+import { validateSync } from 'class-validator';
 import { SpotsService } from './spots.service';
 import { SpotsRepository } from './spots.repository';
 import {
+  DuplicateParkingLocationError,
+  ForbiddenError,
   InvalidBBoxError,
+  InvalidParkingLocationError,
   SpotNotFoundOrDeletedError,
+  TooCloseToExistingSpotError,
 } from '../../common/errors';
+import type { AuthenticatedUser } from '../../common/auth';
+import { UpdateSpotDto } from './dto/update-spot.dto';
 
 describe('SpotsService', () => {
   let service: SpotsService;
   let repository: jest.Mocked<SpotsRepository>;
+
+  const actor: AuthenticatedUser = {
+    userId: 'uuid-user-1',
+    externalId: 'ext-1',
+    role: 'user',
+  };
 
   const mockSpotDetail = {
     id: 'uuid-spot-1',
@@ -45,6 +59,11 @@ describe('SpotsService', () => {
           useValue: {
             listByBBox: jest.fn(),
             findById: jest.fn(),
+            findByIdAnyState: jest.fn(),
+            findNearbyCenters: jest.fn(),
+            createSpot: jest.fn(),
+            updateSpot: jest.fn(),
+            softDeleteSpot: jest.fn(),
           },
         },
       ],
@@ -165,6 +184,240 @@ describe('SpotsService', () => {
       await expect(service.getById('nonexistent')).rejects.toThrow(
         SpotNotFoundOrDeletedError,
       );
+    });
+  });
+
+  describe('create', () => {
+    it('should create spot when nearby check passes and parking is valid', async () => {
+      repository.findNearbyCenters.mockResolvedValue([]);
+      repository.createSpot.mockResolvedValue(mockSpotDetail);
+
+      const dto = {
+        title: 'Spot',
+        description: 'Desc',
+        centerLat: 60,
+        centerLon: 5,
+        accessInfo: 'Access',
+        parkingLocations: [
+          { lat: 60.001, lon: 5.001, label: 'Parking A' },
+          { lat: 60.002, lon: 5.002, label: 'Parking B' },
+        ],
+      };
+
+      const result = await service.create(dto, actor);
+
+      expect(repository.findNearbyCenters).toHaveBeenCalledWith(60, 5, 1000);
+      expect(repository.createSpot).toHaveBeenCalledWith(
+        {
+          title: 'Spot',
+          description: 'Desc',
+          centerLat: 60,
+          centerLon: 5,
+          createdById: actor.userId,
+          accessInfo: 'Access',
+        },
+        [
+          { lat: 60.001, lon: 5.001, label: 'Parking A' },
+          { lat: 60.002, lon: 5.002, label: 'Parking B' },
+        ],
+      );
+      expect(result.id).toBe('uuid-spot-1');
+    });
+
+    it('should throw TooCloseToExistingSpotError when nearby center exists', async () => {
+      repository.findNearbyCenters.mockResolvedValue([
+        { id: 'uuid-existing', distanceMeters: 450 },
+      ]);
+
+      await expect(
+        service.create(
+          {
+            title: 'Spot',
+            centerLat: 60,
+            centerLon: 5,
+          },
+          actor,
+        ),
+      ).rejects.toThrow(TooCloseToExistingSpotError);
+    });
+
+    it('should fail when parking has more than 5 entries', async () => {
+      await expect(
+        service.create(
+          {
+            title: 'Spot',
+            centerLat: 60,
+            centerLon: 5,
+            parkingLocations: [
+              { lat: 60.001, lon: 5.001 },
+              { lat: 60.002, lon: 5.002 },
+              { lat: 60.003, lon: 5.003 },
+              { lat: 60.004, lon: 5.004 },
+              { lat: 60.005, lon: 5.005 },
+              { lat: 60.006, lon: 5.006 },
+            ],
+          },
+          actor,
+        ),
+      ).rejects.toThrow(InvalidParkingLocationError);
+    });
+
+    it('should fail when parking is farther than 5000m from center', async () => {
+      await expect(
+        service.create(
+          {
+            title: 'Spot',
+            centerLat: 60,
+            centerLon: 5,
+            parkingLocations: [{ lat: 61, lon: 5 }],
+          },
+          actor,
+        ),
+      ).rejects.toThrow(InvalidParkingLocationError);
+    });
+
+    it('should fail when parking locations are closer than 2m', async () => {
+      await expect(
+        service.create(
+          {
+            title: 'Spot',
+            centerLat: 60,
+            centerLon: 5,
+            parkingLocations: [
+              { lat: 60.001, lon: 5.001 },
+              { lat: 60.00100001, lon: 5.00100001 },
+            ],
+          },
+          actor,
+        ),
+      ).rejects.toThrow(DuplicateParkingLocationError);
+    });
+  });
+
+  describe('update', () => {
+    it('should allow owner to update', async () => {
+      repository.findByIdAnyState.mockResolvedValue(mockSpotDetail);
+      repository.updateSpot.mockResolvedValue({
+        ...mockSpotDetail,
+        title: 'Updated Spot',
+      });
+
+      const result = await service.update(
+        'uuid-spot-1',
+        { title: 'Updated Spot' },
+        actor,
+      );
+
+      expect(repository.updateSpot).toHaveBeenCalledWith(
+        'uuid-spot-1',
+        { title: 'Updated Spot' },
+        undefined,
+      );
+      expect(result.title).toBe('Updated Spot');
+    });
+
+    it('should allow moderator/admin to update', async () => {
+      repository.findByIdAnyState.mockResolvedValue({
+        ...mockSpotDetail,
+        createdById: 'other-user',
+      });
+      repository.updateSpot.mockResolvedValue({
+        ...mockSpotDetail,
+        createdById: 'other-user',
+        title: 'Updated by moderator',
+      });
+
+      const moderator: AuthenticatedUser = {
+        userId: 'mod-user',
+        externalId: 'ext-mod',
+        role: 'moderator',
+      };
+
+      const result = await service.update(
+        'uuid-spot-1',
+        { title: 'Updated by moderator' },
+        moderator,
+      );
+
+      expect(result.title).toBe('Updated by moderator');
+    });
+
+    it('should reject update when actor is not owner/moderator/admin', async () => {
+      repository.findByIdAnyState.mockResolvedValue({
+        ...mockSpotDetail,
+        createdById: 'other-user',
+      });
+
+      await expect(
+        service.update('uuid-spot-1', { title: 'Nope' }, actor),
+      ).rejects.toThrow(ForbiddenError);
+    });
+  });
+
+  describe('softDelete', () => {
+    it('should allow owner to soft delete', async () => {
+      repository.findByIdAnyState.mockResolvedValue(mockSpotDetail);
+
+      await service.softDelete('uuid-spot-1', actor);
+
+      expect(repository.softDeleteSpot).toHaveBeenCalledWith('uuid-spot-1');
+    });
+
+    it('should allow moderator/admin to soft delete', async () => {
+      repository.findByIdAnyState.mockResolvedValue({
+        ...mockSpotDetail,
+        createdById: 'other-user',
+      });
+
+      const admin: AuthenticatedUser = {
+        userId: 'admin-user',
+        externalId: 'ext-admin',
+        role: 'admin',
+      };
+
+      await service.softDelete('uuid-spot-1', admin);
+
+      expect(repository.softDeleteSpot).toHaveBeenCalledWith('uuid-spot-1');
+    });
+
+    it('should reject soft delete when actor is not owner/moderator/admin', async () => {
+      repository.findByIdAnyState.mockResolvedValue({
+        ...mockSpotDetail,
+        createdById: 'other-user',
+      });
+
+      await expect(service.softDelete('uuid-spot-1', actor)).rejects.toThrow(
+        ForbiddenError,
+      );
+    });
+
+    it('should be idempotent when spot is already soft deleted', async () => {
+      repository.findByIdAnyState.mockResolvedValue({
+        ...mockSpotDetail,
+        isDeleted: true,
+      });
+
+      await service.softDelete('uuid-spot-1', actor);
+
+      expect(repository.softDeleteSpot).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('UpdateSpotDto validation', () => {
+    it('should reject center field updates through DTO whitelist', () => {
+      const dto = plainToInstance(UpdateSpotDto, {
+        title: 'valid title',
+        centerLat: 60,
+      });
+
+      const errors = validateSync(dto, {
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      });
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0]?.property).toBe('centerLat');
+      expect(errors[0]?.constraints?.whitelistValidation).toBeDefined();
     });
   });
 });

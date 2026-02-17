@@ -4,14 +4,40 @@ import { SpotsRepository } from './spots.repository';
 
 describe('SpotsRepository', () => {
   let repository: SpotsRepository;
-  let prisma: { diveSpot: Record<string, jest.Mock> };
+  let prisma: {
+    diveSpot: Record<string, jest.Mock>;
+    parkingLocation: Record<string, jest.Mock>;
+    $queryRaw: jest.Mock;
+    $transaction: jest.Mock;
+  };
 
   beforeEach(async () => {
+    const tx = {
+      diveSpot: {
+        create: jest.fn(),
+        update: jest.fn(),
+        findFirst: jest.fn(),
+      },
+      parkingLocation: {
+        createMany: jest.fn(),
+        deleteMany: jest.fn(),
+      },
+    };
+
     prisma = {
       diveSpot: {
         findMany: jest.fn(),
         findFirst: jest.fn(),
+        updateMany: jest.fn(),
       },
+      parkingLocation: {
+        createMany: jest.fn(),
+        deleteMany: jest.fn(),
+      },
+      $queryRaw: jest.fn(),
+      $transaction: jest.fn(async (callback: (trx: typeof tx) => unknown) =>
+        callback(tx),
+      ),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -97,6 +123,167 @@ describe('SpotsRepository', () => {
       const result = await repository.findById('nonexistent');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('findByIdAnyState', () => {
+    it('should query by id without isDeleted filter', async () => {
+      prisma.diveSpot.findFirst.mockResolvedValue(null);
+
+      await repository.findByIdAnyState('uuid-1');
+
+      expect(prisma.diveSpot.findFirst).toHaveBeenCalledWith({
+        where: { id: 'uuid-1' },
+        include: {
+          parkingLocations: true,
+          createdBy: { select: { displayName: true } },
+        },
+      });
+    });
+  });
+
+  describe('findNearbyCenters', () => {
+    it('should execute raw query and return nearby centers', async () => {
+      const mockRows = [{ id: 'uuid-1', distanceMeters: 230 }];
+      prisma.$queryRaw.mockResolvedValue(mockRows);
+
+      const result = await repository.findNearbyCenters(60, 5, 1000);
+
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+      expect(result).toEqual(mockRows);
+    });
+  });
+
+  describe('createSpot', () => {
+    it('should create spot and parking locations in one transaction', async () => {
+      const txDiveSpot = {
+        create: jest.fn().mockResolvedValue({ id: 'uuid-1' }),
+        update: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue({ id: 'uuid-1' }),
+      };
+      const txParking = {
+        createMany: jest.fn().mockResolvedValue({ count: 1 }),
+        deleteMany: jest.fn(),
+      };
+
+      prisma.$transaction.mockImplementation(
+        async (
+          callback: (trx: {
+            diveSpot: typeof txDiveSpot;
+            parkingLocation: typeof txParking;
+          }) => unknown,
+        ) => callback({ diveSpot: txDiveSpot, parkingLocation: txParking }),
+      );
+
+      const result = await repository.createSpot(
+        {
+          title: 'Spot',
+          description: 'Desc',
+          centerLat: 60,
+          centerLon: 5,
+          createdById: 'user-1',
+          accessInfo: null,
+        },
+        [{ lat: 60.1, lon: 5.1, label: 'Main' }],
+      );
+
+      expect(txDiveSpot.create).toHaveBeenCalledWith({
+        data: {
+          title: 'Spot',
+          description: 'Desc',
+          centerLat: 60,
+          centerLon: 5,
+          createdById: 'user-1',
+          accessInfo: null,
+        },
+      });
+      expect(txParking.createMany).toHaveBeenCalledWith({
+        data: [{ lat: 60.1, lon: 5.1, label: 'Main', spotId: 'uuid-1' }],
+      });
+      expect(result).toEqual({ id: 'uuid-1' });
+    });
+  });
+
+  describe('updateSpot', () => {
+    it('should update spot and replace parking locations when provided', async () => {
+      const txDiveSpot = {
+        create: jest.fn(),
+        update: jest.fn().mockResolvedValue({ id: 'uuid-1' }),
+        findFirst: jest.fn().mockResolvedValue({ id: 'uuid-1' }),
+      };
+      const txParking = {
+        createMany: jest.fn().mockResolvedValue({ count: 2 }),
+        deleteMany: jest.fn().mockResolvedValue({ count: 2 }),
+      };
+
+      prisma.$transaction.mockImplementation(
+        async (
+          callback: (trx: {
+            diveSpot: typeof txDiveSpot;
+            parkingLocation: typeof txParking;
+          }) => unknown,
+        ) => callback({ diveSpot: txDiveSpot, parkingLocation: txParking }),
+      );
+
+      await repository.updateSpot(
+        'uuid-1',
+        { title: 'Updated' },
+        [{ lat: 60.2, lon: 5.2, label: null }],
+      );
+
+      expect(txDiveSpot.update).toHaveBeenCalledWith({
+        where: { id: 'uuid-1' },
+        data: { title: 'Updated' },
+      });
+      expect(txParking.deleteMany).toHaveBeenCalledWith({
+        where: { spotId: 'uuid-1' },
+      });
+      expect(txParking.createMany).toHaveBeenCalledWith({
+        data: [{ lat: 60.2, lon: 5.2, label: null, spotId: 'uuid-1' }],
+      });
+    });
+
+    it('should update only spot fields when parking is omitted', async () => {
+      const txDiveSpot = {
+        create: jest.fn(),
+        update: jest.fn().mockResolvedValue({ id: 'uuid-1' }),
+        findFirst: jest.fn().mockResolvedValue({ id: 'uuid-1' }),
+      };
+      const txParking = {
+        createMany: jest.fn(),
+        deleteMany: jest.fn(),
+      };
+
+      prisma.$transaction.mockImplementation(
+        async (
+          callback: (trx: {
+            diveSpot: typeof txDiveSpot;
+            parkingLocation: typeof txParking;
+          }) => unknown,
+        ) => callback({ diveSpot: txDiveSpot, parkingLocation: txParking }),
+      );
+
+      await repository.updateSpot('uuid-1', { description: 'Updated' });
+
+      expect(txDiveSpot.update).toHaveBeenCalledWith({
+        where: { id: 'uuid-1' },
+        data: { description: 'Updated' },
+      });
+      expect(txParking.deleteMany).not.toHaveBeenCalled();
+      expect(txParking.createMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('softDeleteSpot', () => {
+    it('should update only non-deleted spots and set deletedAt', async () => {
+      prisma.diveSpot.updateMany.mockResolvedValue({ count: 1 });
+
+      await repository.softDeleteSpot('uuid-1');
+
+      expect(prisma.diveSpot.updateMany).toHaveBeenCalledWith({
+        where: { id: 'uuid-1', isDeleted: false },
+        data: { isDeleted: true, deletedAt: expect.any(Date) },
+      });
     });
   });
 });
