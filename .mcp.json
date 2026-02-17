@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "ios-simulator": {
+      "command": "npx",
+      "args": ["-y", "ios-simulator-mcp"]
+    },
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://postgres:postgres@127.0.0.1:54322/postgres"]
+    },
+    "prisma": {
+      "command": "npx",
+      "args": ["-y", "prisma", "mcp"]
+    },
+    "semgrep": {
+      "command": "semgrep",
+      "args": ["mcp"]
+    },
+    "security-audit": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-security-audit"]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    }
+  }
+}
