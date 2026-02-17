@@ -1,16 +1,25 @@
 import {
+  Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '../../common/auth';
+import { AuthGuard, CurrentUser } from '../../common/auth';
 import { SpotsService } from './spots.service';
 import { ListSpotsByBBoxQueryDto } from './dto/list-spots-by-bbox-query.dto';
 import { ListSpotsResponseDto } from './dto/list-spots-response.dto';
 import { SpotDetailResponseDto } from './dto/spot-detail-response.dto';
+import { CreateSpotDto } from './dto/create-spot.dto';
+import { UpdateSpotDto } from './dto/update-spot.dto';
+import type { AuthenticatedUser } from '../../common/auth';
 
 @Controller('spots')
 @UseGuards(AuthGuard)
@@ -35,5 +44,31 @@ export class SpotsController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<SpotDetailResponseDto> {
     return this.spotsService.getById(id);
+  }
+
+  @Post()
+  async create(
+    @Body() dto: CreateSpotDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ): Promise<SpotDetailResponseDto> {
+    return this.spotsService.create(dto, actor);
+  }
+
+  @Patch(':id')
+  async update(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateSpotDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ): Promise<SpotDetailResponseDto> {
+    return this.spotsService.update(id, dto, actor);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async softDelete(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() actor: AuthenticatedUser,
+  ): Promise<void> {
+    await this.spotsService.softDelete(id, actor);
   }
 }
