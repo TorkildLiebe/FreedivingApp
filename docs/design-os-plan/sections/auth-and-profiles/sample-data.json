@@ -1,0 +1,177 @@
+{
+  "_meta": {
+    "models": {
+      "currentUser": "The authenticated user's full profile — alias, avatar, bio, email, and account creation date.",
+      "diveReports": "Dive reports posted by the current user, each linked to a named spot with visibility, current, rating, and optional notes.",
+      "createdSpots": "Dive spots the current user has added to the map, each with a name, location description, and max depth.",
+      "favorites": "Spots the current user has saved for quick access, with spot name, location, and a summary of recent conditions."
+    },
+    "relationships": [
+      "currentUser authors all entries in diveReports",
+      "currentUser created all entries in createdSpots",
+      "currentUser saved all entries in favorites",
+      "diveReports reference spotId which may match a createdSpots entry or an external spot not in this list",
+      "favorites reference spotId distinct from the user's own created spots (saved others' spots)"
+    ]
+  },
+  "currentUser": {
+    "id": "user-1",
+    "alias": "Torkild",
+    "email": "torkild@example.com",
+    "bio": "Freediver based in Oslo. Chasing cold water and good visibility along the Norwegian coast.",
+    "avatarUrl": "https://i.pravatar.cc/150?img=12",
+    "createdAt": "2023-08-15T10:22:00Z",
+    "preferredLanguage": "no"
+  },
+  "diveReports": [
+    {
+      "id": "report-1",
+      "spotId": "spot-ext-1",
+      "spotName": "Steilneset Point",
+      "date": "2026-01-28T09:15:00Z",
+      "visibilityMeters": 12,
+      "currentStrength": 2,
+      "overallRating": 5,
+      "notes": "Exceptional day. The kelp forest was full of life and the water was crystal clear — best visibility I've had here in years.",
+      "photos": [
+        { "id": "photo-1a", "url": "https://images.unsplash.com/photo-1682687982502-1529b3b33816?w=800", "caption": "Looking up through the kelp" }
+      ]
+    },
+    {
+      "id": "report-2",
+      "spotId": "spot-1",
+      "spotName": "Bygdøy Outer Reef",
+      "date": "2026-01-14T11:30:00Z",
+      "visibilityMeters": 6,
+      "currentStrength": 3,
+      "overallRating": 4,
+      "notes": "Strong lateral current made it challenging, but the rock formations at 18m were worth it.",
+      "photos": []
+    },
+    {
+      "id": "report-3",
+      "spotId": "spot-ext-2",
+      "spotName": "Nesodden Wall",
+      "date": "2025-12-03T08:45:00Z",
+      "visibilityMeters": 4,
+      "currentStrength": 1,
+      "overallRating": 3,
+      "notes": null,
+      "photos": []
+    },
+    {
+      "id": "report-4",
+      "spotId": "spot-2",
+      "spotName": "Fornebu Shallows",
+      "date": "2025-11-19T14:00:00Z",
+      "visibilityMeters": 8,
+      "currentStrength": 1,
+      "overallRating": 4,
+      "notes": "Nice beginner-friendly spot. Shallow enough to train breath holds without pressure.",
+      "photos": [
+        { "id": "photo-4a", "url": "https://images.unsplash.com/photo-1559827291-72ee739d0d9a?w=800", "caption": "Sandy bottom at 5m" },
+        { "id": "photo-4b", "url": "https://images.unsplash.com/photo-1583212292454-1fe6229603b7?w=800", "caption": null }
+      ]
+    },
+    {
+      "id": "report-5",
+      "spotId": "spot-1",
+      "spotName": "Bygdøy Outer Reef",
+      "date": "2025-10-08T10:00:00Z",
+      "visibilityMeters": 10,
+      "currentStrength": 2,
+      "overallRating": 5,
+      "notes": "Autumn colours underwater — sea urchins everywhere and a small school of pollock at depth.",
+      "photos": []
+    },
+    {
+      "id": "report-6",
+      "spotId": "spot-ext-3",
+      "spotName": "Håøya South Shore",
+      "date": "2025-09-20T12:30:00Z",
+      "visibilityMeters": 14,
+      "currentStrength": 1,
+      "overallRating": 5,
+      "notes": "One of the best dives of the season. Late summer warmth and zero current.",
+      "photos": [
+        { "id": "photo-6a", "url": "https://images.unsplash.com/photo-1682687982441-38bb0a9c2f44?w=800", "caption": "Rocky drop-off" }
+      ]
+    }
+  ],
+  "createdSpots": [
+    {
+      "id": "spot-1",
+      "name": "Bygdøy Outer Reef",
+      "locationDescription": "Bygdøy, Oslo",
+      "maxDepthMeters": 22,
+      "createdAt": "2024-03-10T16:45:00Z",
+      "reportCount": 8
+    },
+    {
+      "id": "spot-2",
+      "name": "Fornebu Shallows",
+      "locationDescription": "Fornebu, Bærum",
+      "maxDepthMeters": 9,
+      "createdAt": "2024-07-22T11:00:00Z",
+      "reportCount": 3
+    },
+    {
+      "id": "spot-3",
+      "name": "Hovedøya East Wall",
+      "locationDescription": "Hovedøya island, Oslofjord",
+      "maxDepthMeters": 18,
+      "createdAt": "2024-11-05T09:30:00Z",
+      "reportCount": 1
+    },
+    {
+      "id": "spot-4",
+      "name": "Ekebergstranda Entry",
+      "locationDescription": "Ekeberg, Oslo",
+      "maxDepthMeters": 12,
+      "createdAt": "2025-02-14T13:15:00Z",
+      "reportCount": 0
+    }
+  ],
+  "favorites": [
+    {
+      "id": "fav-1",
+      "spotId": "spot-ext-1",
+      "spotName": "Steilneset Point",
+      "locationDescription": "Vardø, Finnmark",
+      "latestVisibilityMeters": 12,
+      "latestReportDate": "2026-01-28T09:15:00Z"
+    },
+    {
+      "id": "fav-2",
+      "spotId": "spot-ext-4",
+      "spotName": "Drøbak Wreck",
+      "locationDescription": "Drøbak, Akershus",
+      "latestVisibilityMeters": 7,
+      "latestReportDate": "2025-12-30T10:00:00Z"
+    },
+    {
+      "id": "fav-3",
+      "spotId": "spot-ext-2",
+      "spotName": "Nesodden Wall",
+      "locationDescription": "Nesodden, Akershus",
+      "latestVisibilityMeters": 4,
+      "latestReportDate": "2025-12-03T08:45:00Z"
+    },
+    {
+      "id": "fav-4",
+      "spotId": "spot-ext-5",
+      "spotName": "Gressholmen Arch",
+      "locationDescription": "Gressholmen island, Oslofjord",
+      "latestVisibilityMeters": null,
+      "latestReportDate": null
+    },
+    {
+      "id": "fav-5",
+      "spotId": "spot-ext-3",
+      "spotName": "Håøya South Shore",
+      "locationDescription": "Håøya island, Oslofjord",
+      "latestVisibilityMeters": 14,
+      "latestReportDate": "2025-09-20T12:30:00Z"
+    }
+  ]
+}

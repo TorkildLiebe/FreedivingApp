@@ -1,0 +1,372 @@
+{
+  "_meta": {
+    "section": "map-and-spots",
+    "description": "Sample data for the Map & Spots section. Includes Norwegian dive spots, dive reports, and parking locations.",
+    "notes": [
+      "spot-1 (Langøyene) has a fresh report — normal visibility display",
+      "spot-2 (Gressholmen) has a stale report (> 30 days old) — triggers amber date indicator",
+      "spot-3 (Bleikøya) has no reports — triggers 'No data yet' empty state",
+      "spot-4 (Ryvarden) and spot-5 (Ålesund Dykkesenter) are west coast spots with multiple reports",
+      "spot-6 (Lindøya) is a nearby Oslo island spot with a mid-range history",
+      "currentUserRating: spot-1 and spot-4 are rated by the current user (4 and 5); all others are null",
+      "Ratings come from SpotRating entities, not DiveReports — averageRating and currentUserRating are pre-computed aggregates"
+    ]
+  },
+  "spots": [
+    {
+      "id": "spot-1",
+      "name": "Langøyene",
+      "description": "One of Oslo's most popular dive spots — shallow sandy approaches, eelgrass beds, and a gentle slope down to 18m. Great visibility after calm periods. The ferry from Aker Brygge runs in summer.",
+      "accessInfo": "Take the ferry from Aker Brygge (line 94). No diving equipment rental on the island. Parking at Aker Brygge P-hus.",
+      "position": {
+        "lat": 59.8785,
+        "lng": 10.7271
+      },
+      "parkingLocationIds": [
+        "parking-1a"
+      ],
+      "photos": [
+        {
+          "id": "photo-1a",
+          "url": "https://images.unsplash.com/photo-1682687981749-c9e2f8b18d97?w=800",
+          "caption": "Eelgrass meadow at 6m"
+        },
+        {
+          "id": "photo-1b",
+          "url": "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800",
+          "caption": "Sandy bottom near the ferry dock"
+        }
+      ],
+      "reportCount": 4,
+      "averageRating": 4.2,
+      "averageVisibility": 5.5,
+      "latestReport": {
+        "visibility": 6,
+        "date": "2026-02-16T11:30:00Z"
+      },
+      "isFavorited": true,
+      "currentUserRating": 4
+    },
+    {
+      "id": "spot-2",
+      "name": "Gressholmen",
+      "description": "A small nature reserve island with an old airport runway pier. The east side has dramatic drop-offs and good macro life. Best dived at slack tide. Accessible by boat only.",
+      "accessInfo": "Accessible by private boat or kayak only. No ferry service. Anchor in the cove on the north side.",
+      "position": {
+        "lat": 59.8841,
+        "lng": 10.7348
+      },
+      "parkingLocationIds": [
+        "parking-2a"
+      ],
+      "photos": [
+        {
+          "id": "photo-2a",
+          "url": "https://images.unsplash.com/photo-1682687981974-c5ef2111640c?w=800",
+          "caption": "The old runway pier"
+        }
+      ],
+      "reportCount": 2,
+      "averageRating": 3.8,
+      "averageVisibility": 4,
+      "latestReport": {
+        "visibility": 3,
+        "date": "2026-01-04T09:15:00Z"
+      },
+      "isFavorited": false,
+      "currentUserRating": null
+    },
+    {
+      "id": "spot-3",
+      "name": "Bleikøya",
+      "description": "Quiet island south of Gressholmen. Forested shoreline, rocky entry points, and kelp forests starting at 4m. Rarely crowded. Depths to 22m on the west side.",
+      "accessInfo": "Private boat access only. Small natural harbour on the south end is suitable for anchoring.",
+      "position": {
+        "lat": 59.8762,
+        "lng": 10.739
+      },
+      "parkingLocationIds": [],
+      "photos": [],
+      "reportCount": 0,
+      "averageRating": null,
+      "averageVisibility": null,
+      "latestReport": null,
+      "isFavorited": false,
+      "currentUserRating": null
+    },
+    {
+      "id": "spot-4",
+      "name": "Ryvarden",
+      "description": "Rocky headland on the Hordaland coast with strong current channels and exceptional macro life. Nudibranchs, crabs, and the occasional wolf fish. Depths to 30m+ on the outer reef.",
+      "accessInfo": "Park at Ryvarden Fyr (lighthouse). 10-minute walk to the dive entry point on the south side. Slippery rocks — wear appropriate footwear.",
+      "position": {
+        "lat": 59.5617,
+        "lng": 5.2282
+      },
+      "parkingLocationIds": [
+        "parking-4a"
+      ],
+      "photos": [
+        {
+          "id": "photo-4a",
+          "url": "https://images.unsplash.com/photo-1504472478235-9bc48ba4d60f?w=800",
+          "caption": "Wolf fish at 18m"
+        },
+        {
+          "id": "photo-4b",
+          "url": "https://images.unsplash.com/photo-1513614835788-03d7f4a1deca?w=800",
+          "caption": "Nudibranch on kelp"
+        },
+        {
+          "id": "photo-4c",
+          "url": "https://images.unsplash.com/photo-1602526211938-c2be5c2bfe24?w=800",
+          "caption": "Current channel at the outer reef"
+        }
+      ],
+      "reportCount": 3,
+      "averageRating": 4.7,
+      "averageVisibility": 9.3,
+      "latestReport": {
+        "visibility": 10,
+        "date": "2026-02-12T14:00:00Z"
+      },
+      "isFavorited": true,
+      "currentUserRating": 5
+    },
+    {
+      "id": "spot-5",
+      "name": "Ålesund Dykkesenter",
+      "description": "Shore dive from the dive centre dock in the Borgundfjord. Sheltered from wind, easy entry, good training site. Artificial reef structures added in 2023. Max depth 14m from the dock.",
+      "accessInfo": "Park at Ålesund Dykkesenter. Entry fee for non-members. Gear rental available on site. Shore entry from the floating dock.",
+      "position": {
+        "lat": 62.4722,
+        "lng": 6.1495
+      },
+      "parkingLocationIds": [
+        "parking-5a",
+        "parking-5b"
+      ],
+      "photos": [
+        {
+          "id": "photo-5a",
+          "url": "https://images.unsplash.com/photo-1559827291-72ee739d0d9a?w=800",
+          "caption": "Artificial reef at 8m"
+        }
+      ],
+      "reportCount": 2,
+      "averageRating": 3.5,
+      "averageVisibility": 6.5,
+      "latestReport": {
+        "visibility": 7,
+        "date": "2026-02-10T10:45:00Z"
+      },
+      "isFavorited": false,
+      "currentUserRating": null
+    },
+    {
+      "id": "spot-6",
+      "name": "Lindøya",
+      "description": "Popular summer island near Oslo with a protected cove on the north side. Sandy-bottom dive to 12m, often with good visibility. Busy in summer weekends — best dived on weekday mornings.",
+      "accessInfo": "Ferry from Aker Brygge (line 92). No facilities on the island. Bring all your own equipment.",
+      "position": {
+        "lat": 59.8851,
+        "lng": 10.7152
+      },
+      "parkingLocationIds": [
+        "parking-1a"
+      ],
+      "photos": [
+        {
+          "id": "photo-6a",
+          "url": "https://images.unsplash.com/photo-1565967511849-76a60a516170?w=800",
+          "caption": "North cove, low tide"
+        }
+      ],
+      "reportCount": 1,
+      "averageRating": 4,
+      "averageVisibility": 8,
+      "latestReport": {
+        "visibility": 8,
+        "date": "2026-01-28T08:00:00Z"
+      },
+      "isFavorited": false,
+      "currentUserRating": null
+    }
+  ],
+  "reports": [
+    {
+      "id": "report-1a",
+      "spotId": "spot-1",
+      "authorAlias": "deepwater_dag",
+      "authorAvatarUrl": null,
+      "visibility": 6,
+      "current": 1,
+      "notes": "Calm conditions after two days without wind. Visibility significantly better than last visit. Eelgrass is thick right now.",
+      "photos": [],
+      "createdAt": "2026-02-16T11:30:00Z"
+    },
+    {
+      "id": "report-1b",
+      "spotId": "spot-1",
+      "authorAlias": "oslo_apnea",
+      "authorAvatarUrl": "https://i.pravatar.cc/100?u=oslo_apnea",
+      "visibility": 5,
+      "current": 1,
+      "notes": "Perfect morning session. Water was calm, ferry hadn't started yet. Saw a juvenile flatfish at 8m.",
+      "photos": [],
+      "createdAt": "2026-02-09T07:45:00Z"
+    },
+    {
+      "id": "report-1c",
+      "spotId": "spot-1",
+      "authorAlias": "fjordfreediver",
+      "authorAvatarUrl": "https://i.pravatar.cc/100?u=fjordfreediver",
+      "visibility": 4,
+      "current": 2,
+      "notes": "Some current due to recent wind. Still enjoyable. The sandy slope is beautiful.",
+      "photos": [],
+      "createdAt": "2026-01-31T14:20:00Z"
+    },
+    {
+      "id": "report-1d",
+      "spotId": "spot-1",
+      "authorAlias": "deepwater_dag",
+      "authorAvatarUrl": null,
+      "visibility": 7,
+      "current": 1,
+      "notes": "Excellent early-season dive. Water cold but crystal clear.",
+      "photos": [],
+      "createdAt": "2026-01-12T10:00:00Z"
+    },
+    {
+      "id": "report-2a",
+      "spotId": "spot-2",
+      "authorAlias": "islandhop_ine",
+      "authorAvatarUrl": "https://i.pravatar.cc/100?u=islandhop_ine",
+      "visibility": 3,
+      "current": 3,
+      "notes": "Strong current on the east side. Visibility was poor after the storm last week. The drop-off is impressive though.",
+      "photos": [],
+      "createdAt": "2026-01-04T09:15:00Z"
+    },
+    {
+      "id": "report-2b",
+      "spotId": "spot-2",
+      "authorAlias": "oslo_apnea",
+      "authorAvatarUrl": "https://i.pravatar.cc/100?u=oslo_apnea",
+      "visibility": 5,
+      "current": 2,
+      "notes": "Slack tide, perfect. The macro life on the east wall is incredible — three different nudibranch species.",
+      "photos": [],
+      "createdAt": "2025-12-20T13:00:00Z"
+    },
+    {
+      "id": "report-4a",
+      "spotId": "spot-4",
+      "authorAlias": "vestlandet_breath",
+      "authorAvatarUrl": "https://i.pravatar.cc/100?u=vestlandet_breath",
+      "visibility": 10,
+      "current": 2,
+      "notes": "Best west coast diving I've done in years. Water was gin clear. Two wolf fish sightings and a massive spider crab at 24m.",
+      "photos": [],
+      "createdAt": "2026-02-12T14:00:00Z"
+    },
+    {
+      "id": "report-4b",
+      "spotId": "spot-4",
+      "authorAlias": "havsfreedive",
+      "authorAvatarUrl": "https://i.pravatar.cc/100?u=havsfreedive",
+      "visibility": 9,
+      "current": 3,
+      "notes": "Strong current on the outer reef but manageable. Visibility stunning. Bring a surface marker — boats pass regularly.",
+      "photos": [],
+      "createdAt": "2026-01-22T09:30:00Z"
+    },
+    {
+      "id": "report-4c",
+      "spotId": "spot-4",
+      "authorAlias": "vestlandet_breath",
+      "authorAvatarUrl": "https://i.pravatar.cc/100?u=vestlandet_breath",
+      "visibility": 9,
+      "current": 2,
+      "notes": "Solid dive. Not quite as clear as the February visit but still great. Kelp forest on the south side is in great shape.",
+      "photos": [],
+      "createdAt": "2025-12-05T11:15:00Z"
+    },
+    {
+      "id": "report-5a",
+      "spotId": "spot-5",
+      "authorAlias": "alesund_dykk",
+      "authorAvatarUrl": "https://i.pravatar.cc/100?u=alesund_dykk",
+      "visibility": 7,
+      "current": 1,
+      "notes": "Good beginner spot. The artificial reef adds some structure. Nothing too exciting but solid training.",
+      "photos": [],
+      "createdAt": "2026-02-10T10:45:00Z"
+    },
+    {
+      "id": "report-5b",
+      "spotId": "spot-5",
+      "authorAlias": "fjordfreediver",
+      "authorAvatarUrl": "https://i.pravatar.cc/100?u=fjordfreediver",
+      "visibility": 6,
+      "current": 1,
+      "notes": "Easy entry, calm water. Perfect for working on technique. Saw a small wolf fish under the dock.",
+      "photos": [],
+      "createdAt": "2026-01-18T15:00:00Z"
+    },
+    {
+      "id": "report-6a",
+      "spotId": "spot-6",
+      "authorAlias": "oslo_apnea",
+      "authorAvatarUrl": "https://i.pravatar.cc/100?u=oslo_apnea",
+      "visibility": 8,
+      "current": 1,
+      "notes": "Quiet weekday morning — had the cove to myself. Sandy bottom was undisturbed, great viz.",
+      "photos": [],
+      "createdAt": "2026-01-28T08:00:00Z"
+    }
+  ],
+  "parkingLocations": [
+    {
+      "id": "parking-1a",
+      "position": {
+        "lat": 59.9045,
+        "lng": 10.7289
+      },
+      "description": "Aker Brygge P-hus — paid parking, 5 min walk to ferry terminal"
+    },
+    {
+      "id": "parking-2a",
+      "position": {
+        "lat": 59.898,
+        "lng": 10.731
+      },
+      "description": "Nesoddtangen boat launch — free parking for registered boaters"
+    },
+    {
+      "id": "parking-4a",
+      "position": {
+        "lat": 59.563,
+        "lng": 5.225
+      },
+      "description": "Ryvarden Fyr parking area — free, limited spaces. 10 min walk to entry point"
+    },
+    {
+      "id": "parking-5a",
+      "position": {
+        "lat": 62.473,
+        "lng": 6.148
+      },
+      "description": "Ålesund Dykkesenter main lot — free for members, 50 NOK/day for non-members"
+    },
+    {
+      "id": "parking-5b",
+      "position": {
+        "lat": 62.4715,
+        "lng": 6.151
+      },
+      "description": "Street parking on Borgundvegen — free, 2-hour limit on weekdays"
+    }
+  ]
+}

@@ -1,0 +1,223 @@
+{
+  "_meta": {
+    "section": "dive-reports",
+    "description": "Sample data for the Dive Reports section. Covers two features: DiveLogs (repeatable condition records per spot) and SpotRatings (one quality rating per user per spot).",
+    "notes": [
+      "DiveLogs are session-level records — visibility, current, optional notes and photos",
+      "SpotRatings are location-level — one rating per userId+spotId, editable any time",
+      "Rating is removed from DiveLog — it now lives exclusively in SpotRating",
+      "spot-1 (Langøyene), spot-2 (Gressholmen), spot-4 (Ryvarden), spot-5 (Ålesund Dykkesenter) have logs",
+      "log-1e has no notes and no photos — bare minimum log entry",
+      "log-2a has photos to test thumbnail display",
+      "user-1 is the currentUserId in DiveReportsProps — has ratings on spot-1 and spot-4"
+    ],
+    "relationships": {
+      "DiveLog.spotId": "references DiveSpot.id in map-and-spots",
+      "SpotRating.userId": "references User.id",
+      "SpotRating.spotId": "references DiveSpot.id in map-and-spots",
+      "one SpotRating per userId+spotId": "enforced at the application level"
+    }
+  },
+  "users": [
+    {
+      "id": "user-1",
+      "alias": "deepwater_dag",
+      "avatarUrl": null
+    },
+    {
+      "id": "user-2",
+      "alias": "oslo_apnea",
+      "avatarUrl": "https://i.pravatar.cc/100?u=oslo_apnea"
+    },
+    {
+      "id": "user-3",
+      "alias": "fjordfreediver",
+      "avatarUrl": "https://i.pravatar.cc/100?u=fjordfreediver"
+    },
+    {
+      "id": "user-4",
+      "alias": "vestlandet_breath",
+      "avatarUrl": "https://i.pravatar.cc/100?u=vestlandet_breath"
+    },
+    {
+      "id": "user-5",
+      "alias": "islandhop_ine",
+      "avatarUrl": "https://i.pravatar.cc/100?u=islandhop_ine"
+    }
+  ],
+  "diveLogs": [
+    {
+      "id": "log-1a",
+      "spotId": "spot-1",
+      "authorAlias": "deepwater_dag",
+      "authorAvatarUrl": null,
+      "visibility": 6,
+      "current": 1,
+      "notes": "Calm conditions after two days without wind. Visibility significantly better than last visit. Eelgrass is thick right now.",
+      "photos": [],
+      "createdAt": "2026-02-16T11:30:00Z"
+    },
+    {
+      "id": "log-1b",
+      "spotId": "spot-1",
+      "authorAlias": "oslo_apnea",
+      "authorAvatarUrl": "https://i.pravatar.cc/100?u=oslo_apnea",
+      "visibility": 5,
+      "current": 1,
+      "notes": "Perfect morning session. Water was calm, ferry hadn't started yet. Saw a juvenile flatfish at 8m.",
+      "photos": [],
+      "createdAt": "2026-02-09T07:45:00Z"
+    },
+    {
+      "id": "log-1c",
+      "spotId": "spot-1",
+      "authorAlias": "fjordfreediver",
+      "authorAvatarUrl": "https://i.pravatar.cc/100?u=fjordfreediver",
+      "visibility": 4,
+      "current": 2,
+      "notes": "Some current due to recent wind. Still enjoyable. The sandy slope is beautiful.",
+      "photos": [],
+      "createdAt": "2026-01-31T14:20:00Z"
+    },
+    {
+      "id": "log-1d",
+      "spotId": "spot-1",
+      "authorAlias": "deepwater_dag",
+      "authorAvatarUrl": null,
+      "visibility": 7,
+      "current": 1,
+      "notes": "Excellent early-season dive. Water cold but crystal clear.",
+      "photos": [],
+      "createdAt": "2026-01-12T10:00:00Z"
+    },
+    {
+      "id": "log-1e",
+      "spotId": "spot-1",
+      "authorAlias": "islandhop_ine",
+      "authorAvatarUrl": "https://i.pravatar.cc/100?u=islandhop_ine",
+      "visibility": 3,
+      "current": 3,
+      "notes": null,
+      "photos": [],
+      "createdAt": "2025-12-28T16:00:00Z"
+    },
+    {
+      "id": "log-2a",
+      "spotId": "spot-2",
+      "authorAlias": "islandhop_ine",
+      "authorAvatarUrl": "https://i.pravatar.cc/100?u=islandhop_ine",
+      "visibility": 3,
+      "current": 3,
+      "notes": "Strong current on the east side. Visibility was poor after the storm last week. The drop-off is impressive though.",
+      "photos": [
+        "https://images.unsplash.com/photo-1682687981749-c9e2f8b18d97?w=400",
+        "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400"
+      ],
+      "createdAt": "2026-01-04T09:15:00Z"
+    },
+    {
+      "id": "log-2b",
+      "spotId": "spot-2",
+      "authorAlias": "oslo_apnea",
+      "authorAvatarUrl": "https://i.pravatar.cc/100?u=oslo_apnea",
+      "visibility": 5,
+      "current": 2,
+      "notes": "Slack tide, perfect. The macro life on the east wall is incredible — three different nudibranch species.",
+      "photos": [],
+      "createdAt": "2025-12-20T13:00:00Z"
+    },
+    {
+      "id": "log-4a",
+      "spotId": "spot-4",
+      "authorAlias": "vestlandet_breath",
+      "authorAvatarUrl": "https://i.pravatar.cc/100?u=vestlandet_breath",
+      "visibility": 10,
+      "current": 2,
+      "notes": "Best west coast diving I've done in years. Water was gin clear. Two wolf fish sightings and a massive spider crab at 24m.",
+      "photos": [
+        "https://images.unsplash.com/photo-1504472478235-9bc48ba4d60f?w=400"
+      ],
+      "createdAt": "2026-02-12T14:00:00Z"
+    },
+    {
+      "id": "log-4b",
+      "spotId": "spot-4",
+      "authorAlias": "fjordfreediver",
+      "authorAvatarUrl": "https://i.pravatar.cc/100?u=fjordfreediver",
+      "visibility": 9,
+      "current": 3,
+      "notes": "Strong current on the outer reef but manageable. Visibility stunning. Bring a surface marker — boats pass regularly.",
+      "photos": [],
+      "createdAt": "2026-01-22T09:30:00Z"
+    },
+    {
+      "id": "log-5a",
+      "spotId": "spot-5",
+      "authorAlias": "oslo_apnea",
+      "authorAvatarUrl": "https://i.pravatar.cc/100?u=oslo_apnea",
+      "visibility": 7,
+      "current": 1,
+      "notes": "Good beginner spot. The artificial reef adds some structure. Nothing too exciting but solid training.",
+      "photos": [],
+      "createdAt": "2026-02-10T10:45:00Z"
+    }
+  ],
+  "spotRatings": [
+    {
+      "id": "rating-1-user1",
+      "spotId": "spot-1",
+      "userId": "user-1",
+      "rating": 4,
+      "updatedAt": "2026-02-16T12:00:00Z"
+    },
+    {
+      "id": "rating-1-user2",
+      "spotId": "spot-1",
+      "userId": "user-2",
+      "rating": 5,
+      "updatedAt": "2026-02-09T08:15:00Z"
+    },
+    {
+      "id": "rating-1-user3",
+      "spotId": "spot-1",
+      "userId": "user-3",
+      "rating": 4,
+      "updatedAt": "2026-01-31T15:00:00Z"
+    },
+    {
+      "id": "rating-2-user5",
+      "spotId": "spot-2",
+      "userId": "user-5",
+      "rating": 3,
+      "updatedAt": "2026-01-04T10:00:00Z"
+    },
+    {
+      "id": "rating-2-user2",
+      "spotId": "spot-2",
+      "userId": "user-2",
+      "rating": 5,
+      "updatedAt": "2025-12-20T14:00:00Z"
+    },
+    {
+      "id": "rating-4-user1",
+      "spotId": "spot-4",
+      "userId": "user-1",
+      "rating": 5,
+      "updatedAt": "2026-02-12T15:00:00Z"
+    },
+    {
+      "id": "rating-4-user4",
+      "spotId": "spot-4",
+      "userId": "user-4",
+      "rating": 5,
+      "updatedAt": "2026-01-22T10:30:00Z"
+    },
+    {
+      "id": "rating-5-user2",
+      "spotId": "spot-5",
+      "userId": "user-2",
+      "rating": 3,
+      "updatedAt": "2026-02-10T11:30:00Z"
+    }
+  ]
+}
