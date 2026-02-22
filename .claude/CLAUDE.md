@@ -12,12 +12,14 @@ DiveFreely is a pnpm monorepo:
 ## Source of Truth
 
 Use docs before introducing new patterns:
-- `docs/USECASE.md`: user flows and operations
 - `docs/DOMAIN.md`: domain invariants and business rules
+- `docs/USECASE.md`: user flows and operations
 - `docs/ARCHITECTURE.md`: architecture and dependency direction
+- `docs/UI_DESIGN.md`: design system, component specs, and UI flows
+- `docs/ROADMAP.md`: development milestones and implementation sequence
+- `docs/VISION.md`: product scope and MVP constraints
 - `docs/QUALITY.md`: security/quality/testing expectations
 - `docs/CONTRIBUTING.md`: workflow and contribution rules
-- `docs/VISION.md`: product scope and MVP constraints
 
 ## Rules Layout
 

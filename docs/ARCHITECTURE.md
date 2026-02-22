@@ -89,6 +89,14 @@ apps/backend/
         users.module.ts
         dto/
           get-me-response.dto.ts
+      ratings/
+        ratings.controller.ts      # PUT /spots/:spotId/rating
+        ratings.service.ts
+        ratings.repository.ts
+        ratings.module.ts
+        dto/
+          upsert-rating.dto.ts
+          spot-rating-response.dto.ts
     common/
       auth/                        # AuthGuard, JWT verifier, CurrentUser decorator
       errors/                      # DomainError, InvalidBBoxError, SpotNotFoundError
@@ -104,7 +112,7 @@ apps/backend/
     seed.ts
 ```
 
-> **Not yet implemented:** reports/, photos/, uploads/ modules (see USECASE.md for specs).
+> **Not yet implemented:** reports/, photos/, uploads/, ratings/ modules (see USECASE.md for specs).
 
 ---
 
@@ -185,9 +193,24 @@ apps/mobile/
         hooks/use-spots.ts
         constants/map.ts
         types.ts
+      spots/                         # Spot detail, creation, favorites
+        components/
+        hooks/
+        types.ts
+      reports/                       # Dive logging (AddDiveForm)
+        components/
+        hooks/
+        types.ts
+      ratings/                       # SpotRating (RatingSheet)
+        components/
+        hooks/
+        types.ts
 
     shared/
-      theme/Colors.ts
+      theme/
+        colors.ts                    # Design tokens (emerald/teal/stone)
+        typography.ts                # Font families (Space Grotesk/Inter/IBM Plex Mono)
+        index.ts
 
     infrastructure/
       api/client.ts                  # authenticated fetch wrapper

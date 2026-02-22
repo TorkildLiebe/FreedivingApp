@@ -7,6 +7,8 @@ paths:
 ## Structure and Dependency Direction
 
 - Keep route files in `app/` thin; put feature logic in `src/features/<feature>/`.
+- Expected feature folders: `auth/`, `map/`, `spots/`, `reports/`, `ratings/`.
+- Design tokens live in `src/shared/theme/` (colors, typography). See `docs/UI_DESIGN.md`.
 - Allowed dependency direction: `app/ -> features/ -> shared|infrastructure`.
 - Do not add direct cross-feature imports; extract shared contracts into `src/shared`.
 

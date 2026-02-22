@@ -12,27 +12,27 @@ Operational flows. Validation in **DOMAIN.md §2**. Errors in **DOMAIN.md §3**.
 ## 1) Auth & Profiles
 
 ### 1.1 GetMe
-**Intent**: Return current authenticated user profile & role.  
-**Input**: *(none)* — uses JWT from Authorization header.  
-**Rules**: Auth required.  
-**Output**: `{ id, displayName?, avatarUrl?, email?, role, preferredLanguage }`  
+**Intent**: Return current authenticated user profile & role.
+**Input**: *(none)* — uses JWT from Authorization header.
+**Rules**: Auth required.
+**Output**: `{ id, alias?, bio?, avatarUrl?, email?, role, preferredLanguage }`
 **Errors**: 401 if no/invalid token.
 
 ### 1.2 GetUserProfile
-**Intent**: Public profile lookup by `userId`.  
-**Input**: `{ userId }`  
-**Rules**: Public; returns only non-sensitive fields.  
-**Output**: `{ id, displayName, avatarUrl, createdAt }`  
+**Intent**: Public profile lookup by `userId`.
+**Input**: `{ userId }`
+**Rules**: Public; returns only non-sensitive fields.
+**Output**: `{ id, alias, avatarUrl, bio?, createdAt }`
 **Errors**: `UserNotFoundError` → 404
 
 ### 1.3 UpdateMyProfile
-**Intent**: Let a user edit their display name, avatar, or language preference.  
-**Input**: `{ displayName?, avatarUrl?, preferredLanguage? }`  
+**Intent**: Let a user edit their alias, bio, avatar, or language preference.
+**Input**: `{ alias?, bio?, avatarUrl?, preferredLanguage? }`
 **Rules**:
 - Auth required; user can only edit their own profile.
-- Apply `DOMAIN.md` §2.1 rules (displayName, avatarUrl normalization, preferredLanguage must be "en" or "no").
-**Output**: updated user profile.  
-**Errors**: `InvalidDisplayNameError`, `InvalidPhotoUrlError`, `InvalidPreferredLanguageError`
+- Apply `DOMAIN.md` §2.1 rules (alias, bio, avatarUrl normalization, preferredLanguage must be "en" or "no").
+**Output**: updated user profile.
+**Errors**: `InvalidAliasError`, `InvalidBioError`, `InvalidPhotoUrlError`, `InvalidPreferredLanguageError`
 
 ### 1.4 CreateUploadUrl
 **Intent**: Get a pre-signed upload URL + a final public URL for client-side uploads.  
@@ -43,6 +43,27 @@ Operational flows. Validation in **DOMAIN.md §2**. Errors in **DOMAIN.md §3**.
 - Ensure the upload purpose maps to the correct storage bucket (per bucket policy).
 **Output**: `{ uploadUrl, publicUrl, expiresAt }`  
 **Errors**: `InvalidUploadPurposeError`
+
+### 1.5 ListMyReports
+**Intent**: Return the current user's dive reports with spot names.
+**Input**: *(none)* — uses JWT for authentication.
+**Rules**: Auth required.
+**Output**: array of `{ id, spotId, spotName, divedAt, visibilityMeters, currentStrength, notes?, photos }` ordered by `divedAt DESC`.
+**Errors**: 401 if no/invalid token.
+
+### 1.6 ListMySpots
+**Intent**: Return spots created by the current user.
+**Input**: *(none)* — uses JWT for authentication.
+**Rules**: Auth required.
+**Output**: array of `{ id, title, createdAt, reportCount }` ordered by `createdAt DESC`.
+**Errors**: 401 if no/invalid token.
+
+### 1.7 GetMyStats
+**Intent**: Return activity statistics for the current user.
+**Input**: *(none)* — uses JWT for authentication.
+**Rules**: Auth required.
+**Output**: `{ totalReports, uniqueSpotsDived, favoritesCount, memberSince }`
+**Errors**: 401 if no/invalid token.
 
 ---
 
@@ -100,20 +121,20 @@ Operational flows. Validation in **DOMAIN.md §2**. Errors in **DOMAIN.md §3**.
 ## 3) Dive Reports
 
 ### 3.1 CreateDiveReport
-**Input**: `{ spotId, visibilityMeters, currentStrength, divedAt, rating?, remark }`  
-**Preconditions**: Spot exists & not deleted; auth required.  
+**Input**: `{ spotId, visibilityMeters, currentStrength, divedAt, notes? }`
+**Preconditions**: Spot exists & not deleted; auth required.
 **Steps**:
-1. Validate ranges (`visibilityMeters`, `currentStrength`, and `rating` if provided) and ensure `divedAt` is not in the future (per `DOMAIN.md` §2.4).
+1. Validate ranges (`visibilityMeters ∈ [0,30]`, `currentStrength ∈ [1,5]`), validate `notes` if provided (0-500 chars, no emoji), and ensure `divedAt` is not in the future (per `DOMAIN.md` §2.4).
 2. Anti-duplication check: if the same user posted a report for the same spot within the last ~2 hours with a similar visibility (Δ ≤ 1.0) and identical `currentStrength` → 409 Conflict.
-3. Persist the new report with `authorId = actor.userId` (include `rating` if provided) and return the report.
+3. Persist the new report with `authorId = actor.userId` and return the report.
 
 ### 3.2 UpdateDiveReport
-**Input**: `{ reportId, visibilityMeters?, currentStrength?, divedAt?, rating? }`  
-**Preconditions**: Report exists & not deleted; user is author (within 48h of creation) or a moderator/admin.  
+**Input**: `{ reportId, visibilityMeters?, currentStrength?, divedAt?, notes? }`
+**Preconditions**: Report exists & not deleted; user is author (within 48h of creation) or a moderator/admin.
 **Steps**:
-1. Validate all provided fields per `DOMAIN.md` §2.4 (including `rating` if present); ensure immutable fields (`spotId`, `authorId`) are not changed.
+1. Validate all provided fields per `DOMAIN.md` §2.4 (including `notes` if present); ensure immutable fields (`spotId`, `authorId`) are not changed.
 2. Re-run the anti-duplication check if any key values (visibility, currentStrength, divedAt) have changed.
-3. Persist the changes (`updatedAt = now`; update `rating` if provided) and return the updated report.
+3. Persist the changes (`updatedAt = now`) and return the updated report.
 
 ### 3.3 AddPhotoToReport
 **Input**: `{ reportId, url, caption? }`  
@@ -149,14 +170,43 @@ Operational flows. Validation in **DOMAIN.md §2**. Errors in **DOMAIN.md §3**.
 4. Return success.
 
 ### 4.3 ListMyFavoriteSpots
-**Intent**: Retrieve the current user’s favorite dive spots.  
-**Input**: *(none)* — uses JWT for authentication.  
-**Preconditions**: Auth required.  
+**Intent**: Retrieve the current user’s favorite dive spots with latest conditions.
+**Input**: *(none)* — uses JWT for authentication.
+**Preconditions**: Auth required.
 **Steps**:
 1. Read the user’s `favoriteSpotIds` list.
 2. Fetch each corresponding spot (ignore any that are deleted or missing).
-3. Return the list of favorite spots.
+3. For each spot, include `latestVisibilityMeters` and `latestReportDate` from the most recent dive report (null if no reports).
+4. Return the enriched list of favorite spots.
 
-**Output**: An array of dive spot objects that the user has favorited.  
+**Output**: array of `{ id, spotId, spotName, latestVisibilityMeters?, latestReportDate? }`
+
+---
+
+## 5) Spot Ratings
+
+### 5.1 UpsertSpotRating
+**Intent**: Set or update the current user’s quality rating for a spot.
+**Input**: `{ spotId, rating ∈ [1,5] }`
+**Preconditions**: Spot exists & not deleted; auth required.
+**Steps**:
+1. Validate `rating ∈ [1,5]` (integer).
+2. Upsert: if a SpotRating exists for `(userId, spotId)`, update it; otherwise create a new one.
+3. Return the saved SpotRating.
+
+**Output**: `{ id, spotId, userId, rating, updatedAt }`
+**Errors**: `SpotNotFoundOrDeletedError`, `InvalidRatingError`
+
+### 5.2 GetSpotAverageRating
+**Intent**: Get the average star rating for a spot across all users.
+**Input**: `{ spotId }`
+**Preconditions**: Spot exists & not deleted.
+**Steps**:
+1. Query all SpotRatings for the spot.
+2. Calculate average (null if no ratings).
+3. Return average and count.
+
+**Output**: `{ spotId, averageRating: number | null, ratingCount: number }`
+**Errors**: `SpotNotFoundOrDeletedError`
 
 *Last updated: February 2026*

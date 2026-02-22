@@ -26,7 +26,8 @@ A living map of Norwegian freediving where:
 ## 5. MVP Scope
 - **Auth & profiles** (Supabase): `/me`, public profiles, edit my profile.
 - **Dive spots**: create, update (center immutable), soft delete, list by BBOX, get by id.
-- **Dive reports**: create, update (within 48h) with optional rating (1–5); list inside spot detail.
+- **Dive reports**: create, update (within 48h) with visibility (0-30m), current strength, optional notes; list inside spot detail.
+- **Spot ratings**: 1-5 stars per user per spot (separate from dive reports, upsert semantics).
 - **Photos**: attachments on **spots** (≤5) and **reports** (≤5) via pre‑signed uploads; captions allowed; no emoji.
 - **Map**: Norgeskart tiles on client; clustering in frontend.
 - **Favorites**: users can mark/unmark dive spots as favorites for quick access (personal list).
