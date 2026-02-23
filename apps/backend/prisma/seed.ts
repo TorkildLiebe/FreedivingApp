@@ -10,7 +10,7 @@ async function main() {
     create: {
       externalId: 'seed-user-001',
       email: 'diver@example.com',
-      displayName: 'Oslo Diver',
+      alias: 'Oslo Diver',
       role: 'user',
       preferredLanguage: 'no',
     },

@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev:backend": "pnpm --filter backend run start:dev",
-    "dev:mobile": "pnpm --filter mobile run start",
+    "dev:mobile": "pnpm --filter mobile exec expo run:ios",
     "dev:infra": "supabase start",
     "dev:infra:down": "supabase stop",
     "codex:hook:pre-edit": ".codex/hooks/run-hook.sh pre-edit",

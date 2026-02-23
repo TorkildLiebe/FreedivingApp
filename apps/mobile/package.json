@@ -10,7 +10,8 @@
     "lint:fix": "expo lint app src --fix",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -33,6 +34,7 @@
     "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
+    "@babel/runtime": "^7.28.6",
     "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^13.3.3",
     "@types/geojson": "^7946.0.16",
