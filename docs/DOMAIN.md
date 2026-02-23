@@ -21,9 +21,10 @@ Domain entities, value objects, invariants, errors. See **USECASE.md** for opera
 ## 2) Entities & Value Objects
 
 ### 2.1 User
-- **Fields**: `id`, `externalId (sub)`, `email?`, `displayName?`, `avatarUrl?`, `role ∈ {user,moderator,admin}`, `preferredLanguage ∈ {"en","no"}`, `favoriteSpotIds: String[]`, timestamps.
+- **Fields**: `id`, `externalId (sub)`, `email?`, `alias?`, `bio?`, `avatarUrl?`, `role ∈ {user,moderator,admin}`, `preferredLanguage ∈ {"en","no"}`, `favoriteSpotIds: String[]`, timestamps.
 - **Rules**:
-  - `displayName`: 1..120, no emoji.
+  - `alias`: 1..120, no emoji.
+  - `bio`: 0..300, no emoji; null if blank.
   - `avatarUrl`: https-only; null if blank.
   - New users: role=user, language="no".
   - `favoriteSpotIds`: unique, only valid spot IDs.
@@ -56,11 +57,11 @@ Domain entities, value objects, invariants, errors. See **USECASE.md** for opera
   - max 5 per spot.
 
 ### 2.4 DiveReport
-- **Fields**: `id`, `spotId`, `authorId`, `visibilityMeters`, `currentStrength`, `rating?`, `divedAt`, `isDeleted`, `deletedAt?`, timestamps.  
+- **Fields**: `id`, `spotId`, `authorId`, `visibilityMeters`, `currentStrength`, `notes?`, `divedAt`, `isDeleted`, `deletedAt?`, timestamps.
 - **Invariants**:
-  - `visibilityMeters ∈ [0,60]`
+  - `visibilityMeters ∈ [0,30]`
   - `currentStrength ∈ [1,5]`
-  - `rating? ∈ [1,5]`
+  - `notes`: 0..500, no emoji; null if blank.
   - `divedAt`: not future
   - `spotId` references existing spot
   - `authorId` immutable
@@ -73,7 +74,16 @@ Domain entities, value objects, invariants, errors. See **USECASE.md** for opera
   - `url`: https:// only, dedupe case-insensitive.
   - `caption`: 0..140, no emoji.
 
-### 2.6 Geo Utilities
+### 2.6 SpotRating
+- **Fields**: `id`, `spotId`, `userId`, `rating ∈ [1,5]`, `createdAt`, `updatedAt`.
+- **Invariants**:
+  - `rating ∈ [1,5]` (integer).
+  - Unique constraint: `(userId, spotId)` — one rating per user per spot.
+  - **Upsert semantics**: creating a rating when one exists updates the existing record.
+  - `spotId` references existing spot.
+  - `userId` references existing user.
+
+### 2.7 Geo Utilities
 - `distanceMeters(lat1,lon1,lat2,lon2)`
 - `isWithinRadius(centerLat,centerLon,lat,lon,radiusMeters)`
 - `validateBBox(latMin,latMax,lonMin,lonMax)` — rejects antimeridian.
@@ -82,12 +92,13 @@ Domain entities, value objects, invariants, errors. See **USECASE.md** for opera
 
 ## 3) Error Taxonomy
 
-Validation:  
-`InvalidTitleError`, `InvalidDescriptionError`, `InvalidAccessInfoError`,  
-`InvalidCoordinatesError`, `InvalidParkingLocationError`,  
-`InvalidVisibilityError`, `InvalidCurrentStrengthError`, `InvalidRatingError`, `InvalidDiveTimeError`,  
-`InvalidPhotoUrlError`, `TooManyPhotosError`, `EmojiNotAllowedError`,  
-`InvalidDisplayNameError`, `InvalidPreferredLanguageError`,  
+Validation:
+`InvalidTitleError`, `InvalidDescriptionError`, `InvalidAccessInfoError`,
+`InvalidCoordinatesError`, `InvalidParkingLocationError`,
+`InvalidVisibilityError`, `InvalidCurrentStrengthError`, `InvalidDiveTimeError`, `InvalidNotesError`,
+`InvalidPhotoUrlError`, `TooManyPhotosError`, `EmojiNotAllowedError`,
+`InvalidAliasError`, `InvalidBioError`, `InvalidPreferredLanguageError`,
+`InvalidRatingError` (SpotRating context),
 `InvalidBBoxError`, `InvalidPaginationCursorError`.
 
 Ownership/permissions: `ForbiddenError`.  
@@ -99,9 +110,10 @@ Conflicts: `TooCloseToExistingSpotError`, `DuplicateRecentReportError`.
 ## 4) Ports (Domain Interfaces)
 
 Repository interfaces abstract persistence. Key methods:
-- `UserRepository`: `findByExternalId`, `create`, `addFavorite`
-- `DiveSpotRepository`: `create`, `update`, `softDelete`, `findById`, `findCentersWithinRadius`, `listByBBox`
-- `DiveReportRepository`: `create`, `update`, `findById`, `listRecentByAuthorAndSpot`
+- `UserRepository`: `findByExternalId`, `create`, `update`, `addFavorite`, `removeFavorite`, `listFavoriteSpots`
+- `DiveSpotRepository`: `create`, `update`, `softDelete`, `findById`, `findCentersWithinRadius`, `listByBBox`, `listByCreator`
+- `DiveReportRepository`: `create`, `update`, `findById`, `listRecentByAuthorAndSpot`, `listByAuthor`
+- `SpotRatingRepository`: `upsert`, `findByUserAndSpot`, `averageBySpot`
 - `PhotoAttachmentRepository`: `create`, `listByReport`, `listBySpot`, `countByReport`, `countBySpot`
 
 *Actual interfaces live in module code.*
@@ -113,7 +125,8 @@ Repository interfaces abstract persistence. Key methods:
 Operational flows in **USECASE.md**:
 - Spots: Create, Update, SoftDelete, ListByBBox, GetById, GetWithReports, AddPhotoToSpot
 - Reports: Create, Update, AddPhoto
+- Ratings: UpsertSpotRating, GetSpotAverageRating
 - Favorites: Add, Remove, List
-- Profiles: GetMe, GetUserProfile, UpdateMyProfile, CreateUploadUrl
+- Profiles: GetMe, GetUserProfile, UpdateMyProfile, ListMyReports, ListMySpots, GetMyStats, CreateUploadUrl
 
 *Last updated: February 2026*

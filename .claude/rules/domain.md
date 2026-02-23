@@ -13,7 +13,11 @@ Source of truth remains `docs/DOMAIN.md`. This file duplicates operationally cri
 - Parking: max 5, each within 5000m of spot center, dedupe if distance < 2m.
 - Photos: max 5 per spot and max 5 per report.
 - Report edits: owner can edit within 48h; moderator/admin bypasses window.
+- Visibility range: 0-30m (not 60m).
 - Text policy: no emoji in restricted user-facing fields.
+- User fields: `alias` (1-120, no emoji), `bio` (0-300, no emoji).
+- Report notes: 0-500 chars, no emoji; null if blank.
+- SpotRating: rating ∈ [1,5], unique per (userId, spotId), upsert semantics.
 
 ## Data and Validation
 

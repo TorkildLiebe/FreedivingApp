@@ -8,6 +8,7 @@ paths:
 
 - Follow vertical slices: `controller -> dto -> service -> repository`.
 - Keep each feature self-contained under `apps/backend/src/modules/<feature>/`.
+- Expected modules: `health/`, `spots/`, `users/`, `reports/`, `photos/`, `uploads/`, `ratings/`.
 - Keep domain logic independent of NestJS/Prisma and infrastructure adapters.
 - Prefer extending existing module patterns over introducing new layers.
 

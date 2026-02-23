@@ -1,0 +1,127 @@
+import { useCallback, useRef, useState } from 'react';
+import { Alert, StyleSheet, Text, View } from 'react-native';
+import {
+  DEFAULT_CENTER,
+  DEFAULT_ZOOM,
+  TILE_URLS,
+  type MapLayer,
+} from '@/src/features/map/constants/map';
+import { useLocation } from '@/src/features/map/hooks/use-location';
+import { useSpots } from '@/src/features/map/hooks/use-spots';
+import { useSpotDetail } from '@/src/features/map/hooks/use-spot-detail';
+import { MapFloatingButton } from '@/src/features/map/components/map-floating-button';
+import { MapView, type MapViewHandle } from '@/src/features/map/components/map-view';
+import {
+  SpotDetailSheet,
+  type SpotDetailSheetHandle,
+} from '@/src/features/map/components/spot-detail-sheet';
+import type { BBox, ParkingLocation } from '@/src/features/map/types';
+
+export default function MapScreen() {
+  const { location } = useLocation();
+  const mapRef = useRef<MapViewHandle>(null);
+  const sheetRef = useRef<SpotDetailSheetHandle>(null);
+  const [activeLayer, setActiveLayer] = useState<MapLayer>('topo');
+  const [bbox, setBbox] = useState<BBox | null>(null);
+  const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
+  const { spots } = useSpots(bbox);
+  const { spot, isLoading: isSpotLoading } = useSpotDetail(selectedSpotId);
+
+  const center = location ?? DEFAULT_CENTER;
+
+  function handleCenterOnMe() {
+    if (!location) {
+      Alert.alert(
+        'Location unavailable',
+        'Enable location permissions in your device settings to use this feature.',
+      );
+      return;
+    }
+    mapRef.current?.flyTo(location, 14);
+  }
+
+  function handleToggleLayer() {
+    setActiveLayer((prev) => (prev === 'topo' ? 'nautical' : 'topo'));
+  }
+
+  const handleSpotPress = useCallback((spotId: string) => {
+    setSelectedSpotId(spotId);
+  }, []);
+
+  const handleParkingPress = useCallback((parking: ParkingLocation) => {
+    mapRef.current?.flyTo({ lat: parking.lat, lng: parking.lon }, 16);
+    sheetRef.current?.minimize();
+  }, []);
+
+  const handleSheetDismiss = useCallback(() => {
+    setSelectedSpotId(null);
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      <MapView
+        ref={mapRef}
+        tileUrl={TILE_URLS[activeLayer]}
+        center={center}
+        zoom={DEFAULT_ZOOM}
+        location={location}
+        spots={spots}
+        parkingLocations={spot?.parkingLocations}
+        onRegionDidChange={setBbox}
+        onSpotPress={handleSpotPress}
+        onParkingPress={handleParkingPress}
+      />
+      <View style={styles.attribution}>
+        <Text style={styles.attributionText}>{'\u00A9'} Kartverket</Text>
+      </View>
+      <MapFloatingButton
+        testID="map-toggle-layer-button"
+        onPress={handleToggleLayer}
+        iconName="globe"
+        style={styles.layerButton}
+      />
+      <MapFloatingButton
+        testID="map-center-on-me-button"
+        onPress={handleCenterOnMe}
+        iconName="crosshairs"
+        style={styles.centerButton}
+      />
+      <SpotDetailSheet
+        ref={sheetRef}
+        spot={spot}
+        isLoading={isSpotLoading}
+        onDismiss={handleSheetDismiss}
+        onParkingPress={handleParkingPress}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  attribution: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  attributionText: {
+    fontSize: 11,
+    color: '#333',
+  },
+  layerButton: {
+    position: 'absolute',
+    bottom: 80,
+    right: 16,
+  },
+  centerButton: {
+    position: 'absolute',
+    bottom: 24,
+    right: 16,
+  },
+});
