@@ -64,6 +64,8 @@ describe('SpotDetailSheet', () => {
     isLoading: false,
     onDismiss: jest.fn(),
     onParkingPress: jest.fn(),
+    onToggleFavorite: jest.fn(),
+    isTogglingFavorite: false,
     onAddPhoto: jest.fn(),
     isUploadingPhoto: false,
     photoUploadError: null as string | null,
@@ -103,6 +105,20 @@ describe('SpotDetailSheet', () => {
 
     fireEvent.press(getByTestId('spot-detail-close-button'));
     expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onToggleFavorite when favorite button is pressed', () => {
+    const onToggleFavorite = jest.fn();
+    const { getByTestId } = render(
+      <SpotDetailSheet
+        {...defaultProps}
+        spot={mockSpot}
+        onToggleFavorite={onToggleFavorite}
+      />,
+    );
+
+    fireEvent.press(getByTestId('spot-detail-favorite-toggle'));
+    expect(onToggleFavorite).toHaveBeenCalledWith(mockSpot);
   });
 
   it('renders stats row values and stale indicator', () => {

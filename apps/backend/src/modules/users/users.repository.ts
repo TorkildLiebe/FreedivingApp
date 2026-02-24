@@ -27,4 +27,47 @@ export class UsersRepository {
       },
     });
   }
+
+  async findActiveSpotById(spotId: string) {
+    return this.prisma.diveSpot.findFirst({
+      where: { id: spotId, isDeleted: false },
+      select: { id: true },
+    });
+  }
+
+  async addFavoriteSpot(
+    userId: string,
+    spotId: string,
+    currentFavoriteSpotIds: string[],
+  ): Promise<string[]> {
+    const nextFavoriteSpotIds = currentFavoriteSpotIds.includes(spotId)
+      ? currentFavoriteSpotIds
+      : [...currentFavoriteSpotIds, spotId];
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { favoriteSpotIds: nextFavoriteSpotIds },
+      select: { favoriteSpotIds: true },
+    });
+
+    return updatedUser.favoriteSpotIds;
+  }
+
+  async removeFavoriteSpot(
+    userId: string,
+    spotId: string,
+    currentFavoriteSpotIds: string[],
+  ): Promise<string[]> {
+    const nextFavoriteSpotIds = currentFavoriteSpotIds.filter(
+      (favoriteSpotId) => favoriteSpotId !== spotId,
+    );
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { favoriteSpotIds: nextFavoriteSpotIds },
+      select: { favoriteSpotIds: true },
+    });
+
+    return updatedUser.favoriteSpotIds;
+  }
 }

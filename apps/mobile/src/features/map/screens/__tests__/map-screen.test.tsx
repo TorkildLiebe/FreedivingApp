@@ -1,46 +1,46 @@
 import React from 'react';
+import { Alert } from 'react-native';
 import { act, fireEvent, render } from '@testing-library/react-native';
 
+import type { SpotDetail } from '@/src/features/map/types';
 import '@/src/__tests__/mocks/expo-vector-icons.mock';
 
+const mockUseLocation = jest.fn();
+const mockUseSpots = jest.fn();
+const mockUseSpotDetail = jest.fn();
+const mockUseSpotPhotoUpload = jest.fn();
+const mockUseCreateSpot = jest.fn();
+const mockUseFavoriteSpots = jest.fn();
+const mockUseRouter = jest.fn();
+const mockPush = jest.fn();
+const mockToggleFavoriteSpot = jest.fn();
+
 jest.mock('@/src/features/map/hooks/use-location', () => ({
-  useLocation: () => ({ location: null, error: null, isLoading: false }),
+  useLocation: (...args: unknown[]) => mockUseLocation(...args),
 }));
 
 jest.mock('@/src/features/map/hooks/use-spots', () => ({
-  useSpots: () => ({
-    spots: [],
-    isLoading: false,
-    error: null,
-    refresh: jest.fn(),
-  }),
+  useSpots: (...args: unknown[]) => mockUseSpots(...args),
 }));
 
 jest.mock('@/src/features/map/hooks/use-spot-detail', () => ({
-  useSpotDetail: () => ({
-    spot: null,
-    isLoading: false,
-    error: null,
-    refresh: jest.fn(),
-  }),
+  useSpotDetail: (...args: unknown[]) => mockUseSpotDetail(...args),
 }));
 
 jest.mock('@/src/features/map/hooks/use-spot-photo-upload', () => ({
-  useSpotPhotoUpload: () => ({
-    uploadPhoto: jest.fn(),
-    isUploading: false,
-    error: null,
-    clearError: jest.fn(),
-  }),
+  useSpotPhotoUpload: (...args: unknown[]) => mockUseSpotPhotoUpload(...args),
 }));
 
 jest.mock('@/src/features/map/hooks/use-create-spot', () => ({
-  useCreateSpot: () => ({
-    createSpot: jest.fn(),
-    isSubmitting: false,
-    error: null,
-    clearError: jest.fn(),
-  }),
+  useCreateSpot: (...args: unknown[]) => mockUseCreateSpot(...args),
+}));
+
+jest.mock('@/src/features/map/hooks/use-favorite-spots', () => ({
+  useFavoriteSpots: (...args: unknown[]) => mockUseFavoriteSpots(...args),
+}));
+
+jest.mock('expo-router', () => ({
+  useRouter: (...args: unknown[]) => mockUseRouter(...args),
 }));
 
 const mockRequestMediaLibraryPermissionsAsync = jest.fn();
@@ -105,6 +105,76 @@ jest.mock('@/src/features/map/components/create-spot-overlay', () => {
 // eslint-disable-next-line import/first
 import MapScreen from '@/src/features/map/screens/map-screen';
 
+const mockSpot: SpotDetail = {
+  id: 'spot-123',
+  title: 'Test Spot',
+  description: 'Description',
+  centerLat: 59.9,
+  centerLon: 10.7,
+  createdById: 'user-1',
+  creatorDisplayName: 'Tester',
+  accessInfo: null,
+  parkingLocations: [],
+  photoUrls: [],
+  isFavorite: false,
+  averageVisibilityMeters: null,
+  averageRating: null,
+  reportCount: 0,
+  latestReportAt: null,
+  diveLogs: [],
+  shareUrl: null,
+  shareableAccessInfo: null,
+  createdAt: '2025-01-01T00:00:00.000Z',
+  updatedAt: '2025-01-01T00:00:00.000Z',
+};
+
+beforeEach(() => {
+  jest.clearAllMocks();
+
+  mockUseLocation.mockReturnValue({
+    location: null,
+    error: null,
+    isLoading: false,
+  });
+
+  mockUseSpots.mockReturnValue({
+    spots: [],
+    isLoading: false,
+    error: null,
+    refresh: jest.fn(),
+  });
+
+  mockUseSpotDetail.mockReturnValue({
+    spot: null,
+    isLoading: false,
+    error: null,
+    refresh: jest.fn(),
+  });
+
+  mockUseSpotPhotoUpload.mockReturnValue({
+    uploadPhoto: jest.fn(),
+    isUploading: false,
+    error: null,
+    clearError: jest.fn(),
+  });
+
+  mockUseCreateSpot.mockReturnValue({
+    createSpot: jest.fn(),
+    isSubmitting: false,
+    error: null,
+    clearError: jest.fn(),
+  });
+
+  mockToggleFavoriteSpot.mockResolvedValue({ error: null });
+  mockUseFavoriteSpots.mockReturnValue({
+    isAuthenticated: true,
+    favoriteSpotIds: [],
+    toggleFavoriteSpot: mockToggleFavoriteSpot,
+  });
+
+  mockUseRouter.mockReturnValue({ push: mockPush });
+});
+
 describe('MapScreen', () => {
   it('renders MapView component', () => {
     const { getByTestId } = render(<MapScreen />);
@@ -148,13 +218,100 @@ describe('MapScreen', () => {
     expect(getByTestId('spot-detail-sheet')).toBeTruthy();
   });
 
-  it('passes photo upload props to SpotDetailSheet', () => {
+  it('passes photo upload and favorite toggle props to SpotDetailSheet', () => {
+    mockUseSpotDetail.mockReturnValue({
+      spot: mockSpot,
+      isLoading: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+
     const { getByTestId } = render(<MapScreen />);
     const sheet = getByTestId('spot-detail-sheet');
 
     expect(sheet.props.onAddPhoto).toBeInstanceOf(Function);
     expect(sheet.props.isUploadingPhoto).toBe(false);
     expect(sheet.props.photoUploadError).toBeNull();
+    expect(sheet.props.onToggleFavorite).toBeInstanceOf(Function);
+    expect(sheet.props.spot.isFavorite).toBe(false);
+  });
+
+  it('reflects favorite state from auth context in SpotDetailSheet', () => {
+    mockUseSpotDetail.mockReturnValue({
+      spot: mockSpot,
+      isLoading: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+    mockUseFavoriteSpots.mockReturnValue({
+      isAuthenticated: true,
+      favoriteSpotIds: ['spot-123'],
+      toggleFavoriteSpot: mockToggleFavoriteSpot,
+    });
+
+    const { getByTestId } = render(<MapScreen />);
+    const sheet = getByTestId('spot-detail-sheet');
+
+    expect(sheet.props.spot.isFavorite).toBe(true);
+  });
+
+  it('toggles favorite through auth context', async () => {
+    mockUseSpotDetail.mockReturnValue({
+      spot: mockSpot,
+      isLoading: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+    mockUseFavoriteSpots.mockReturnValue({
+      isAuthenticated: true,
+      favoriteSpotIds: ['spot-123'],
+      toggleFavoriteSpot: mockToggleFavoriteSpot,
+    });
+
+    const { getByTestId } = render(<MapScreen />);
+    const sheet = getByTestId('spot-detail-sheet');
+
+    await act(async () => {
+      await sheet.props.onToggleFavorite(mockSpot);
+    });
+
+    expect(mockToggleFavoriteSpot).toHaveBeenCalledWith('spot-123', false);
+  });
+
+  it('prompts login when toggling favorite while unauthenticated', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(jest.fn());
+    mockUseSpotDetail.mockReturnValue({
+      spot: mockSpot,
+      isLoading: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+    mockUseFavoriteSpots.mockReturnValue({
+      isAuthenticated: false,
+      favoriteSpotIds: [],
+      toggleFavoriteSpot: mockToggleFavoriteSpot,
+    });
+
+    const { getByTestId } = render(<MapScreen />);
+    const sheet = getByTestId('spot-detail-sheet');
+
+    await act(async () => {
+      await sheet.props.onToggleFavorite(mockSpot);
+    });
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Sign in required',
+      'Please sign in to save favorite spots.',
+      expect.any(Array),
+    );
+    expect(mockToggleFavoriteSpot).not.toHaveBeenCalled();
+
+    const [, , buttons] = alertSpy.mock.calls[0] ?? [];
+    const signInAction = buttons?.[1]?.onPress as (() => void) | undefined;
+    signInAction?.();
+    expect(mockPush).toHaveBeenCalledWith('/(auth)/login');
+
+    alertSpy.mockRestore();
   });
 
   it('renders create spot button', () => {

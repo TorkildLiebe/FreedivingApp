@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
 import {
   DEFAULT_CENTER,
   DEFAULT_ZOOM,
@@ -15,6 +16,7 @@ import {
   useCreateSpot,
   type PendingSpotPhoto,
 } from '@/src/features/map/hooks/use-create-spot';
+import { useFavoriteSpots } from '@/src/features/map/hooks/use-favorite-spots';
 import { MapFloatingButton } from '@/src/features/map/components/map-floating-button';
 import { MapView, type MapViewHandle } from '@/src/features/map/components/map-view';
 import {
@@ -27,6 +29,9 @@ import { FrostedGlass } from '@/src/shared/components/FrostedGlass';
 import { colors } from '@/src/shared/theme';
 
 export default function MapScreen() {
+  const router = useRouter();
+  const { isAuthenticated, favoriteSpotIds, toggleFavoriteSpot } =
+    useFavoriteSpots();
   const { location } = useLocation();
   const mapRef = useRef<MapViewHandle>(null);
   const sheetRef = useRef<SpotDetailSheetHandle>(null);
@@ -54,6 +59,7 @@ export default function MapScreen() {
   const [createPhotos, setCreatePhotos] = useState<PendingSpotPhoto[]>([]);
   const [createLocalError, setCreateLocalError] = useState<string | null>(null);
   const [isPickingCreatePhotos, setIsPickingCreatePhotos] = useState(false);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const { spots, refresh: refreshSpots } = useSpots(bbox);
   const { spot, isLoading: isSpotLoading, refresh } = useSpotDetail(selectedSpotId);
   const {
@@ -92,6 +98,21 @@ export default function MapScreen() {
     [bbox, center, devCreateLat, devCreateLon],
   );
   const activeCreateError = createLocalError ?? createError;
+  const spotWithFavorite = useMemo(() => {
+    if (!spot) {
+      return null;
+    }
+
+    const isFavorite = favoriteSpotIds.includes(spot.id);
+    if (spot.isFavorite === isFavorite) {
+      return spot;
+    }
+
+    return {
+      ...spot,
+      isFavorite,
+    };
+  }, [favoriteSpotIds, spot]);
 
   const filteredSpots = searchQuery.trim()
     ? spots.filter((s) => s.title.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -135,6 +156,39 @@ export default function MapScreen() {
       void uploadPhoto(targetSpot);
     },
     [uploadPhoto],
+  );
+
+  const handleToggleFavorite = useCallback(
+    async (targetSpot: SpotDetail) => {
+      if (!isAuthenticated) {
+        Alert.alert('Sign in required', 'Please sign in to save favorite spots.', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign In', onPress: () => router.push('/(auth)/login') },
+        ]);
+        return;
+      }
+
+      if (isTogglingFavorite) {
+        return;
+      }
+
+      setIsTogglingFavorite(true);
+      const shouldFavorite = !favoriteSpotIds.includes(targetSpot.id);
+      const { error } = await toggleFavoriteSpot(targetSpot.id, shouldFavorite);
+
+      if (error) {
+        Alert.alert('Error', 'Failed to update favorite. Please try again.');
+      }
+
+      setIsTogglingFavorite(false);
+    },
+    [
+      favoriteSpotIds,
+      isAuthenticated,
+      isTogglingFavorite,
+      router,
+      toggleFavoriteSpot,
+    ],
   );
 
   const resetCreateForm = useCallback(() => {
@@ -296,10 +350,12 @@ export default function MapScreen() {
       />
       <SpotDetailSheet
         ref={sheetRef}
-        spot={createStep === 'idle' ? spot : null}
+        spot={createStep === 'idle' ? spotWithFavorite : null}
         isLoading={createStep === 'idle' ? isSpotLoading : false}
         onDismiss={handleSheetDismiss}
         onParkingPress={handleParkingPress}
+        onToggleFavorite={handleToggleFavorite}
+        isTogglingFavorite={isTogglingFavorite}
         onAddPhoto={handleAddPhoto}
         isUploadingPhoto={isUploadingPhoto}
         photoUploadError={photoUploadError}

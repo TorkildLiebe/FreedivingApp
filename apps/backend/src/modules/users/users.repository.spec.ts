@@ -4,7 +4,10 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 describe('UsersRepository', () => {
   let repository: UsersRepository;
-  let prisma: { user: Record<string, jest.Mock> };
+  let prisma: {
+    user: Record<string, jest.Mock>;
+    diveSpot: Record<string, jest.Mock>;
+  };
 
   const mockUser = {
     id: 'uuid-1',
@@ -27,6 +30,10 @@ describe('UsersRepository', () => {
       user: {
         findFirst: jest.fn(),
         create: jest.fn(),
+        update: jest.fn(),
+      },
+      diveSpot: {
+        findFirst: jest.fn(),
       },
     };
 
@@ -107,6 +114,73 @@ describe('UsersRepository', () => {
           preferredLanguage: 'no',
         },
       });
+    });
+  });
+
+  describe('findActiveSpotById', () => {
+    it('queries non-deleted spot by id', async () => {
+      prisma.diveSpot.findFirst.mockResolvedValue({ id: 'spot-1' });
+
+      const result = await repository.findActiveSpotById('spot-1');
+
+      expect(result).toEqual({ id: 'spot-1' });
+      expect(prisma.diveSpot.findFirst).toHaveBeenCalledWith({
+        where: { id: 'spot-1', isDeleted: false },
+        select: { id: true },
+      });
+    });
+  });
+
+  describe('addFavoriteSpot', () => {
+    it('adds spot when missing from favorites', async () => {
+      prisma.user.update.mockResolvedValue({
+        favoriteSpotIds: ['spot-1'],
+      });
+
+      const result = await repository.addFavoriteSpot('uuid-1', 'spot-1', []);
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'uuid-1' },
+        data: { favoriteSpotIds: ['spot-1'] },
+        select: { favoriteSpotIds: true },
+      });
+      expect(result).toEqual(['spot-1']);
+    });
+
+    it('keeps favorites unique when spot already exists', async () => {
+      prisma.user.update.mockResolvedValue({
+        favoriteSpotIds: ['spot-1'],
+      });
+
+      const result = await repository.addFavoriteSpot('uuid-1', 'spot-1', [
+        'spot-1',
+      ]);
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'uuid-1' },
+        data: { favoriteSpotIds: ['spot-1'] },
+        select: { favoriteSpotIds: true },
+      });
+      expect(result).toEqual(['spot-1']);
+    });
+  });
+
+  describe('removeFavoriteSpot', () => {
+    it('removes spot from favorites', async () => {
+      prisma.user.update.mockResolvedValue({
+        favoriteSpotIds: [],
+      });
+
+      const result = await repository.removeFavoriteSpot('uuid-1', 'spot-1', [
+        'spot-1',
+      ]);
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'uuid-1' },
+        data: { favoriteSpotIds: [] },
+        select: { favoriteSpotIds: true },
+      });
+      expect(result).toEqual([]);
     });
   });
 });

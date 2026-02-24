@@ -5,7 +5,6 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
-  useState,
 } from 'react';
 import {
   ActivityIndicator,
@@ -26,6 +25,8 @@ interface SpotDetailSheetProps {
   isLoading: boolean;
   onDismiss: () => void;
   onParkingPress: (parking: ParkingLocation) => void;
+  onToggleFavorite?: (spot: SpotDetail) => void;
+  isTogglingFavorite?: boolean;
   onAddPhoto?: (spot: SpotDetail) => void;
   isUploadingPhoto?: boolean;
   photoUploadError?: string | null;
@@ -58,6 +59,8 @@ export const SpotDetailSheet = forwardRef<
     isLoading,
     onDismiss,
     onParkingPress,
+    onToggleFavorite,
+    isTogglingFavorite = false,
     onAddPhoto,
     isUploadingPhoto = false,
     photoUploadError = null,
@@ -65,7 +68,6 @@ export const SpotDetailSheet = forwardRef<
   ref,
 ) {
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const [isFavorite, setIsFavorite] = useState(false);
   const snapPoints = useMemo(() => ['25%', '50%', '90%'], []);
 
   useImperativeHandle(ref, () => ({
@@ -81,10 +83,6 @@ export const SpotDetailSheet = forwardRef<
       bottomSheetRef.current?.close();
     }
   }, [spot, isLoading]);
-
-  useEffect(() => {
-    setIsFavorite(Boolean(spot?.isFavorite));
-  }, [spot?.id, spot?.isFavorite]);
 
   const handleSheetChange = useCallback(
     (index: number) => {
@@ -133,13 +131,18 @@ export const SpotDetailSheet = forwardRef<
                 <TouchableOpacity
                   testID="spot-detail-favorite-toggle"
                   accessibilityRole="button"
-                  onPress={() => setIsFavorite((prev) => !prev)}
+                  onPress={() => {
+                    if (spot) {
+                      onToggleFavorite?.(spot);
+                    }
+                  }}
+                  disabled={!spot || !onToggleFavorite || isTogglingFavorite}
                   style={styles.iconButton}
                 >
                   <FontAwesome
-                    name={isFavorite ? 'heart' : 'heart-o'}
+                    name={spot.isFavorite ? 'heart' : 'heart-o'}
                     size={18}
-                    color={isFavorite ? colors.primary[500] : colors.neutral[700]}
+                    color={spot.isFavorite ? colors.primary[500] : colors.neutral[700]}
                   />
                 </TouchableOpacity>
                 <TouchableOpacity

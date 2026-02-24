@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UsersRepository } from './users.repository';
+import { SpotNotFoundOrDeletedError } from '../../common/errors';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -32,6 +34,9 @@ describe('UsersService', () => {
             findByExternalId: jest.fn(),
             findById: jest.fn(),
             create: jest.fn(),
+            findActiveSpotById: jest.fn(),
+            addFavoriteSpot: jest.fn(),
+            removeFavoriteSpot: jest.fn(),
           },
         },
       ],
@@ -94,6 +99,68 @@ describe('UsersService', () => {
       const result = await service.findById('nonexistent');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('addFavoriteSpot', () => {
+    it('adds favorite when user and spot exist', async () => {
+      repository.findById.mockResolvedValue(mockUser);
+      repository.findActiveSpotById.mockResolvedValue({ id: 'spot-1' });
+      repository.addFavoriteSpot.mockResolvedValue(['spot-1']);
+
+      const result = await service.addFavoriteSpot('uuid-1', 'spot-1');
+
+      expect(repository.addFavoriteSpot).toHaveBeenCalledWith(
+        'uuid-1',
+        'spot-1',
+        [],
+      );
+      expect(result).toEqual(['spot-1']);
+    });
+
+    it('throws when user is missing', async () => {
+      repository.findById.mockResolvedValue(null);
+      repository.findActiveSpotById.mockResolvedValue({ id: 'spot-1' });
+
+      await expect(
+        service.addFavoriteSpot('missing-user', 'spot-1'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws when spot is missing or deleted', async () => {
+      repository.findById.mockResolvedValue(mockUser);
+      repository.findActiveSpotById.mockResolvedValue(null);
+
+      await expect(
+        service.addFavoriteSpot('uuid-1', 'spot-missing'),
+      ).rejects.toThrow(SpotNotFoundOrDeletedError);
+    });
+  });
+
+  describe('removeFavoriteSpot', () => {
+    it('removes favorite when user exists', async () => {
+      repository.findById.mockResolvedValue({
+        ...mockUser,
+        favoriteSpotIds: ['spot-1'],
+      });
+      repository.removeFavoriteSpot.mockResolvedValue([]);
+
+      const result = await service.removeFavoriteSpot('uuid-1', 'spot-1');
+
+      expect(repository.removeFavoriteSpot).toHaveBeenCalledWith(
+        'uuid-1',
+        'spot-1',
+        ['spot-1'],
+      );
+      expect(result).toEqual([]);
+    });
+
+    it('throws when user is missing', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(
+        service.removeFavoriteSpot('missing-user', 'spot-1'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });
