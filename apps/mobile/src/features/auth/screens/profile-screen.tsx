@@ -1,45 +1,38 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useAuth } from '@/src/features/auth/context/auth-context';
+import { useEffect } from 'react';
+import { StyleSheet, Text, useWindowDimensions } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+
+import { colors, typography } from '@/src/shared/theme';
 
 export default function ProfileScreen() {
-  const { session, signOut } = useAuth();
+  const { height: screenHeight } = useWindowDimensions();
+  const translateY = useSharedValue(screenHeight);
+
+  useEffect(() => {
+    translateY.value = withTiming(0, { duration: 280 });
+  }, [translateY]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Profile</Text>
-      <Text testID="profile-email-text" style={styles.subtitle}>{session?.user?.email}</Text>
-      <TouchableOpacity testID="profile-sign-out-button" style={styles.button} onPress={signOut}>
-        <Text style={styles.buttonText}>Sign Out</Text>
-      </TouchableOpacity>
-    </View>
+    <Animated.View style={[styles.container, animatedStyle]}>
+      <Text style={styles.placeholder}>Profile coming in M4</Text>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10,
+    backgroundColor: colors.neutral[50],
+    alignItems: "center",
+    justifyContent: "center",
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 8,
-  },
-  button: {
-    marginTop: 24,
-    backgroundColor: '#e74c3c',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  placeholder: {
+    ...typography.body,
+    color: colors.neutral[900],
   },
 });

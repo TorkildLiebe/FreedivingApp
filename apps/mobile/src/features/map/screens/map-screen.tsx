@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import {
   DEFAULT_CENTER,
   DEFAULT_ZOOM,
@@ -16,6 +16,8 @@ import {
   type SpotDetailSheetHandle,
 } from '@/src/features/map/components/spot-detail-sheet';
 import type { BBox, ParkingLocation } from '@/src/features/map/types';
+import { FrostedGlass } from '@/src/shared/components/FrostedGlass';
+import { colors } from '@/src/shared/theme';
 
 export default function MapScreen() {
   const { location } = useLocation();
@@ -24,10 +26,15 @@ export default function MapScreen() {
   const [activeLayer, setActiveLayer] = useState<MapLayer>('topo');
   const [bbox, setBbox] = useState<BBox | null>(null);
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const { spots } = useSpots(bbox);
   const { spot, isLoading: isSpotLoading } = useSpotDetail(selectedSpotId);
 
   const center = location ?? DEFAULT_CENTER;
+
+  const filteredSpots = searchQuery.trim()
+    ? spots.filter((s) => s.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    : spots;
 
   function handleCenterOnMe() {
     if (!location) {
@@ -59,13 +66,27 @@ export default function MapScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.searchBarContainer} pointerEvents="box-none">
+        <FrostedGlass style={styles.searchBar}>
+          <TextInput
+            testID="map-search-input"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search spots…"
+            placeholderTextColor={colors.neutral[400]}
+            style={styles.searchInput}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+          />
+        </FrostedGlass>
+      </View>
       <MapView
         ref={mapRef}
         tileUrl={TILE_URLS[activeLayer]}
         center={center}
         zoom={DEFAULT_ZOOM}
         location={location}
-        spots={spots}
+        spots={filteredSpots}
         parkingLocations={spot?.parkingLocations}
         onRegionDidChange={setBbox}
         onSpotPress={handleSpotPress}
@@ -100,6 +121,23 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  searchBarContainer: {
+    position: 'absolute',
+    top: 56,
+    left: 16,
+    right: 16,
+    zIndex: 20,
+  },
+  searchBar: {
+    borderRadius: 12,
+    height: 44,
+  },
+  searchInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: colors.neutral[900],
   },
   attribution: {
     position: 'absolute',
