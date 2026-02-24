@@ -21,6 +21,13 @@ const mockSpot: SpotDetail = {
   parkingLocations: [
     { id: 'p-1', lat: 60.01, lon: 5.01, label: 'Main parking' },
   ],
+  photoUrls: [],
+  isFavorite: false,
+  averageVisibilityMeters: null,
+  averageRating: null,
+  reportCount: 0,
+  latestReportAt: null,
+  diveLogs: [],
   shareUrl: null,
   shareableAccessInfo: null,
   createdAt: '2025-01-01T00:00:00.000Z',

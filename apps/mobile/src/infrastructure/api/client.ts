@@ -2,6 +2,7 @@ import { supabase } from '@/src/infrastructure/supabase/client';
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+const DEV_USER_ID = process.env.EXPO_PUBLIC_DEV_USER_ID;
 
 export async function apiFetch<T>(
   path: string,
@@ -16,6 +17,7 @@ export async function apiFetch<T>(
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(DEV_USER_ID ? { 'x-dev-user-id': DEV_USER_ID } : {}),
       ...options?.headers,
     },
     ...options,
