@@ -11,12 +11,11 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from 'react-native';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import Colors from '@/src/shared/theme/Colors';
+import { colors } from '@/src/shared/theme';
 import type { ParkingLocation, SpotDetail } from '@/src/features/map/types';
 
 interface SpotDetailSheetProps {
@@ -35,8 +34,6 @@ export const SpotDetailSheet = forwardRef<
   SpotDetailSheetProps
 >(function SpotDetailSheet({ spot, isLoading, onDismiss, onParkingPress }, ref) {
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const colorScheme = useColorScheme() ?? 'light';
-  const colors = Colors[colorScheme];
   const snapPoints = useMemo(() => ['25%', '50%', '90%'], []);
 
   useImperativeHandle(ref, () => ({
@@ -71,22 +68,22 @@ export const SpotDetailSheet = forwardRef<
       snapPoints={snapPoints}
       onChange={handleSheetChange}
       enablePanDownToClose
-      backgroundStyle={{ backgroundColor: colors.background }}
-      handleIndicatorStyle={{ backgroundColor: colors.text, opacity: 0.3 }}
+      backgroundStyle={{ backgroundColor: colors.neutral[50] }}
+      handleIndicatorStyle={{ backgroundColor: colors.neutral[900], opacity: 0.3 }}
     >
       {/* Fixed header: title + creator */}
-      <View style={[styles.header, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.neutral[50] }]}>
         {isLoading && !spot ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.tint} />
+            <ActivityIndicator size="large" color={colors.primary[500]} />
           </View>
         ) : spot ? (
           <>
-            <Text testID="spot-detail-title" style={[styles.title, { color: colors.text }]}>
+            <Text testID="spot-detail-title" style={[styles.title, { color: colors.neutral[900] }]}>
               {spot.title}
             </Text>
             <Text
-              style={[styles.creator, { color: colors.text, opacity: 0.6 }]}
+              style={[styles.creator, { color: colors.neutral[900], opacity: 0.6 }]}
             >
               {spot.creatorDisplayName ?? 'Anonymous'}
             </Text>
@@ -97,14 +94,14 @@ export const SpotDetailSheet = forwardRef<
       {/* Scrollable content */}
       {spot ? (
         <BottomSheetScrollView
-          style={[styles.scrollContent, { backgroundColor: colors.background }]}
+          style={[styles.scrollContent, { backgroundColor: colors.neutral[50] }]}
         >
           {spot.description ? (
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              <Text style={[styles.sectionTitle, { color: colors.neutral[900] }]}>
                 Description
               </Text>
-              <Text style={[styles.body, { color: colors.text }]}>
+              <Text style={[styles.body, { color: colors.neutral[900] }]}>
                 {spot.description}
               </Text>
             </View>
@@ -112,10 +109,10 @@ export const SpotDetailSheet = forwardRef<
 
           {spot.accessInfo ? (
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              <Text style={[styles.sectionTitle, { color: colors.neutral[900] }]}>
                 Access Info
               </Text>
-              <Text style={[styles.body, { color: colors.text }]}>
+              <Text style={[styles.body, { color: colors.neutral[900] }]}>
                 {spot.accessInfo}
               </Text>
             </View>
@@ -123,7 +120,7 @@ export const SpotDetailSheet = forwardRef<
 
           {spot.parkingLocations.length > 0 ? (
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              <Text style={[styles.sectionTitle, { color: colors.neutral[900] }]}>
                 Parking
               </Text>
               {spot.parkingLocations.map((parking) => (
@@ -131,20 +128,20 @@ export const SpotDetailSheet = forwardRef<
                   key={parking.id}
                   style={[
                     styles.parkingItem,
-                    { borderColor: colors.text },
+                    { borderColor: colors.neutral[900] },
                   ]}
                   onPress={() => onParkingPress(parking)}
                   activeOpacity={0.7}
                 >
                   <FontAwesome name="map-marker" size={16} color="#2196F3" />
-                  <Text style={[styles.parkingLabel, { color: colors.text }]}>
+                  <Text style={[styles.parkingLabel, { color: colors.neutral[900] }]}>
                     {parking.label ??
                       `Parking (${parking.lat.toFixed(4)}, ${parking.lon.toFixed(4)})`}
                   </Text>
                   <FontAwesome
                     name="chevron-right"
                     size={12}
-                    color={colors.text}
+                    color={colors.neutral[900]}
                     style={{ opacity: 0.4 }}
                   />
                 </TouchableOpacity>
@@ -154,13 +151,13 @@ export const SpotDetailSheet = forwardRef<
 
           <View style={styles.section}>
             <Text
-              style={[styles.meta, { color: colors.text, opacity: 0.5 }]}
+              style={[styles.meta, { color: colors.neutral[900], opacity: 0.5 }]}
             >
               Created {new Date(spot.createdAt).toLocaleDateString()}
             </Text>
             {spot.createdAt !== spot.updatedAt ? (
               <Text
-                style={[styles.meta, { color: colors.text, opacity: 0.5 }]}
+                style={[styles.meta, { color: colors.neutral[900], opacity: 0.5 }]}
               >
                 Updated {new Date(spot.updatedAt).toLocaleDateString()}
               </Text>

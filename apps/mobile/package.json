@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@babel/runtime": "^7.28.6",
+    "@react-navigation/bottom-tabs": "^7.14.0",
     "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^13.3.3",
     "@types/geojson": "^7946.0.16",

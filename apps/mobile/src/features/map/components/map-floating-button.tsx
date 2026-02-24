@@ -1,8 +1,7 @@
 import { StyleSheet, TouchableOpacity, type ViewStyle } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { useColorScheme } from 'react-native';
 
-import Colors from '@/src/shared/theme/Colors';
+import { colors } from '@/src/shared/theme';
 
 interface MapFloatingButtonProps {
   onPress: () => void;
@@ -12,20 +11,18 @@ interface MapFloatingButtonProps {
 }
 
 export function MapFloatingButton({ onPress, iconName, style, testID }: MapFloatingButtonProps) {
-  const colorScheme = useColorScheme() ?? 'light';
-
   return (
     <TouchableOpacity
       testID={testID}
       style={[
         styles.button,
-        { backgroundColor: Colors[colorScheme].background },
+        { backgroundColor: colors.neutral[50] },
         style,
       ]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <FontAwesome name={iconName} size={20} color={Colors[colorScheme].text} />
+      <FontAwesome name={iconName} size={20} color={colors.neutral[900]} />
     </TouchableOpacity>
   );
 }
