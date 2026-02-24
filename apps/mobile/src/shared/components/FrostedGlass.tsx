@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleProp, ViewStyle } from 'react-native';
+import { StyleSheet, View, StyleProp, ViewStyle } from 'react-native';
 import { BlurView } from 'expo-blur';
 
 // Frosted glass visual recipe constants (light mode only for M1)
@@ -8,7 +8,7 @@ const FROSTED_BACKGROUND = 'rgba(255, 255, 255, 0.8)';
 const FROSTED_BORDER_COLOR = 'rgba(231, 229, 228, 0.6)'; // stone-200 @ 60%
 
 type FrostedGlassProps = {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   intensity?: number;
 };
@@ -30,10 +30,9 @@ export function FrostedGlass({ children, style, intensity = 70 }: FrostedGlassPr
         intensity={intensity}
         tint="light"
         experimentalBlurMethod="dimezisBlurView"
-        style={{ flex: 1 }}
-      >
-        {children}
-      </BlurView>
+        style={StyleSheet.absoluteFillObject}
+      />
+      {children}
     </View>
   );
 }
