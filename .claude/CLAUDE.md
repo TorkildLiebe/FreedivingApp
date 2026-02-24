@@ -46,6 +46,10 @@ Skill types currently available in `.claude/skills/`:
 - Quality and policy: `audit-rules`, `security`
 - Product and documentation: `product-copilot`, `sync-docs`
 
+Dedicated agents in `.claude/agents/`:
+
+- `vertical-slice-implementor`: issue-to-feature implementation with mandatory tests and risk-tier verification
+
 MCP servers from `.mcp.json` and primary usage:
 
 - `ios-simulator`: UI flows, simulator automation, screenshot-based verification

@@ -21,6 +21,7 @@ Apply these rules when working in `/Users/torkildliebe/FreedivingApp`.
 - Testing and verification: `test-backend`, `test-mobile`, `ios-simulator-skill`
 - Quality and policy: `audit-rules`, `security`
 - Product and documentation: `product-copilot`, `sync-docs`
+- Dedicated agent: `vertical-slice-implementor` in `.claude/agents/vertical-slice-implementor.md`
 
 ## Mandatory Lifecycle
 
