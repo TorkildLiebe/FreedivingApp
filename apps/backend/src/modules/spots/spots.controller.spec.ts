@@ -44,6 +44,14 @@ describe('SpotsController', () => {
     updatedAt: new Date(),
   };
 
+  const mockUploadUrlResponse = {
+    uploadUrl:
+      'https://storage.example.com/upload/sign/spot-photos/spots/uuid-1/file.jpg?token=abc',
+    publicUrl:
+      'https://storage.example.com/object/public/spot-photos/spots/uuid-1/file.jpg',
+    expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SpotsController],
@@ -55,6 +63,8 @@ describe('SpotsController', () => {
             getById: jest.fn(),
             create: jest.fn(),
             update: jest.fn(),
+            createPhotoUploadUrl: jest.fn(),
+            addPhoto: jest.fn(),
             softDelete: jest.fn(),
           },
         },
@@ -144,6 +154,40 @@ describe('SpotsController', () => {
       const result = await controller.update('uuid-1', dto, mockUser);
 
       expect(spotsService.update).toHaveBeenCalledWith('uuid-1', dto, mockUser);
+      expect(result).toEqual(mockDetailResponse);
+    });
+  });
+
+  describe('createPhotoUploadUrl', () => {
+    it('should call service with spot id and mime type', async () => {
+      spotsService.createPhotoUploadUrl.mockResolvedValue(
+        mockUploadUrlResponse,
+      );
+
+      const result = await controller.createPhotoUploadUrl('uuid-1', {
+        mimeType: 'image/jpeg',
+      });
+
+      expect(spotsService.createPhotoUploadUrl).toHaveBeenCalledWith(
+        'uuid-1',
+        'image/jpeg',
+      );
+      expect(result).toEqual(mockUploadUrlResponse);
+    });
+  });
+
+  describe('addPhoto', () => {
+    it('should call service with spot id and photo url', async () => {
+      spotsService.addPhoto.mockResolvedValue(mockDetailResponse);
+
+      const result = await controller.addPhoto('uuid-1', {
+        url: 'https://example.com/photo.jpg',
+      });
+
+      expect(spotsService.addPhoto).toHaveBeenCalledWith(
+        'uuid-1',
+        'https://example.com/photo.jpg',
+      );
       expect(result).toEqual(mockDetailResponse);
     });
   });

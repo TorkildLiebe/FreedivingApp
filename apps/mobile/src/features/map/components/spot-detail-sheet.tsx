@@ -26,6 +26,9 @@ interface SpotDetailSheetProps {
   isLoading: boolean;
   onDismiss: () => void;
   onParkingPress: (parking: ParkingLocation) => void;
+  onAddPhoto?: (spot: SpotDetail) => void;
+  isUploadingPhoto?: boolean;
+  photoUploadError?: string | null;
 }
 
 export interface SpotDetailSheetHandle {
@@ -49,7 +52,18 @@ function isStale(latestReportAt: string | null): boolean {
 export const SpotDetailSheet = forwardRef<
   SpotDetailSheetHandle,
   SpotDetailSheetProps
->(function SpotDetailSheet({ spot, isLoading, onDismiss, onParkingPress }, ref) {
+>(function SpotDetailSheet(
+  {
+    spot,
+    isLoading,
+    onDismiss,
+    onParkingPress,
+    onAddPhoto,
+    isUploadingPhoto = false,
+    photoUploadError = null,
+  },
+  ref,
+) {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const snapPoints = useMemo(() => ['25%', '50%', '90%'], []);
@@ -194,7 +208,33 @@ export const SpotDetailSheet = forwardRef<
           </View>
 
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.neutral[900] }]}>Photos</Text>
+            <View style={styles.photosHeaderRow}>
+              <Text style={[styles.sectionTitle, { color: colors.neutral[900] }]}>Photos</Text>
+              <TouchableOpacity
+                testID="spot-detail-add-photo-button"
+                accessibilityRole="button"
+                onPress={() => onAddPhoto?.(spot)}
+                disabled={!onAddPhoto || isUploadingPhoto || spot.photoUrls.length >= 5}
+                style={[
+                  styles.addPhotoButton,
+                  (!onAddPhoto || isUploadingPhoto || spot.photoUrls.length >= 5) &&
+                    styles.addPhotoButtonDisabled,
+                ]}
+              >
+                {isUploadingPhoto ? (
+                  <ActivityIndicator size="small" color={colors.neutral[50]} />
+                ) : (
+                  <Text style={styles.addPhotoButtonText}>
+                    {spot.photoUrls.length >= 5 ? 'Max 5' : '+ Add Photo'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+            {photoUploadError ? (
+              <Text testID="spot-detail-photo-upload-error" style={styles.photoUploadError}>
+                {photoUploadError}
+              </Text>
+            ) : null}
             {spot.photoUrls.length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photosRow}>
                 {spot.photoUrls.slice(0, 5).map((photoUrl, index) => (
@@ -211,6 +251,11 @@ export const SpotDetailSheet = forwardRef<
                 No photos yet.
               </Text>
             )}
+            {spot.photoUrls.length >= 5 ? (
+              <Text testID="spot-detail-photo-limit-text" style={styles.photoLimitText}>
+                Maximum 5 photos per spot.
+              </Text>
+            ) : null}
           </View>
 
           <View style={styles.section}>
@@ -396,6 +441,38 @@ const styles = StyleSheet.create({
   photosRow: {
     gap: 10,
     paddingRight: 8,
+  },
+  photosHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  addPhotoButton: {
+    minWidth: 90,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.secondary[500],
+  },
+  addPhotoButtonDisabled: {
+    opacity: 0.5,
+  },
+  addPhotoButtonText: {
+    color: colors.neutral[50],
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  photoUploadError: {
+    color: '#b91c1c',
+    marginBottom: 8,
+    fontSize: 13,
+  },
+  photoLimitText: {
+    marginTop: 8,
+    color: colors.neutral[700],
+    fontSize: 12,
   },
   photo: {
     width: 120,

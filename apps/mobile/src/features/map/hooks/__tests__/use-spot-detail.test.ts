@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { SpotDetail } from '@/src/features/map/types';
 
 const mockApiFetch = jest.fn();
@@ -115,5 +115,23 @@ describe('useSpotDetail', () => {
 
     expect(mockApiFetch).toHaveBeenCalledTimes(2);
     expect(mockApiFetch).toHaveBeenCalledWith('/spots/uuid-2');
+  });
+
+  it('refetches when refresh is called', async () => {
+    mockApiFetch.mockResolvedValue(mockSpot);
+
+    const { result } = renderHook(() => useSpotDetail('uuid-1'));
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    await act(async () => {
+      result.current.refresh();
+    });
+
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledTimes(2);
+    });
   });
 });

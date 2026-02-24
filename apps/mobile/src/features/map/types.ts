@@ -57,3 +57,9 @@ export interface SpotDetail {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface SpotPhotoUploadUrlResponse {
+  uploadUrl: string;
+  publicUrl: string;
+  expiresAt: string;
+}

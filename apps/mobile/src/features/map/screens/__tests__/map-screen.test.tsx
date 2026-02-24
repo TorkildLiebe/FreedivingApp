@@ -12,7 +12,21 @@ jest.mock('@/src/features/map/hooks/use-spots', () => ({
 }));
 
 jest.mock('@/src/features/map/hooks/use-spot-detail', () => ({
-  useSpotDetail: () => ({ spot: null, isLoading: false, error: null }),
+  useSpotDetail: () => ({
+    spot: null,
+    isLoading: false,
+    error: null,
+    refresh: jest.fn(),
+  }),
+}));
+
+jest.mock('@/src/features/map/hooks/use-spot-photo-upload', () => ({
+  useSpotPhotoUpload: () => ({
+    uploadPhoto: jest.fn(),
+    isUploading: false,
+    error: null,
+    clearError: jest.fn(),
+  }),
 }));
 
 jest.mock('@/src/features/map/components/map-view', () => {
@@ -89,5 +103,14 @@ describe('MapScreen', () => {
   it('renders SpotDetailSheet', () => {
     const { getByTestId } = render(<MapScreen />);
     expect(getByTestId('spot-detail-sheet')).toBeTruthy();
+  });
+
+  it('passes photo upload props to SpotDetailSheet', () => {
+    const { getByTestId } = render(<MapScreen />);
+    const sheet = getByTestId('spot-detail-sheet');
+
+    expect(sheet.props.onAddPhoto).toBeInstanceOf(Function);
+    expect(sheet.props.isUploadingPhoto).toBe(false);
+    expect(sheet.props.photoUploadError).toBeNull();
   });
 });

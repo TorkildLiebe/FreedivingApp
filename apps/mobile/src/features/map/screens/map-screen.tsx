@@ -9,13 +9,14 @@ import {
 import { useLocation } from '@/src/features/map/hooks/use-location';
 import { useSpots } from '@/src/features/map/hooks/use-spots';
 import { useSpotDetail } from '@/src/features/map/hooks/use-spot-detail';
+import { useSpotPhotoUpload } from '@/src/features/map/hooks/use-spot-photo-upload';
 import { MapFloatingButton } from '@/src/features/map/components/map-floating-button';
 import { MapView, type MapViewHandle } from '@/src/features/map/components/map-view';
 import {
   SpotDetailSheet,
   type SpotDetailSheetHandle,
 } from '@/src/features/map/components/spot-detail-sheet';
-import type { BBox, ParkingLocation } from '@/src/features/map/types';
+import type { BBox, ParkingLocation, SpotDetail } from '@/src/features/map/types';
 import { FrostedGlass } from '@/src/shared/components/FrostedGlass';
 import { colors } from '@/src/shared/theme';
 
@@ -28,7 +29,15 @@ export default function MapScreen() {
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const { spots } = useSpots(bbox);
-  const { spot, isLoading: isSpotLoading } = useSpotDetail(selectedSpotId);
+  const { spot, isLoading: isSpotLoading, refresh } = useSpotDetail(selectedSpotId);
+  const {
+    uploadPhoto,
+    isUploading: isUploadingPhoto,
+    error: photoUploadError,
+    clearError: clearPhotoUploadError,
+  } = useSpotPhotoUpload({
+    onUploaded: refresh,
+  });
 
   const center = location ?? DEFAULT_CENTER;
 
@@ -52,8 +61,9 @@ export default function MapScreen() {
   }
 
   const handleSpotPress = useCallback((spotId: string) => {
+    clearPhotoUploadError();
     setSelectedSpotId(spotId);
-  }, []);
+  }, [clearPhotoUploadError]);
 
   const handleParkingPress = useCallback((parking: ParkingLocation) => {
     mapRef.current?.flyTo({ lat: parking.lat, lng: parking.lon }, 16);
@@ -61,8 +71,16 @@ export default function MapScreen() {
   }, []);
 
   const handleSheetDismiss = useCallback(() => {
+    clearPhotoUploadError();
     setSelectedSpotId(null);
-  }, []);
+  }, [clearPhotoUploadError]);
+
+  const handleAddPhoto = useCallback(
+    (targetSpot: SpotDetail) => {
+      void uploadPhoto(targetSpot);
+    },
+    [uploadPhoto],
+  );
 
   return (
     <View style={styles.container}>
@@ -114,6 +132,9 @@ export default function MapScreen() {
         isLoading={isSpotLoading}
         onDismiss={handleSheetDismiss}
         onParkingPress={handleParkingPress}
+        onAddPhoto={handleAddPhoto}
+        isUploadingPhoto={isUploadingPhoto}
+        photoUploadError={photoUploadError}
       />
     </View>
   );

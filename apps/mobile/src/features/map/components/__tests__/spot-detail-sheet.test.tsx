@@ -64,6 +64,9 @@ describe('SpotDetailSheet', () => {
     isLoading: false,
     onDismiss: jest.fn(),
     onParkingPress: jest.fn(),
+    onAddPhoto: jest.fn(),
+    isUploadingPhoto: false,
+    photoUploadError: null as string | null,
   };
 
   beforeEach(() => {
@@ -139,6 +142,7 @@ describe('SpotDetailSheet', () => {
     );
 
     expect(getByText('No photos yet.')).toBeTruthy();
+    expect(getByTestId('spot-detail-add-photo-button')).toBeTruthy();
     expect(getByTestId('spot-detail-dive-log-placeholder')).toBeTruthy();
     expect(
       getByTestId('spot-detail-add-dive-button').props.accessibilityState
@@ -158,6 +162,58 @@ describe('SpotDetailSheet', () => {
     );
 
     expect(getAllByTestId('spot-detail-photo')).toHaveLength(2);
+  });
+
+  it('calls onAddPhoto when add photo button is pressed', () => {
+    const onAddPhoto = jest.fn();
+    const { getByTestId } = render(
+      <SpotDetailSheet
+        {...defaultProps}
+        spot={mockSpot}
+        onAddPhoto={onAddPhoto}
+      />,
+    );
+
+    fireEvent.press(getByTestId('spot-detail-add-photo-button'));
+    expect(onAddPhoto).toHaveBeenCalledWith(mockSpot);
+  });
+
+  it('shows limit text and disables add photo button when max photos reached', () => {
+    const onAddPhoto = jest.fn();
+    const { getByTestId } = render(
+      <SpotDetailSheet
+        {...defaultProps}
+        onAddPhoto={onAddPhoto}
+        spot={{
+          ...mockSpot,
+          photoUrls: [
+            'https://example.com/1.jpg',
+            'https://example.com/2.jpg',
+            'https://example.com/3.jpg',
+            'https://example.com/4.jpg',
+            'https://example.com/5.jpg',
+          ],
+        }}
+      />,
+    );
+
+    expect(getByTestId('spot-detail-photo-limit-text')).toBeTruthy();
+    expect(
+      getByTestId('spot-detail-add-photo-button').props.accessibilityState
+        ?.disabled,
+    ).toBe(true);
+  });
+
+  it('renders photo upload error message when provided', () => {
+    const { getByTestId } = render(
+      <SpotDetailSheet
+        {...defaultProps}
+        spot={mockSpot}
+        photoUploadError="Failed to upload"
+      />,
+    );
+
+    expect(getByTestId('spot-detail-photo-upload-error')).toBeTruthy();
   });
 
   it('renders parking locations and handles parking press', () => {

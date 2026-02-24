@@ -2,14 +2,14 @@
 
 - Milestone: M2
 - Status: in_progress
-- Current issue: 75
-- Updated at: 2026-02-24T20:50:05.452Z
+- Current issue: 76
+- Updated at: 2026-02-24T21:46:13.544Z
 
 | Issue | Title | Status | Attempts | Note |
 | --- | --- | --- | --- | --- |
 | #73 | Add marker clustering and name-based spot search | committed | 1 |  |
 | #74 | Build spot detail bottom sheet | committed | 2 |  |
-| #75 | Add photo upload and display on spots | pending | 0 |  |
+| #75 | Add photo upload and display on spots | committed | 1 |  |
 | #76 | Build spot creation flow (map pin + form) | pending | 0 |  |
 | #77 | Add favorite toggle for spots | pending | 0 |  |
 | #78 | Show ratings summary on spot detail | pending | 0 |  |

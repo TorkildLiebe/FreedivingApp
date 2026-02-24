@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '@/src/infrastructure/api/client';
 import type { SpotDetail } from '@/src/features/map/types';
 
@@ -6,6 +6,11 @@ export function useSpotDetail(spotId: string | null) {
   const [spot, setSpot] = useState<SpotDetail | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const refresh = useCallback(() => {
+    setReloadKey((prev) => prev + 1);
+  }, []);
 
   useEffect(() => {
     if (!spotId) {
@@ -41,7 +46,7 @@ export function useSpotDetail(spotId: string | null) {
     return () => {
       cancelled = true;
     };
-  }, [spotId]);
+  }, [spotId, reloadKey]);
 
-  return { spot, isLoading, error };
+  return { spot, isLoading, error, refresh };
 }
