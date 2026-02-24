@@ -2,75 +2,173 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  createIssueRunState,
-  ensureNumericIssueNumber,
+  canRetryIssue,
+  completeRun,
+  createRunState,
   hasVerificationFailure,
+  isMobileUiImpacting,
+  markIssueBlocked,
+  markIssueCompleted,
+  markIssuesMergedLocal,
+  nextPendingIssue,
   parseWorkerReport,
-  validateImplementationWorker,
+  parseWorkerTrailer,
+  renderRoadmapMarkdown,
+  recordIssueAttempt,
+  setIssueStatus,
+  validateWorkerTrailer,
 } from '../lib/core.mjs';
 
-test('validates implementation worker as agent vertical-slice-implementor', () => {
-  const worker = validateImplementationWorker({
-    implementationWorker: {
-      type: 'agent',
-      name: 'vertical-slice-implementor',
-    },
-  });
+test('parses worker report contract and trailer block', () => {
+  const markdown = `## Changes made
+Updated feature.
 
-  assert.equal(worker.type, 'agent');
-  assert.equal(worker.name, 'vertical-slice-implementor');
+## Verification run
+All passed.
+
+## Not run / limitations
+Android simulator not run.
+
+## Risk notes
+Residual Android verification risk.
+
+RESULT: PASS
+VERIFICATION: PASS
+MOBILE_UI_TOUCHED: true
+IOS_VERIFIED: true
+ISSUE_NUMBER: 120`;
+
+  const sections = parseWorkerReport(markdown);
+  const trailer = validateWorkerTrailer(parseWorkerTrailer(markdown), 120);
+
+  assert.equal(sections['Changes made'], 'Updated feature.');
+  assert.equal(sections['Verification run'], 'All passed.');
+  assert.equal(trailer.RESULT, 'PASS');
+  assert.equal(trailer.MOBILE_UI_TOUCHED, true);
 });
 
-test('rejects non-agent worker configuration', () => {
-  assert.throws(() => {
-    validateImplementationWorker({
-      implementationWorker: {
-        type: 'skill',
-        name: 'vertical-slice-implementor',
-      },
-    });
-  });
-});
+test('worker report parser fails when a required heading is missing', () => {
+  const markdown = `## Changes made
+Updated feature.
 
-test('parses worker report with required four sections', () => {
-  const markdown = `## Changes made\nA\n\n## Verification run\nAll passed\n\n## Not run / limitations\nNone\n\n## Risk notes\nLow`;
-  const report = parseWorkerReport(markdown);
+## Verification run
+All passed.
 
-  assert.equal(report['Changes made'], 'A');
-  assert.equal(report['Verification run'], 'All passed');
-  assert.equal(report['Not run / limitations'], 'None');
-  assert.equal(report['Risk notes'], 'Low');
-});
-
-test('fails report parsing when a required section is missing', () => {
-  const markdown = `## Changes made\nA\n\n## Verification run\nAll passed\n\n## Risk notes\nLow`;
+## Risk notes
+Low`;
 
   assert.throws(() => parseWorkerReport(markdown), /Missing report sections/);
 });
 
-test('detects verification failures from worker output', () => {
-  assert.equal(hasVerificationFailure('pnpm test:backend failed with exit 1'), true);
-  assert.equal(hasVerificationFailure('All passed across targeted checks.'), false);
-});
-
-test('issue number input must be numeric', () => {
-  assert.equal(ensureNumericIssueNumber('42'), 42);
-  assert.throws(() => ensureNumericIssueNumber('abc'), /must be numeric/);
-});
-
-test('issue run state includes required agent lifecycle fields', () => {
-  const state = createIssueRunState(
-    {
-      issueNumber: 101,
-      title: 'Example',
-      url: 'https://github.com/example/repo/issues/101',
-      itemId: 'ITEM_1',
-    },
-    'codex/issue/101-example',
+test('trailer validation fails on missing keys and invalid values', () => {
+  assert.throws(
+    () => validateWorkerTrailer({ RESULT: 'PASS', VERIFICATION: 'PASS' }),
+    /Missing trailer field/,
   );
 
-  assert.equal(state.agent_started_at, null);
-  assert.equal(state.agent_finished_at, null);
-  assert.equal(state.agent_result, null);
-  assert.equal(state.agent_blocker, null);
+  assert.throws(
+    () =>
+      validateWorkerTrailer({
+        RESULT: 'MAYBE',
+        VERIFICATION: 'PASS',
+        MOBILE_UI_TOUCHED: 'true',
+        IOS_VERIFIED: 'true',
+        ISSUE_NUMBER: '1',
+      }),
+    /Invalid trailer RESULT value/,
+  );
+});
+
+test('run state handles happy path transitions for two issues', () => {
+  const start = '2026-02-24T12:00:00.000Z';
+  let state = createRunState({ runId: '20260224-120000', milestone: 'M2', issueOrder: [101, 102], startedAt: start });
+
+  state = setIssueStatus(state, 101, 'planning', '2026-02-24T12:01:00.000Z');
+  state = setIssueStatus(state, 101, 'implementing', '2026-02-24T12:02:00.000Z');
+  state = setIssueStatus(state, 101, 'verifying', '2026-02-24T12:03:00.000Z');
+  state = markIssueCompleted(state, 101, '2026-02-24T12:05:00.000Z');
+
+  state = setIssueStatus(state, 102, 'planning', '2026-02-24T12:06:00.000Z');
+  state = setIssueStatus(state, 102, 'implementing', '2026-02-24T12:07:00.000Z');
+  state = setIssueStatus(state, 102, 'verifying', '2026-02-24T12:08:00.000Z');
+  state = markIssueCompleted(state, 102, '2026-02-24T12:09:00.000Z');
+
+  state = markIssuesMergedLocal(state, [101, 102], '2026-02-24T12:10:00.000Z');
+  state = completeRun(state, '2026-02-24T12:11:00.000Z');
+
+  assert.equal(state.status, 'completed');
+  assert.deepEqual(state.completed_issues, [101, 102]);
+  assert.equal(state.current_issue, null);
+  assert.equal(state.issues['101'].status, 'merged_local');
+  assert.equal(state.issues['102'].status, 'merged_local');
+});
+
+test('retry budget tracks attempts and blocks after retry cap', () => {
+  let state = createRunState({ runId: '20260224-120000', milestone: 'M2', issueOrder: [210] });
+
+  state = recordIssueAttempt(state, 210);
+  assert.equal(canRetryIssue(state, 210, 2), true);
+
+  state = recordIssueAttempt(state, 210);
+  assert.equal(canRetryIssue(state, 210, 2), true);
+
+  state = recordIssueAttempt(state, 210);
+  assert.equal(canRetryIssue(state, 210, 2), false);
+
+  state = markIssueBlocked(state, 210, 'Verification failed after retries.');
+  assert.equal(state.status, 'blocked');
+  assert.equal(state.blocked_issue, 210);
+});
+
+test('resume logic returns first non-completed issue', () => {
+  let state = createRunState({ runId: 'run-1', milestone: 'M3', issueOrder: [1, 2, 3] });
+  state = markIssueCompleted(state, 1);
+  state = markIssueCompleted(state, 2);
+
+  assert.equal(nextPendingIssue(state), 3);
+  assert.equal(state.current_issue, 3);
+});
+
+test('mobile UI impact detector follows path and slice rules', () => {
+  assert.equal(
+    isMobileUiImpacting({
+      affectedSlices: ['backend'],
+      touchedFiles: ['apps/backend/src/modules/spots/spots.service.ts'],
+    }),
+    false,
+  );
+
+  assert.equal(
+    isMobileUiImpacting({
+      affectedSlices: ['mobile'],
+      touchedFiles: [],
+    }),
+    true,
+  );
+
+  assert.equal(
+    isMobileUiImpacting({
+      affectedSlices: [],
+      touchedFiles: ['apps/mobile/src/features/map/screens/MapScreen.tsx'],
+    }),
+    true,
+  );
+});
+
+test('roadmap markdown renders deterministic table output', () => {
+  let state = createRunState({ runId: 'run-table', milestone: 'M2', issueOrder: [5] });
+  state = setIssueStatus(state, 5, 'planning', '2026-02-24T12:02:00.000Z');
+
+  const markdown = renderRoadmapMarkdown(state, {
+    5: { title: 'Map marker clustering' },
+  });
+
+  assert.match(markdown, /# Run Roadmap run-table/);
+  assert.match(markdown, /\| #5 \| Map marker clustering \| planning \| 0 \|  \|/);
+});
+
+test('verification failure helper uses text and trailer data', () => {
+  assert.equal(hasVerificationFailure('pnpm test failed'), true);
+  assert.equal(hasVerificationFailure('All passed', { VERIFICATION: 'PASS' }), false);
+  assert.equal(hasVerificationFailure('All passed', { VERIFICATION: 'FAIL' }), true);
 });

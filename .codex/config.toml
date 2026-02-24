@@ -1,0 +1,13 @@
+[features]
+multi_agent = true
+
+[agents]
+config_file = ".codex/agents.toml"
+
+[agents.monitor-agent]
+description = "Milestone orchestrator that runs issue-by-issue and resumes from run artifacts."
+config_file = ".codex/agents/monitor-agent.md"
+
+[agents.vertical-slice-implementor]
+description = "Issue implementation worker with mandatory verification and report contract."
+config_file = ".codex/agents/vertical-slice-implementor.md"

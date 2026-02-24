@@ -29,6 +29,8 @@ Always execute in this order:
 
 - Require a numeric issue number as the first argument.
 - Optional implementation notes may follow the issue number.
+- If a run context path is provided in notes, save the issue plan before implementation to:
+  - `docs/orchestration/runs/<run-id>/issues/<issue-number>-plan.md`
 - If missing or non-numeric, stop and return:
   - `Usage: /verticalslice.implement <issue-number> [implementation-notes]`
 
@@ -56,7 +58,7 @@ Always execute in this order:
   - `audit-rules` before final report.
   - `sync-docs` when behavior/contracts/docs drift.
 - Use MCP tools only when needed:
-  - `ios-simulator` for iOS and Android screenshot verification on mobile UI changes.
+  - `ios-simulator` for iOS screenshot verification on mobile UI changes.
   - `prisma` and `postgres` for schema/query/data validation.
   - `semgrep` and `security-audit` for high-risk security-sensitive changes.
   - `sequential-thinking` for issue decomposition and risk reasoning.
@@ -90,7 +92,8 @@ Mobile touched:
 - Targeted: `pnpm --filter mobile test -- <pattern>`
 - Medium/high: `pnpm test:mobile`
 - Static checks: `pnpm lint:mobile`, `pnpm --filter mobile run type-check`
-- UI changes: capture iOS and Android screenshot evidence (or report explicit limitation).
+- UI changes: capture iOS screenshot evidence before declaring success.
+- Android verification is currently non-blocking and must be called out in `Risk notes` when not run.
 
 Shared/auth/prisma/security touched:
 - Treat as high risk.
@@ -116,3 +119,11 @@ Final output must include exactly these sections:
 - `Verification run`
 - `Not run / limitations`
 - `Risk notes`
+
+After these sections, append this machine-readable trailer block:
+
+- `RESULT: PASS|FAIL`
+- `VERIFICATION: PASS|FAIL`
+- `MOBILE_UI_TOUCHED: true|false`
+- `IOS_VERIFIED: true|false`
+- `ISSUE_NUMBER: <issue-number>`

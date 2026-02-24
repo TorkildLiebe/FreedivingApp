@@ -7,7 +7,7 @@ Apply these rules when working in `/Users/torkildliebe/FreedivingApp`.
 - Canonical guidance remains in `/Users/torkildliebe/FreedivingApp/.claude/`.
 - Core memory: `/Users/torkildliebe/FreedivingApp/.claude/CLAUDE.md`
 - Rules: `/Users/torkildliebe/FreedivingApp/.claude/rules/`
-- Skills: `/Users/torkildliebe/FreedivingApp/.claude/skills/`
+- Skills: `/Users/torkildliebe/FreedivingApp/.claude/skills/` and codex-native skills under `.agents/skills/`
 
 ## Skills-First + MCP-When-Useful
 
@@ -21,7 +21,9 @@ Apply these rules when working in `/Users/torkildliebe/FreedivingApp`.
 - Testing and verification: `test-backend`, `test-mobile`, `ios-simulator-skill`
 - Quality and policy: `audit-rules`, `security`
 - Product and documentation: `product-copilot`, `sync-docs`
-- Dedicated agent: `vertical-slice-implementor` in `.claude/agents/vertical-slice-implementor.md`
+- Dedicated agents:
+  - `monitor-agent` via codex role config in `.codex/agents.toml`
+  - `vertical-slice-implementor` in `.claude/agents/vertical-slice-implementor.md`
 
 ## Mandatory Lifecycle
 

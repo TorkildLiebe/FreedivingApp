@@ -1,0 +1,137 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Orchestration Run State",
+  "type": "object",
+  "required": [
+    "run_id",
+    "milestone",
+    "status",
+    "started_at",
+    "updated_at",
+    "issue_order",
+    "current_issue",
+    "attempts_by_issue",
+    "completed_issues",
+    "blocked_issue",
+    "stop_reason"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "milestone": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "running",
+        "blocked",
+        "completed",
+        "time_cap_reached"
+      ]
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "issue_order": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "current_issue": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "attempts_by_issue": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "completed_issues": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "blocked_issue": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "stop_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "issues": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "status",
+          "attempts",
+          "note",
+          "history"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "planning",
+              "implementing",
+              "verifying",
+              "committed",
+              "merged_local",
+              "blocked"
+            ]
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "status",
+                "at"
+              ],
+              "properties": {
+                "status": {
+                  "type": "string"
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
