@@ -46,6 +46,10 @@ model DiveSpot {
   createdById         String    @map("created_by_id") @db.Uuid
   accessInfo          String?   @map("access_info") @db.VarChar(1000)
   photoUrls           String[]  @default([]) @map("photo_urls")
+  averageVisibilityMeters Float? @map("average_visibility_meters")
+  averageRating       Float?    @map("average_rating")
+  reportCount         Int       @default(0) @map("report_count")
+  latestReportAt      DateTime? @map("latest_report_at")
   shareUrl            String?   @map("share_url")
   shareableAccessInfo Boolean?  @map("shareable_access_info")
   isDeleted           Boolean   @default(false) @map("is_deleted")

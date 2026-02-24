@@ -254,6 +254,10 @@ export class SpotsService {
       label: string | null;
     }>;
     photoUrls: string[];
+    averageVisibilityMeters: number | null;
+    averageRating: number | null;
+    reportCount: number;
+    latestReportAt: Date | null;
     shareUrl: string | null;
     shareableAccessInfo: boolean | null;
     createdAt: Date;
@@ -276,10 +280,10 @@ export class SpotsService {
       })),
       photoUrls: spot.photoUrls,
       isFavorite: false,
-      averageVisibilityMeters: null,
-      averageRating: null,
-      reportCount: 0,
-      latestReportAt: null,
+      averageVisibilityMeters: spot.averageVisibilityMeters,
+      averageRating: spot.averageRating,
+      reportCount: spot.reportCount,
+      latestReportAt: spot.latestReportAt,
       diveLogs: [],
       shareUrl: spot.shareUrl,
       shareableAccessInfo: spot.shareableAccessInfo,

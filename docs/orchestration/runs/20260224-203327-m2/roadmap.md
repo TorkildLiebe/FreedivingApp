@@ -2,8 +2,8 @@
 
 - Milestone: M2
 - Status: in_progress
-- Current issue: 78
-- Updated at: 2026-02-24T23:23:14.506Z
+- Current issue: none
+- Updated at: 2026-02-24T23:36:53.295Z
 
 | Issue | Title | Status | Attempts | Note |
 | --- | --- | --- | --- | --- |
@@ -12,4 +12,4 @@
 | #75 | Add photo upload and display on spots | committed | 1 |  |
 | #76 | Build spot creation flow (map pin + form) | committed | 1 |  |
 | #77 | Add favorite toggle for spots | committed | 1 |  |
-| #78 | Show ratings summary on spot detail | pending | 0 |  |
+| #78 | Show ratings summary on spot detail | committed | 1 |  |

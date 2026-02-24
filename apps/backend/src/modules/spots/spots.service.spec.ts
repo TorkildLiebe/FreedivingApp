@@ -38,6 +38,10 @@ describe('SpotsService', () => {
     createdById: 'uuid-user-1',
     createdBy: { alias: 'TestUser' },
     accessInfo: 'Park at the pier',
+    averageVisibilityMeters: 8.2,
+    averageRating: 4.5,
+    reportCount: 12,
+    latestReportAt: new Date('2026-01-01'),
     shareUrl: null,
     shareableAccessInfo: null,
     isDeleted: false,
@@ -187,16 +191,33 @@ describe('SpotsService', () => {
         ],
         photoUrls: [],
         isFavorite: false,
-        averageVisibilityMeters: null,
-        averageRating: null,
-        reportCount: 0,
-        latestReportAt: null,
+        averageVisibilityMeters: 8.2,
+        averageRating: 4.5,
+        reportCount: 12,
+        latestReportAt: new Date('2026-01-01'),
         diveLogs: [],
         shareUrl: null,
         shareableAccessInfo: null,
         createdAt: new Date('2025-01-01'),
         updatedAt: new Date('2025-01-02'),
       });
+    });
+
+    it('should preserve null summary values when no report aggregates exist', async () => {
+      repository.findById.mockResolvedValue({
+        ...mockSpotDetail,
+        averageVisibilityMeters: null,
+        averageRating: null,
+        reportCount: 0,
+        latestReportAt: null,
+      });
+
+      const result = await service.getById('uuid-spot-1');
+
+      expect(result.averageVisibilityMeters).toBeNull();
+      expect(result.averageRating).toBeNull();
+      expect(result.reportCount).toBe(0);
+      expect(result.latestReportAt).toBeNull();
     });
 
     it('should throw SpotNotFoundOrDeletedError when spot not found', async () => {

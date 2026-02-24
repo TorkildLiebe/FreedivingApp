@@ -3,7 +3,7 @@
   "milestone": "M2",
   "status": "in_progress",
   "started_at": "2026-02-24T19:33:44.771Z",
-  "updated_at": "2026-02-24T23:23:14.506Z",
+  "updated_at": "2026-02-24T23:36:53.295Z",
   "issue_order": [
     73,
     74,
@@ -12,21 +12,22 @@
     77,
     78
   ],
-  "current_issue": 78,
+  "current_issue": null,
   "attempts_by_issue": {
     "73": 1,
     "74": 2,
     "75": 1,
     "76": 1,
     "77": 1,
-    "78": 0
+    "78": 1
   },
   "completed_issues": [
     73,
     74,
     75,
     76,
-    77
+    77,
+    78
   ],
   "blocked_issue": null,
   "stop_reason": null,
@@ -183,13 +184,29 @@
       ]
     },
     "78": {
-      "status": "pending",
-      "attempts": 0,
+      "status": "committed",
+      "attempts": 1,
       "note": null,
       "history": [
         {
           "status": "pending",
           "at": "2026-02-24T19:33:44.771Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-24T23:30:48.966Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-24T23:36:51.295Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-24T23:36:52.295Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-24T23:36:53.295Z"
         }
       ]
     }
