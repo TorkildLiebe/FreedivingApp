@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, render } from '@testing-library/react-native';
+import { act, fireEvent, render } from '@testing-library/react-native';
 
 import '@/src/__tests__/mocks/expo-vector-icons.mock';
 
@@ -8,7 +8,12 @@ jest.mock('@/src/features/map/hooks/use-location', () => ({
 }));
 
 jest.mock('@/src/features/map/hooks/use-spots', () => ({
-  useSpots: () => ({ spots: [], isLoading: false, error: null }),
+  useSpots: () => ({
+    spots: [],
+    isLoading: false,
+    error: null,
+    refresh: jest.fn(),
+  }),
 }));
 
 jest.mock('@/src/features/map/hooks/use-spot-detail', () => ({
@@ -27,6 +32,27 @@ jest.mock('@/src/features/map/hooks/use-spot-photo-upload', () => ({
     error: null,
     clearError: jest.fn(),
   }),
+}));
+
+jest.mock('@/src/features/map/hooks/use-create-spot', () => ({
+  useCreateSpot: () => ({
+    createSpot: jest.fn(),
+    isSubmitting: false,
+    error: null,
+    clearError: jest.fn(),
+  }),
+}));
+
+const mockRequestMediaLibraryPermissionsAsync = jest.fn();
+const mockLaunchImageLibraryAsync = jest.fn();
+jest.mock('expo-image-picker', () => ({
+  requestMediaLibraryPermissionsAsync: () =>
+    mockRequestMediaLibraryPermissionsAsync(),
+  launchImageLibraryAsync: (...args: unknown[]) =>
+    mockLaunchImageLibraryAsync(...args),
+  MediaTypeOptions: {
+    Images: 'Images',
+  },
 }));
 
 jest.mock('@/src/features/map/components/map-view', () => {
@@ -56,6 +82,23 @@ jest.mock('@/src/features/map/components/spot-detail-sheet', () => {
         ...props,
       });
     }),
+  };
+});
+
+jest.mock('@/src/features/map/components/create-spot-overlay', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { View } = require('react-native');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const mockReact = require('react');
+  return {
+    __esModule: true,
+    CreateSpotOverlay: (props: any) =>
+      props.visible
+        ? mockReact.createElement(View, {
+            testID: 'create-spot-overlay',
+            ...props,
+          })
+        : null,
   };
 });
 
@@ -112,5 +155,19 @@ describe('MapScreen', () => {
     expect(sheet.props.onAddPhoto).toBeInstanceOf(Function);
     expect(sheet.props.isUploadingPhoto).toBe(false);
     expect(sheet.props.photoUploadError).toBeNull();
+  });
+
+  it('renders create spot button', () => {
+    const { getByTestId } = render(<MapScreen />);
+    expect(getByTestId('map-start-create-spot-button')).toBeTruthy();
+  });
+
+  it('shows create overlay after tapping create spot button', () => {
+    const { getByTestId } = render(<MapScreen />);
+
+    fireEvent.press(getByTestId('map-start-create-spot-button'));
+
+    expect(getByTestId('create-spot-overlay')).toBeTruthy();
+    expect(getByTestId('create-spot-overlay').props.step).toBe('placing');
   });
 });

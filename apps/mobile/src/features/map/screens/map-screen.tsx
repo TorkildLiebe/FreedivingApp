@@ -1,5 +1,6 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import {
   DEFAULT_CENTER,
   DEFAULT_ZOOM,
@@ -10,12 +11,17 @@ import { useLocation } from '@/src/features/map/hooks/use-location';
 import { useSpots } from '@/src/features/map/hooks/use-spots';
 import { useSpotDetail } from '@/src/features/map/hooks/use-spot-detail';
 import { useSpotPhotoUpload } from '@/src/features/map/hooks/use-spot-photo-upload';
+import {
+  useCreateSpot,
+  type PendingSpotPhoto,
+} from '@/src/features/map/hooks/use-create-spot';
 import { MapFloatingButton } from '@/src/features/map/components/map-floating-button';
 import { MapView, type MapViewHandle } from '@/src/features/map/components/map-view';
 import {
   SpotDetailSheet,
   type SpotDetailSheetHandle,
 } from '@/src/features/map/components/spot-detail-sheet';
+import { CreateSpotOverlay } from '@/src/features/map/components/create-spot-overlay';
 import type { BBox, ParkingLocation, SpotDetail } from '@/src/features/map/types';
 import { FrostedGlass } from '@/src/shared/components/FrostedGlass';
 import { colors } from '@/src/shared/theme';
@@ -28,7 +34,27 @@ export default function MapScreen() {
   const [bbox, setBbox] = useState<BBox | null>(null);
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const { spots } = useSpots(bbox);
+  const devCreateStep =
+    process.env.NODE_ENV === 'development'
+      ? process.env.EXPO_PUBLIC_DEV_CREATE_STEP
+      : undefined;
+  const devCreateLat = Number(process.env.EXPO_PUBLIC_DEV_CREATE_LAT);
+  const devCreateLon = Number(process.env.EXPO_PUBLIC_DEV_CREATE_LON);
+  const initialCreateStep: 'idle' | 'placing' | 'form' =
+    devCreateStep === 'placing' || devCreateStep === 'form'
+      ? devCreateStep
+      : 'idle';
+
+  const [createStep, setCreateStep] = useState<'idle' | 'placing' | 'form'>(
+    initialCreateStep,
+  );
+  const [createTitle, setCreateTitle] = useState('');
+  const [createDescription, setCreateDescription] = useState('');
+  const [createAccessInfo, setCreateAccessInfo] = useState('');
+  const [createPhotos, setCreatePhotos] = useState<PendingSpotPhoto[]>([]);
+  const [createLocalError, setCreateLocalError] = useState<string | null>(null);
+  const [isPickingCreatePhotos, setIsPickingCreatePhotos] = useState(false);
+  const { spots, refresh: refreshSpots } = useSpots(bbox);
   const { spot, isLoading: isSpotLoading, refresh } = useSpotDetail(selectedSpotId);
   const {
     uploadPhoto,
@@ -38,8 +64,34 @@ export default function MapScreen() {
   } = useSpotPhotoUpload({
     onUploaded: refresh,
   });
+  const {
+    createSpot,
+    isSubmitting: isCreatingSpot,
+    error: createError,
+    clearError: clearCreateError,
+  } = useCreateSpot();
 
   const center = location ?? DEFAULT_CENTER;
+  const mapCenter = useMemo(
+    () => {
+      if (
+        process.env.NODE_ENV === 'development' &&
+        Number.isFinite(devCreateLat) &&
+        Number.isFinite(devCreateLon)
+      ) {
+        return { lat: devCreateLat, lng: devCreateLon };
+      }
+
+      return bbox
+        ? {
+            lat: (bbox.latMin + bbox.latMax) / 2,
+            lng: (bbox.lonMin + bbox.lonMax) / 2,
+          }
+        : center;
+    },
+    [bbox, center, devCreateLat, devCreateLon],
+  );
+  const activeCreateError = createLocalError ?? createError;
 
   const filteredSpots = searchQuery.trim()
     ? spots.filter((s) => s.title.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -61,9 +113,12 @@ export default function MapScreen() {
   }
 
   const handleSpotPress = useCallback((spotId: string) => {
+    if (createStep !== 'idle') {
+      return;
+    }
     clearPhotoUploadError();
     setSelectedSpotId(spotId);
-  }, [clearPhotoUploadError]);
+  }, [clearPhotoUploadError, createStep]);
 
   const handleParkingPress = useCallback((parking: ParkingLocation) => {
     mapRef.current?.flyTo({ lat: parking.lat, lng: parking.lon }, 16);
@@ -81,6 +136,113 @@ export default function MapScreen() {
     },
     [uploadPhoto],
   );
+
+  const resetCreateForm = useCallback(() => {
+    setCreateStep('idle');
+    setCreateTitle('');
+    setCreateDescription('');
+    setCreateAccessInfo('');
+    setCreatePhotos([]);
+    setCreateLocalError(null);
+    clearCreateError();
+  }, [clearCreateError]);
+
+  const handleStartCreate = useCallback(() => {
+    clearPhotoUploadError();
+    setSelectedSpotId(null);
+    setCreateLocalError(null);
+    clearCreateError();
+    setCreateStep('placing');
+  }, [clearCreateError, clearPhotoUploadError]);
+
+  const handlePickCreatePhotos = useCallback(async () => {
+    if (createPhotos.length >= 5 || isCreatingSpot) {
+      return;
+    }
+
+    setIsPickingCreatePhotos(true);
+    setCreateLocalError(null);
+
+    try {
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permission.status !== 'granted') {
+        setCreateLocalError('Photo library permission is required.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.85,
+        allowsEditing: false,
+        allowsMultipleSelection: true,
+        selectionLimit: 5 - createPhotos.length,
+      });
+
+      if (result.canceled || result.assets.length === 0) {
+        return;
+      }
+
+      setCreatePhotos((previous) => {
+        const remainingSlots = 5 - previous.length;
+        const nextPhotos = result.assets.slice(0, remainingSlots).map((asset) => ({
+          uri: asset.uri,
+          mimeType: asset.mimeType ?? 'image/jpeg',
+        }));
+        return [...previous, ...nextPhotos].slice(0, 5);
+      });
+    } catch (photoError) {
+      console.warn('Failed to pick create-spot photos:', photoError);
+      setCreateLocalError('Failed to select photos. Please try again.');
+    } finally {
+      setIsPickingCreatePhotos(false);
+    }
+  }, [createPhotos.length, isCreatingSpot]);
+
+  const handleSubmitCreate = useCallback(async () => {
+    if (!createTitle.trim()) {
+      setCreateLocalError('Spot name is required.');
+      return;
+    }
+
+    setCreateLocalError(null);
+    clearCreateError();
+
+    try {
+      const createdSpot = await createSpot({
+        title: createTitle,
+        description: createDescription,
+        accessInfo: createAccessInfo,
+        centerLat: mapCenter.lat,
+        centerLon: mapCenter.lng,
+        photos: createPhotos,
+      });
+
+      resetCreateForm();
+      refreshSpots();
+      setSelectedSpotId(createdSpot.id);
+      mapRef.current?.flyTo(
+        {
+          lat: createdSpot.centerLat,
+          lng: createdSpot.centerLon,
+        },
+        14,
+      );
+    } catch {
+      // Hook already stores and exposes user-facing error text.
+    }
+  }, [
+    clearCreateError,
+    createAccessInfo,
+    createDescription,
+    createPhotos,
+    createSpot,
+    createTitle,
+    mapCenter.lat,
+    mapCenter.lng,
+    refreshSpots,
+    resetCreateForm,
+  ]);
 
   return (
     <View style={styles.container}>
@@ -121,6 +283,12 @@ export default function MapScreen() {
         style={styles.layerButton}
       />
       <MapFloatingButton
+        testID="map-start-create-spot-button"
+        onPress={handleStartCreate}
+        iconName="plus"
+        style={styles.createButton}
+      />
+      <MapFloatingButton
         testID="map-center-on-me-button"
         onPress={handleCenterOnMe}
         iconName="crosshairs"
@@ -128,13 +296,40 @@ export default function MapScreen() {
       />
       <SpotDetailSheet
         ref={sheetRef}
-        spot={spot}
-        isLoading={isSpotLoading}
+        spot={createStep === 'idle' ? spot : null}
+        isLoading={createStep === 'idle' ? isSpotLoading : false}
         onDismiss={handleSheetDismiss}
         onParkingPress={handleParkingPress}
         onAddPhoto={handleAddPhoto}
         isUploadingPhoto={isUploadingPhoto}
         photoUploadError={photoUploadError}
+      />
+      <CreateSpotOverlay
+        visible={createStep !== 'idle'}
+        step={createStep === 'placing' ? 'placing' : 'form'}
+        pinCoordinate={mapCenter}
+        title={createTitle}
+        description={createDescription}
+        accessInfo={createAccessInfo}
+        photos={createPhotos}
+        isSubmitting={isCreatingSpot}
+        isPickingPhotos={isPickingCreatePhotos}
+        error={activeCreateError}
+        onCancel={resetCreateForm}
+        onConfirmPin={() => setCreateStep('form')}
+        onBackToPin={() => setCreateStep('placing')}
+        onSubmit={() => {
+          void handleSubmitCreate();
+        }}
+        onPickPhotos={() => {
+          void handlePickCreatePhotos();
+        }}
+        onRemovePhoto={(index) => {
+          setCreatePhotos((photos) => photos.filter((_, i) => i !== index));
+        }}
+        onTitleChange={setCreateTitle}
+        onDescriptionChange={setCreateDescription}
+        onAccessInfoChange={setCreateAccessInfo}
       />
     </View>
   );
@@ -175,6 +370,11 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   layerButton: {
+    position: 'absolute',
+    bottom: 136,
+    right: 16,
+  },
+  createButton: {
     position: 'absolute',
     bottom: 80,
     right: 16,

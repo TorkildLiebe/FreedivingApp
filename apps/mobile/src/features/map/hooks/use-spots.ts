@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiFetch } from '@/src/infrastructure/api/client';
 import type { BBox, ListSpotsResponse, SpotSummary } from '@/src/features/map/types';
 
@@ -10,12 +10,13 @@ export function useSpots(bbox: BBox | null) {
   const [spots, setSpots] = useState<SpotSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
   const lastKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!bbox) return;
 
-    const key = bboxToKey(bbox);
+    const key = `${bboxToKey(bbox)}::${refreshTick}`;
     if (key === lastKeyRef.current) return;
     lastKeyRef.current = key;
 
@@ -54,7 +55,11 @@ export function useSpots(bbox: BBox | null) {
     return () => {
       cancelled = true;
     };
-  }, [bbox]);
+  }, [bbox, refreshTick]);
 
-  return { spots, isLoading, error };
+  const refresh = useCallback(() => {
+    setRefreshTick((current) => current + 1);
+  }, []);
+
+  return { spots, isLoading, error, refresh };
 }
