@@ -26,6 +26,7 @@ jest.mock('@maplibre/maplibre-react-native', () => {
       PointAnnotation: create('PointAnnotation'),
       ShapeSource: create('ShapeSource'),
       CircleLayer: create('CircleLayer'),
+      SymbolLayer: create('SymbolLayer'),
       RasterSource: create('RasterSource'),
       RasterLayer: create('RasterLayer'),
     },
@@ -34,6 +35,7 @@ jest.mock('@maplibre/maplibre-react-native', () => {
     PointAnnotation: create('PointAnnotation'),
     ShapeSource: create('ShapeSource'),
     CircleLayer: create('CircleLayer'),
+    SymbolLayer: create('SymbolLayer'),
     RasterSource: create('RasterSource'),
     RasterLayer: create('RasterLayer'),
   };
@@ -84,6 +86,33 @@ describe('MapView.native', () => {
     expect(layers).toHaveLength(2);
     expect(layers[0].props.id).toBe('spot-clusters');
     expect(layers[1].props.id).toBe('spot-unclustered');
+  });
+
+  it('renders SymbolLayer for cluster count labels', () => {
+    const { getByTestId } = render(
+      <MapView {...defaultProps} spots={spots} />,
+    );
+    const labelLayer = getByTestId('SymbolLayer');
+    expect(labelLayer.props.id).toBe('spot-cluster-count');
+    expect(labelLayer.props.style.textField).toEqual([
+      'get',
+      'point_count_abbreviated',
+    ]);
+  });
+
+  it('highlights selected marker with larger radius style', () => {
+    const { getAllByTestId } = render(
+      <MapView {...defaultProps} spots={spots} selectedSpotId="2" />,
+    );
+    const layers = getAllByTestId('CircleLayer');
+    const unclustered = layers.find((layer) => layer.props.id === 'spot-unclustered');
+    expect(unclustered).toBeDefined();
+    expect(unclustered?.props.style.circleRadius).toEqual([
+      'case',
+      ['==', ['get', 'id'], '2'],
+      11,
+      7,
+    ]);
   });
 
   it('renders user location PointAnnotation when location provided', () => {

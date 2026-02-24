@@ -86,6 +86,7 @@ export default function MapScreen() {
         center={center}
         zoom={DEFAULT_ZOOM}
         location={location}
+        selectedSpotId={selectedSpotId}
         spots={filteredSpots}
         parkingLocations={spot?.parkingLocations}
         onRegionDidChange={setBbox}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { act, render } from '@testing-library/react-native';
 
 import '@/src/__tests__/mocks/expo-vector-icons.mock';
 
@@ -72,6 +72,18 @@ describe('MapScreen', () => {
     const mapView = getByTestId('map-view');
     expect(mapView.props.onSpotPress).toBeInstanceOf(Function);
     expect(mapView.props.onParkingPress).toBeInstanceOf(Function);
+    expect(mapView.props.selectedSpotId).toBeNull();
+  });
+
+  it('updates selectedSpotId when a spot marker is pressed', () => {
+    const { getByTestId } = render(<MapScreen />);
+    const mapView = getByTestId('map-view');
+
+    act(() => {
+      mapView.props.onSpotPress('spot-123');
+    });
+
+    expect(getByTestId('map-view').props.selectedSpotId).toBe('spot-123');
   });
 
   it('renders SpotDetailSheet', () => {

@@ -40,6 +40,7 @@ const mapLibreTestShim = {
   PointAnnotation: createTestMapComponent('PointAnnotation'),
   ShapeSource: createTestMapComponent('ShapeSource'),
   CircleLayer: createTestMapComponent('CircleLayer'),
+  SymbolLayer: createTestMapComponent('SymbolLayer'),
   RasterSource: createTestMapComponent('RasterSource'),
   RasterLayer: createTestMapComponent('RasterLayer'),
 };
@@ -56,6 +57,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
       center,
       zoom,
       location,
+      selectedSpotId,
       spots,
       parkingLocations,
       onRegionDidChange,
@@ -195,12 +197,32 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
               circleStrokeColor: '#fff',
             }}
           />
+          <resolvedMapLibre.SymbolLayer
+            id="spot-cluster-count"
+            filter={['has', 'point_count']}
+            style={{
+              textField: ['get', 'point_count_abbreviated'],
+              textSize: 12,
+              textColor: '#fff',
+              textPitchAlignment: 'map',
+            }}
+          />
           <resolvedMapLibre.CircleLayer
             id="spot-unclustered"
             filter={['!', ['has', 'point_count']]}
             style={{
-              circleColor: '#E8632B',
-              circleRadius: 7,
+              circleColor: [
+                'case',
+                ['==', ['get', 'id'], selectedSpotId ?? ''],
+                '#0C4A6E',
+                '#E8632B',
+              ],
+              circleRadius: [
+                'case',
+                ['==', ['get', 'id'], selectedSpotId ?? ''],
+                11,
+                7,
+              ],
               circleStrokeWidth: 2,
               circleStrokeColor: '#fff',
             }}

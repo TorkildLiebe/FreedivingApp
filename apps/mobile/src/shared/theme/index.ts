@@ -1,2 +1,2 @@
-export { colors } from './colors';
+export { colors } from './Colors';
 export { typography, typographyFallback } from './typography';

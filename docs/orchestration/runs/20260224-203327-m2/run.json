@@ -1,0 +1,113 @@
+{
+  "run_id": "20260224-203327-m2",
+  "milestone": "M2",
+  "status": "running",
+  "started_at": "2026-02-24T19:33:44.771Z",
+  "updated_at": "2026-02-24T19:58:58.675Z",
+  "issue_order": [
+    73,
+    74,
+    75,
+    76,
+    77,
+    78
+  ],
+  "current_issue": 74,
+  "attempts_by_issue": {
+    "73": 1,
+    "74": 0,
+    "75": 0,
+    "76": 0,
+    "77": 0,
+    "78": 0
+  },
+  "completed_issues": [
+    73
+  ],
+  "blocked_issue": null,
+  "stop_reason": null,
+  "issues": {
+    "73": {
+      "status": "committed",
+      "attempts": 1,
+      "note": null,
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-24T19:33:44.771Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-24T19:34:24.079Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-24T19:54:36.563Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-24T19:54:36.563Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-24T19:58:58.675Z"
+        }
+      ]
+    },
+    "74": {
+      "status": "pending",
+      "attempts": 0,
+      "note": null,
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-24T19:33:44.771Z"
+        }
+      ]
+    },
+    "75": {
+      "status": "pending",
+      "attempts": 0,
+      "note": null,
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-24T19:33:44.771Z"
+        }
+      ]
+    },
+    "76": {
+      "status": "pending",
+      "attempts": 0,
+      "note": null,
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-24T19:33:44.771Z"
+        }
+      ]
+    },
+    "77": {
+      "status": "pending",
+      "attempts": 0,
+      "note": null,
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-24T19:33:44.771Z"
+        }
+      ]
+    },
+    "78": {
+      "status": "pending",
+      "attempts": 0,
+      "note": null,
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-24T19:33:44.771Z"
+        }
+      ]
+    }
+  }
+}

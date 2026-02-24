@@ -5,6 +5,7 @@ export interface MapViewProps {
   center: { lat: number; lng: number };
   zoom: number;
   location: { lat: number; lng: number } | null;
+  selectedSpotId?: string | null;
   spots?: SpotSummary[];
   parkingLocations?: ParkingLocation[];
   onRegionDidChange?: (bbox: BBox) => void;
