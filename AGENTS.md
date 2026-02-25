@@ -109,6 +109,15 @@ Mirror `.claude/hooks` behavior through explicit task flow:
 
 Use these explicit commands to run hook-equivalent checks in Codex:
 
+- `./.codex/hooks/run-hook.sh pre-edit -- <file_path>`
+- `./.codex/hooks/run-hook.sh post-edit -- <file_path>`
+- `./.codex/hooks/run-hook.sh pre-edit -- <file1> <file2> <file3>` (batch, fail-fast)
+- `./.codex/hooks/run-hook.sh post-edit -- <file1> <file2> <file3>` (batch, fail-fast)
+- `./.codex/hooks/run-hook.sh pre-commit`
+- `./.codex/hooks/run-hook.sh post-test -- "<command_string>"`
+
+Compatibility fallback commands:
+
 - `pnpm codex:hook:pre-edit -- <file_path>`
 - `pnpm codex:hook:post-edit -- <file_path>`
 - `pnpm codex:hook:pre-commit`
