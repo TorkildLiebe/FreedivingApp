@@ -175,6 +175,7 @@ beforeEach(() => {
   });
   mockUseDiveLogSubmit.mockReturnValue({
     submitDiveLog: jest.fn(),
+    updateDiveLog: jest.fn(),
     isSubmitting: false,
     isUploadingPhotos: false,
     error: null,
@@ -185,6 +186,7 @@ beforeEach(() => {
   mockUseFavoriteSpots.mockReturnValue({
     isAuthenticated: true,
     favoriteSpotIds: [],
+    currentUserId: 'user-1',
     toggleFavoriteSpot: mockToggleFavoriteSpot,
   });
 
@@ -270,6 +272,7 @@ describe('MapScreen', () => {
     mockUseFavoriteSpots.mockReturnValue({
       isAuthenticated: true,
       favoriteSpotIds: ['spot-123'],
+      currentUserId: 'user-1',
       toggleFavoriteSpot: mockToggleFavoriteSpot,
     });
 
@@ -289,6 +292,7 @@ describe('MapScreen', () => {
     mockUseFavoriteSpots.mockReturnValue({
       isAuthenticated: true,
       favoriteSpotIds: ['spot-123'],
+      currentUserId: 'user-1',
       toggleFavoriteSpot: mockToggleFavoriteSpot,
     });
 
@@ -313,6 +317,7 @@ describe('MapScreen', () => {
     mockUseFavoriteSpots.mockReturnValue({
       isAuthenticated: false,
       favoriteSpotIds: [],
+      currentUserId: null,
       toggleFavoriteSpot: mockToggleFavoriteSpot,
     });
 

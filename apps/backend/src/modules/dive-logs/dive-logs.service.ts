@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
+  DiveLogNotFoundError,
+  ForbiddenError,
   InvalidDiveLogError,
   SpotNotFoundOrDeletedError,
 } from '../../common/errors';
@@ -9,10 +11,12 @@ import { CreateDiveLogPhotoUploadUrlDto } from './dto/create-dive-log-photo-uplo
 import { CreateDiveLogResponseDto } from './dto/create-dive-log-response.dto';
 import { DiveLogPhotoUploadUrlResponseDto } from './dto/dive-log-photo-upload-url-response.dto';
 import { DiveLogResponseDto } from './dto/dive-log-response.dto';
+import { UpdateDiveLogDto } from './dto/update-dive-log.dto';
 import { DiveLogPhotoStorageService } from './dive-log-photo-storage.service';
 import { DiveLogsRepository } from './dive-logs.repository';
 
 const MAX_PHOTOS_PER_DIVE_LOG = 5;
+const EDIT_WINDOW_MS = 48 * 60 * 60 * 1000;
 
 @Injectable()
 export class DiveLogsService {
@@ -67,6 +71,58 @@ export class DiveLogsService {
     return this.diveLogPhotoStorage.createUploadUrl(dto.spotId, dto.mimeType);
   }
 
+  async update(
+    diveLogId: string,
+    dto: UpdateDiveLogDto,
+    actor: AuthenticatedUser,
+  ): Promise<DiveLogResponseDto> {
+    const existing = await this.diveLogsRepository.findDiveLogById(diveLogId);
+    if (!existing || existing.isDeleted) {
+      throw new DiveLogNotFoundError(diveLogId);
+    }
+
+    if (existing.authorId !== actor.userId) {
+      throw new ForbiddenError('only dive-log owner may edit this dive log');
+    }
+
+    const createdAtMs = existing.createdAt.getTime();
+    if (Date.now() - createdAtMs > EDIT_WINDOW_MS) {
+      throw new InvalidDiveLogError('Dive log edit window has expired');
+    }
+
+    const updateData: {
+      visibilityMeters?: number;
+      currentStrength?: number;
+      notes?: string | null;
+      photoUrls?: string[];
+      divedAt?: Date;
+    } = {};
+
+    if (dto.visibilityMeters !== undefined) {
+      updateData.visibilityMeters = dto.visibilityMeters;
+    }
+    if (dto.currentStrength !== undefined) {
+      updateData.currentStrength = dto.currentStrength;
+    }
+    if (dto.divedAt !== undefined) {
+      updateData.divedAt = this.parseAndValidateDivedAt(dto.divedAt);
+    }
+    if (dto.notes !== undefined) {
+      updateData.notes = this.normalizeNotes(dto.notes);
+    }
+    if (dto.photoUrls !== undefined) {
+      updateData.photoUrls = this.normalizePhotoUrls(dto.photoUrls);
+    }
+
+    const updated = await this.diveLogsRepository.updateDiveLog(
+      diveLogId,
+      existing.spotId,
+      updateData,
+    );
+
+    return this.toDiveLogResponse(updated);
+  }
+
   private parseAndValidateDivedAt(divedAt?: string): Date {
     if (!divedAt) {
       return new Date();
@@ -84,7 +140,7 @@ export class DiveLogsService {
     return parsed;
   }
 
-  private normalizeNotes(notes?: string): string | null {
+  private normalizeNotes(notes?: string | null): string | null {
     if (notes == null) {
       return null;
     }

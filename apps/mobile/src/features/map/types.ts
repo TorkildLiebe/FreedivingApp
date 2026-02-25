@@ -27,18 +27,18 @@ export interface ParkingLocation {
 
 export interface DiveLogPreview {
   id: string;
-  spotId?: string;
-  authorId?: string;
+  spotId: string;
+  authorId: string;
   authorAlias: string | null;
   authorAvatarUrl: string | null;
   visibilityMeters: number;
   currentStrength: number;
-  notesPreview?: string | null;
-  notes?: string | null;
-  photoUrls?: string[];
+  notesPreview: string | null;
+  notes: string | null;
+  photoUrls: string[];
   divedAt: string;
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface SpotDetail {

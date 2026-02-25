@@ -307,10 +307,15 @@ export class SpotsService {
     },
     diveLogs: Array<{
       id: string;
+      spotId: string;
+      authorId: string;
       visibilityMeters: number;
       currentStrength: number;
       notes: string | null;
+      photoUrls: string[];
       divedAt: Date;
+      createdAt: Date;
+      updatedAt: Date;
       author: {
         alias: string | null;
         avatarUrl: string | null;
@@ -348,10 +353,15 @@ export class SpotsService {
 
   private toDiveLogPreview(diveLog: {
     id: string;
+    spotId: string;
+    authorId: string;
     visibilityMeters: number;
     currentStrength: number;
     notes: string | null;
+    photoUrls: string[];
     divedAt: Date;
+    createdAt: Date;
+    updatedAt: Date;
     author: {
       alias: string | null;
       avatarUrl: string | null;
@@ -359,12 +369,18 @@ export class SpotsService {
   }) {
     return {
       id: diveLog.id,
+      spotId: diveLog.spotId,
+      authorId: diveLog.authorId,
       authorAlias: diveLog.author.alias,
       authorAvatarUrl: diveLog.author.avatarUrl,
       visibilityMeters: diveLog.visibilityMeters,
       currentStrength: diveLog.currentStrength,
+      notes: diveLog.notes,
+      photoUrls: diveLog.photoUrls,
       notesPreview: this.createNotesPreview(diveLog.notes),
       divedAt: diveLog.divedAt,
+      createdAt: diveLog.createdAt,
+      updatedAt: diveLog.updatedAt,
     };
   }
 

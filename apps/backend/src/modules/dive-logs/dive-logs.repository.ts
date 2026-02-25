@@ -64,4 +64,49 @@ export class DiveLogsRepository {
       return diveLog;
     });
   }
+
+  async findDiveLogById(id: string) {
+    return this.prisma.diveLog.findFirst({
+      where: { id },
+      include: DIVE_LOG_WITH_AUTHOR_INCLUDE,
+    });
+  }
+
+  async updateDiveLog(
+    id: string,
+    spotId: string,
+    data: {
+      visibilityMeters?: number;
+      currentStrength?: number;
+      notes?: string | null;
+      photoUrls?: string[];
+      divedAt?: Date;
+    },
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const diveLog = await tx.diveLog.update({
+        where: { id },
+        data,
+        include: DIVE_LOG_WITH_AUTHOR_INCLUDE,
+      });
+
+      const aggregates = await tx.diveLog.aggregate({
+        where: { spotId, isDeleted: false },
+        _avg: { visibilityMeters: true },
+        _count: { _all: true },
+        _max: { divedAt: true },
+      });
+
+      await tx.diveSpot.update({
+        where: { id: spotId },
+        data: {
+          averageVisibilityMeters: aggregates._avg.visibilityMeters,
+          reportCount: aggregates._count._all,
+          latestReportAt: aggregates._max.divedAt,
+        },
+      });
+
+      return diveLog;
+    });
+  }
 }

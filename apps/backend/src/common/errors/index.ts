@@ -9,3 +9,4 @@ export { InvalidPhotoUrlError } from './invalid-photo-url.error';
 export { TooManyPhotosError } from './too-many-photos.error';
 export { DuplicatePhotoUrlError } from './duplicate-photo-url.error';
 export { InvalidDiveLogError } from './invalid-dive-log.error';
+export { DiveLogNotFoundError } from './dive-log-not-found.error';
