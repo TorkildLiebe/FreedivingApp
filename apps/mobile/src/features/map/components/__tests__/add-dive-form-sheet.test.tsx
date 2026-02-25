@@ -80,4 +80,45 @@ describe('AddDiveFormSheet', () => {
 
     expect(getByText('Dive date cannot be in the future.')).toBeTruthy();
   });
+
+  it('prefills edit mode values and submits save payload', async () => {
+    const onSubmit = jest.fn().mockResolvedValue(undefined);
+    const { getByText, getByTestId } = render(
+      <AddDiveFormSheet
+        visible
+        mode="edit"
+        initialValues={{
+          visibilityMeters: 12,
+          currentStrength: 4,
+          divedAt: '2026-02-24T10:00:00.000Z',
+          notes: 'Original notes',
+          photoUrls: ['https://example.com/photo-1.jpg'],
+        }}
+        spotName="Langoyene"
+        isSubmitting={false}
+        error={null}
+        onDismiss={jest.fn()}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    expect(getByText('Edit Dive')).toBeTruthy();
+    expect(getByText('12 m')).toBeTruthy();
+    fireEvent.press(getByTestId('add-dive-next-button'));
+
+    await act(async () => {
+      fireEvent.press(getByTestId('add-dive-submit-button'));
+    });
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+    });
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        visibilityMeters: 12,
+        currentStrength: 4,
+        existingPhotoUrls: ['https://example.com/photo-1.jpg'],
+      }),
+    );
+  });
 });

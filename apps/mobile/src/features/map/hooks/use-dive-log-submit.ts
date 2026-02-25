@@ -3,6 +3,7 @@ import { ApiError, apiFetch } from '@/src/infrastructure/api/client';
 import type {
   CreateDiveLogResponse,
   CreateDiveLogInput,
+  DiveLogPreview,
 } from '@/src/features/map/types';
 import {
   useDiveLogPhotoUpload,
@@ -12,6 +13,15 @@ import {
 interface SubmitDiveLogInput {
   payload: Omit<CreateDiveLogInput, 'photoUrls'>;
   photos: PendingDiveLogPhoto[];
+  existingPhotoUrls?: string[];
+}
+
+interface UpdateDiveLogInput {
+  diveLogId: string;
+  spotId: string;
+  payload: Omit<CreateDiveLogInput, 'spotId' | 'photoUrls'>;
+  photos: PendingDiveLogPhoto[];
+  existingPhotoUrls: string[];
 }
 
 interface UseDiveLogSubmitOptions {
@@ -29,7 +39,11 @@ export function useDiveLogSubmit(options?: UseDiveLogSubmitOptions) {
   } = useDiveLogPhotoUpload();
 
   const submitDiveLog = useCallback(
-    async ({ payload, photos }: SubmitDiveLogInput): Promise<CreateDiveLogResponse> => {
+    async ({
+      payload,
+      photos,
+      existingPhotoUrls = [],
+    }: SubmitDiveLogInput): Promise<CreateDiveLogResponse> => {
       setIsSubmitting(true);
       setError(null);
       clearPhotoUploadError();
@@ -40,7 +54,7 @@ export function useDiveLogSubmit(options?: UseDiveLogSubmitOptions) {
           method: 'POST',
           body: JSON.stringify({
             ...payload,
-            photoUrls: uploadedPhotoUrls,
+            photoUrls: [...existingPhotoUrls, ...uploadedPhotoUrls],
           }),
         });
 
@@ -61,6 +75,45 @@ export function useDiveLogSubmit(options?: UseDiveLogSubmitOptions) {
     [clearPhotoUploadError, options, uploadPhotos],
   );
 
+  const updateDiveLog = useCallback(
+    async ({
+      diveLogId,
+      spotId,
+      payload,
+      photos,
+      existingPhotoUrls,
+    }: UpdateDiveLogInput): Promise<DiveLogPreview> => {
+      setIsSubmitting(true);
+      setError(null);
+      clearPhotoUploadError();
+
+      try {
+        const uploadedPhotoUrls = await uploadPhotos(spotId, photos);
+        const response = await apiFetch<DiveLogPreview>(`/dive-logs/${diveLogId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            ...payload,
+            photoUrls: [...existingPhotoUrls, ...uploadedPhotoUrls],
+          }),
+        });
+
+        await options?.onSubmitted?.();
+        return response;
+      } catch (submitError) {
+        if (submitError instanceof ApiError) {
+          setError(submitError.message);
+        } else {
+          setError('Failed to update dive log. Please try again.');
+        }
+
+        throw submitError;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [clearPhotoUploadError, options, uploadPhotos],
+  );
+
   const clearError = useCallback(() => {
     setError(null);
     clearPhotoUploadError();
@@ -68,6 +121,7 @@ export function useDiveLogSubmit(options?: UseDiveLogSubmitOptions) {
 
   return {
     submitDiveLog,
+    updateDiveLog,
     isSubmitting,
     isUploadingPhotos: isUploading,
     error: error ?? photoUploadError,

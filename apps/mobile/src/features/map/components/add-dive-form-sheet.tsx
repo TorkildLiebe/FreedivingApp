@@ -53,11 +53,22 @@ interface AddDiveFormSubmitValues {
   divedAt: string;
   notes: string | null;
   photos: PendingDiveLogPhoto[];
+  existingPhotoUrls: string[];
+}
+
+interface AddDiveFormInitialValues {
+  visibilityMeters: number;
+  currentStrength: 1 | 2 | 3 | 4 | 5;
+  divedAt: string;
+  notes: string | null;
+  photoUrls: string[];
 }
 
 interface AddDiveFormSheetProps {
   visible: boolean;
   spotName: string;
+  mode?: 'create' | 'edit';
+  initialValues?: AddDiveFormInitialValues | null;
   isSubmitting: boolean;
   error: string | null;
   onDismiss: () => void;
@@ -67,6 +78,8 @@ interface AddDiveFormSheetProps {
 export function AddDiveFormSheet({
   visible,
   spotName,
+  mode = 'create',
+  initialValues = null,
   isSubmitting,
   error,
   onDismiss,
@@ -77,6 +90,7 @@ export function AddDiveFormSheet({
   const [currentStrength, setCurrentStrength] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [diveDate, setDiveDate] = useState(todayDateInputValue);
   const [notes, setNotes] = useState('');
+  const [existingPhotoUrls, setExistingPhotoUrls] = useState<string[]>([]);
   const [photos, setPhotos] = useState<PendingDiveLogPhoto[]>([]);
   const [isPickingPhotos, setIsPickingPhotos] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -87,14 +101,19 @@ export function AddDiveFormSheet({
     }
 
     setStep(1);
-    setVisibilityMeters(8);
-    setCurrentStrength(1);
-    setDiveDate(todayDateInputValue());
-    setNotes('');
+    setVisibilityMeters(initialValues?.visibilityMeters ?? 8);
+    setCurrentStrength(initialValues?.currentStrength ?? 1);
+    setDiveDate(
+      initialValues?.divedAt
+        ? initialValues.divedAt.slice(0, 10)
+        : todayDateInputValue(),
+    );
+    setNotes(initialValues?.notes ?? '');
+    setExistingPhotoUrls(initialValues?.photoUrls ?? []);
     setPhotos([]);
     setIsPickingPhotos(false);
     setLocalError(null);
-  }, [visible]);
+  }, [initialValues, visible]);
 
   const activeError = localError ?? error;
 
@@ -104,7 +123,11 @@ export function AddDiveFormSheet({
   );
 
   const handleAddPhotos = async () => {
-    if (isSubmitting || isPickingPhotos || photos.length >= 5) {
+    if (
+      isSubmitting ||
+      isPickingPhotos ||
+      existingPhotoUrls.length + photos.length >= 5
+    ) {
       return;
     }
 
@@ -123,7 +146,7 @@ export function AddDiveFormSheet({
         quality: 0.85,
         allowsEditing: false,
         allowsMultipleSelection: true,
-        selectionLimit: 5 - photos.length,
+        selectionLimit: 5 - existingPhotoUrls.length - photos.length,
       });
 
       if (result.canceled || !Array.isArray(result.assets) || result.assets.length === 0) {
@@ -139,7 +162,7 @@ export function AddDiveFormSheet({
       }
 
       setPhotos((previous) => {
-        const slots = Math.max(0, 5 - previous.length);
+        const slots = Math.max(0, 5 - existingPhotoUrls.length - previous.length);
         const next = validAssets.slice(0, slots).map((asset) => ({
           uri: asset.uri,
           mimeType: asset.mimeType ?? 'image/jpeg',
@@ -189,6 +212,7 @@ export function AddDiveFormSheet({
       divedAt: diveDate,
       notes: notes.trim().length > 0 ? notes.trim() : null,
       photos,
+      existingPhotoUrls,
     });
   };
 
@@ -200,7 +224,13 @@ export function AddDiveFormSheet({
           <View style={styles.headerRow}>
             <View>
               <Text style={styles.stepLabel}>{`Step ${step} of 2`}</Text>
-              <Text style={styles.title}>{step === 1 ? 'Log a Dive' : 'Notes & Photos'}</Text>
+              <Text style={styles.title}>
+                {step === 1
+                  ? mode === 'edit'
+                    ? 'Edit Dive'
+                    : 'Log a Dive'
+                  : 'Notes & Photos'}
+              </Text>
               <Text style={styles.subtitle}>{spotName}</Text>
             </View>
             <TouchableOpacity
@@ -362,9 +392,26 @@ export function AddDiveFormSheet({
                   <Text style={styles.label}>Photos</Text>
                   <Text style={styles.helperText}>Up to 5 photos from your dive</Text>
                   <View style={styles.photosRow}>
+                    {existingPhotoUrls.map((photoUrl, index) => (
+                      <View key={`${photoUrl}-${index}`} style={styles.photoChip}>
+                        <Text style={styles.photoChipText}>{`Photo ${index + 1}`}</Text>
+                        <TouchableOpacity
+                          testID={`add-dive-remove-existing-photo-${index}`}
+                          onPress={() => {
+                            setExistingPhotoUrls((previous) =>
+                              previous.filter((_, photoIndex) => photoIndex !== index),
+                            );
+                          }}
+                        >
+                          <Text style={styles.photoRemoveText}>x</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
                     {photos.map((photo, index) => (
                       <View key={`${photo.uri}-${index}`} style={styles.photoChip}>
-                        <Text style={styles.photoChipText}>{`Photo ${index + 1}`}</Text>
+                        <Text style={styles.photoChipText}>
+                          {`Photo ${existingPhotoUrls.length + index + 1}`}
+                        </Text>
                         <TouchableOpacity
                           testID={`add-dive-remove-photo-${index}`}
                           onPress={() => {
@@ -381,7 +428,11 @@ export function AddDiveFormSheet({
                       testID="add-dive-add-photo-button"
                       style={styles.addPhotoButton}
                       onPress={handleAddPhotos}
-                      disabled={isSubmitting || isPickingPhotos || photos.length >= 5}
+                      disabled={
+                        isSubmitting ||
+                        isPickingPhotos ||
+                        existingPhotoUrls.length + photos.length >= 5
+                      }
                     >
                       {isPickingPhotos ? (
                         <ActivityIndicator size="small" color={colors.primary[600]} />
@@ -412,7 +463,9 @@ export function AddDiveFormSheet({
                     {isSubmitting ? (
                       <ActivityIndicator color={colors.neutral[50]} />
                     ) : (
-                      <Text style={styles.primaryButtonText}>Submit Dive</Text>
+                      <Text style={styles.primaryButtonText}>
+                        {mode === 'edit' ? 'Save Changes' : 'Submit Dive'}
+                      </Text>
                     )}
                   </TouchableOpacity>
                 </View>

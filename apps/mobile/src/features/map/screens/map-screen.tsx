@@ -28,7 +28,12 @@ import {
 import { AddDiveFormSheet } from '@/src/features/map/components/add-dive-form-sheet';
 import { RatingSheet } from '@/src/features/map/components/rating-sheet';
 import { CreateSpotOverlay } from '@/src/features/map/components/create-spot-overlay';
-import type { BBox, ParkingLocation, SpotDetail } from '@/src/features/map/types';
+import type {
+  BBox,
+  DiveLogPreview,
+  ParkingLocation,
+  SpotDetail,
+} from '@/src/features/map/types';
 import { FrostedGlass } from '@/src/shared/components/FrostedGlass';
 import { colors } from '@/src/shared/theme';
 
@@ -46,7 +51,7 @@ function isConflictError(
 export default function MapScreen() {
   const router = useRouter();
   const navigation = useNavigation();
-  const { isAuthenticated, favoriteSpotIds, toggleFavoriteSpot } =
+  const { isAuthenticated, favoriteSpotIds, toggleFavoriteSpot, currentUserId } =
     useFavoriteSpots();
   const { location } = useLocation();
   const mapRef = useRef<MapViewHandle>(null);
@@ -96,6 +101,9 @@ export default function MapScreen() {
   const [addDiveTargetSpot, setAddDiveTargetSpot] = useState<SpotDetail | null>(
     null,
   );
+  const [editingDiveLog, setEditingDiveLog] = useState<DiveLogPreview | null>(
+    null,
+  );
   const [ratingTargetSpot, setRatingTargetSpot] = useState<{
     spotId: string;
     spotName: string;
@@ -118,6 +126,7 @@ export default function MapScreen() {
   } = useCreateSpot();
   const {
     submitDiveLog,
+    updateDiveLog,
     isSubmitting: isSubmittingDiveLog,
     error: diveLogError,
     clearError: clearDiveLogError,
@@ -219,6 +228,7 @@ export default function MapScreen() {
     clearPhotoUploadError();
     clearDiveLogError();
     setAddDiveTargetSpot(null);
+    setEditingDiveLog(null);
     setSelectedSpotId(null);
   }, [clearDiveLogError, clearPhotoUploadError]);
 
@@ -400,6 +410,16 @@ export default function MapScreen() {
   const handleAddDive = useCallback(
     (targetSpot: SpotDetail) => {
       clearDiveLogError();
+      setEditingDiveLog(null);
+      setAddDiveTargetSpot(targetSpot);
+    },
+    [clearDiveLogError],
+  );
+
+  const handleEditDive = useCallback(
+    (targetSpot: SpotDetail, diveLog: DiveLogPreview) => {
+      clearDiveLogError();
+      setEditingDiveLog(diveLog);
       setAddDiveTargetSpot(targetSpot);
     },
     [clearDiveLogError],
@@ -412,42 +432,61 @@ export default function MapScreen() {
       divedAt,
       notes,
       photos,
+      existingPhotoUrls,
     }: {
       visibilityMeters: number;
       currentStrength: 1 | 2 | 3 | 4 | 5;
       divedAt: string;
       notes: string | null;
       photos: { uri: string; mimeType: string }[];
+      existingPhotoUrls: string[];
     }) => {
       if (!addDiveTargetSpot) {
         return;
       }
 
       try {
-        const response = await submitDiveLog({
-          payload: {
+        if (editingDiveLog) {
+          await updateDiveLog({
+            diveLogId: editingDiveLog.id,
             spotId: addDiveTargetSpot.id,
-            visibilityMeters,
-            currentStrength,
-            divedAt,
-            notes,
-          },
-          photos,
-        });
-
-        setAddDiveTargetSpot(null);
-
-        if (response.shouldPromptRating) {
-          setRatingTargetSpot({
-            spotId: addDiveTargetSpot.id,
-            spotName: addDiveTargetSpot.title,
+            payload: {
+              visibilityMeters,
+              currentStrength,
+              divedAt,
+              notes,
+            },
+            photos,
+            existingPhotoUrls,
           });
+        } else {
+          const response = await submitDiveLog({
+            payload: {
+              spotId: addDiveTargetSpot.id,
+              visibilityMeters,
+              currentStrength,
+              divedAt,
+              notes,
+            },
+            photos,
+            existingPhotoUrls,
+          });
+
+          if (response.shouldPromptRating) {
+            setRatingTargetSpot({
+              spotId: addDiveTargetSpot.id,
+              spotName: addDiveTargetSpot.title,
+            });
+          }
         }
+
+        setEditingDiveLog(null);
+        setAddDiveTargetSpot(null);
       } catch {
         // Error surface is handled in the add-dive sheet via hook state.
       }
     },
-    [addDiveTargetSpot, submitDiveLog],
+    [addDiveTargetSpot, editingDiveLog, submitDiveLog, updateDiveLog],
   );
 
   const handleRateAfterDive = useCallback(
@@ -539,6 +578,8 @@ export default function MapScreen() {
         isUploadingPhoto={isUploadingPhoto}
         photoUploadError={photoUploadError}
         onAddDive={handleAddDive}
+        currentUserId={currentUserId}
+        onEditDive={handleEditDive}
         onUpdateRating={handleUpdateRating}
       />
       <CreateSpotOverlay
@@ -618,10 +659,28 @@ export default function MapScreen() {
       <AddDiveFormSheet
         visible={addDiveTargetSpot !== null}
         spotName={addDiveTargetSpot?.title ?? ''}
+        mode={editingDiveLog ? 'edit' : 'create'}
+        initialValues={
+          editingDiveLog
+            ? {
+                visibilityMeters: editingDiveLog.visibilityMeters,
+                currentStrength: editingDiveLog.currentStrength as
+                  | 1
+                  | 2
+                  | 3
+                  | 4
+                  | 5,
+                divedAt: editingDiveLog.divedAt,
+                notes: editingDiveLog.notes,
+                photoUrls: editingDiveLog.photoUrls,
+              }
+            : null
+        }
         isSubmitting={isSubmittingDiveLog}
         error={diveLogError}
         onDismiss={() => {
           clearDiveLogError();
+          setEditingDiveLog(null);
           setAddDiveTargetSpot(null);
         }}
         onSubmit={handleSubmitDive}

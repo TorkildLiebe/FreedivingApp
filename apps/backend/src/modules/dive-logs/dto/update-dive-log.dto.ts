@@ -7,28 +7,26 @@ import {
   IsOptional,
   IsString,
   IsUrl,
-  IsUUID,
   Max,
   MaxLength,
   Min,
   ValidateIf,
 } from 'class-validator';
 
-export class CreateDiveLogDto {
-  @IsUUID()
-  spotId!: string;
-
+export class UpdateDiveLogDto {
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(30)
-  visibilityMeters!: number;
+  visibilityMeters?: number;
 
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(5)
-  currentStrength!: number;
+  currentStrength?: number;
 
   @IsOptional()
   @IsDateString()

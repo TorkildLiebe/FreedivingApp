@@ -4,12 +4,14 @@ import { apiFetch } from '@/src/infrastructure/api/client';
 import { supabase } from '@/src/infrastructure/supabase/client';
 
 interface GetMeResponse {
+  id: string;
   favoriteSpotIds: string[];
 }
 
 export function useFavoriteSpots() {
   const [session, setSession] = useState<Session | null>(null);
   const [favoriteSpotIds, setFavoriteSpotIds] = useState<string[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,6 +37,7 @@ export function useFavoriteSpots() {
   useEffect(() => {
     if (!session) {
       setFavoriteSpotIds([]);
+      setCurrentUserId(null);
       return;
     }
 
@@ -45,11 +48,13 @@ export function useFavoriteSpots() {
         const profile = await apiFetch<GetMeResponse>('/users/me');
         if (!cancelled) {
           setFavoriteSpotIds(profile.favoriteSpotIds ?? []);
+          setCurrentUserId(profile.id ?? null);
         }
       } catch (error) {
         console.warn('Failed to load favorites:', error);
         if (!cancelled) {
           setFavoriteSpotIds([]);
+          setCurrentUserId(null);
         }
       }
     }
@@ -103,6 +108,7 @@ export function useFavoriteSpots() {
 
   return {
     favoriteSpotIds,
+    currentUserId,
     isAuthenticated: Boolean(session),
     toggleFavoriteSpot,
   };

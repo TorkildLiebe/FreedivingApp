@@ -21,7 +21,7 @@ import {
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { colors, typography } from '@/src/shared/theme';
-import type { ParkingLocation, SpotDetail } from '@/src/features/map/types';
+import type { DiveLogPreview, ParkingLocation, SpotDetail } from '@/src/features/map/types';
 
 interface SpotDetailSheetProps {
   spot: SpotDetail | null;
@@ -34,6 +34,8 @@ interface SpotDetailSheetProps {
   isUploadingPhoto?: boolean;
   photoUploadError?: string | null;
   onAddDive?: (spot: SpotDetail) => void;
+  currentUserId?: string | null;
+  onEditDive?: (spot: SpotDetail, diveLog: DiveLogPreview) => void;
   onUpdateRating?: (spot: SpotDetail, rating: 1 | 2 | 3 | 4 | 5) => void;
 }
 
@@ -135,6 +137,21 @@ function currentStrengthLabel(value: number): string {
   }
 }
 
+function canEditDiveLog(log: DiveLogPreview, currentUserId?: string | null): boolean {
+  if (!currentUserId || log.authorId !== currentUserId) {
+    return false;
+  }
+
+  const createdAt = new Date(log.createdAt);
+  const createdAtMs = createdAt.getTime();
+  if (Number.isNaN(createdAtMs)) {
+    return false;
+  }
+
+  const editWindowMs = 48 * 60 * 60 * 1000;
+  return Date.now() - createdAtMs <= editWindowMs;
+}
+
 export const SpotDetailSheet = forwardRef<
   SpotDetailSheetHandle,
   SpotDetailSheetProps
@@ -150,6 +167,8 @@ export const SpotDetailSheet = forwardRef<
     isUploadingPhoto = false,
     photoUploadError = null,
     onAddDive,
+    currentUserId = null,
+    onEditDive,
     onUpdateRating,
   },
   ref,
@@ -426,6 +445,15 @@ export const SpotDetailSheet = forwardRef<
                   </View>
                   {log.notesPreview ? (
                     <Text style={styles.logNotes}>{log.notesPreview}</Text>
+                  ) : null}
+                  {canEditDiveLog(log, currentUserId) ? (
+                    <TouchableOpacity
+                      testID={`spot-detail-edit-dive-${log.id}`}
+                      style={styles.editDiveButton}
+                      onPress={() => onEditDive?.(spot, log)}
+                    >
+                      <Text style={styles.editDiveButtonText}>Edit</Text>
+                    </TouchableOpacity>
                   ) : null}
                 </View>
               ))
@@ -736,6 +764,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.neutral[700],
     marginTop: 5,
+  },
+  editDiveButton: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: colors.neutral[300],
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  editDiveButtonText: {
+    fontSize: 12,
+    color: colors.neutral[700],
+    fontFamily: typography.bodyBold.fontFamily,
   },
   ratingBackdrop: {
     flex: 1,

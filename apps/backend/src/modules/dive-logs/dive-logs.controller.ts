@@ -1,10 +1,20 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard, CurrentUser } from '../../common/auth';
 import type { AuthenticatedUser } from '../../common/auth';
 import { CreateDiveLogDto } from './dto/create-dive-log.dto';
 import { CreateDiveLogPhotoUploadUrlDto } from './dto/create-dive-log-photo-upload-url.dto';
 import { CreateDiveLogResponseDto } from './dto/create-dive-log-response.dto';
 import { DiveLogPhotoUploadUrlResponseDto } from './dto/dive-log-photo-upload-url-response.dto';
+import { DiveLogResponseDto } from './dto/dive-log-response.dto';
+import { UpdateDiveLogDto } from './dto/update-dive-log.dto';
 import { DiveLogsService } from './dive-logs.service';
 
 @Controller('dive-logs')
@@ -25,5 +35,14 @@ export class DiveLogsController {
     @Body() dto: CreateDiveLogPhotoUploadUrlDto,
   ): Promise<DiveLogPhotoUploadUrlResponseDto> {
     return this.diveLogsService.createPhotoUploadUrl(dto);
+  }
+
+  @Patch(':id')
+  async update(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateDiveLogDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ): Promise<DiveLogResponseDto> {
+    return this.diveLogsService.update(id, dto, actor);
   }
 }

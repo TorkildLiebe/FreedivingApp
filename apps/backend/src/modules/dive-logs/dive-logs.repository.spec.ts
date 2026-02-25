@@ -22,6 +22,8 @@ describe('DiveLogsRepository', () => {
       diveLog: {
         create: jest.fn(),
         aggregate: jest.fn(),
+        findFirst: jest.fn(),
+        update: jest.fn(),
       },
       $transaction: jest.fn(),
     };
@@ -140,5 +142,118 @@ describe('DiveLogsRepository', () => {
       },
     });
     expect(result.id).toBe('log-1');
+  });
+
+  it('finds dive log by id including author', async () => {
+    const divedAt = new Date('2026-02-25T10:00:00.000Z');
+    prisma.diveLog.findFirst.mockResolvedValue({
+      id: 'log-1',
+      spotId: 'spot-1',
+      authorId: 'user-1',
+      visibilityMeters: 8,
+      currentStrength: 3,
+      notes: null,
+      photoUrls: [],
+      divedAt,
+      isDeleted: false,
+      deletedAt: null,
+      createdAt: divedAt,
+      updatedAt: divedAt,
+      author: {
+        alias: 'Diver',
+        avatarUrl: null,
+      },
+    });
+
+    const result = await repository.findDiveLogById('log-1');
+
+    expect(prisma.diveLog.findFirst).toHaveBeenCalledWith({
+      where: { id: 'log-1' },
+      include: {
+        author: {
+          select: {
+            alias: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+    expect(result?.id).toBe('log-1');
+  });
+
+  it('updates dive log and refreshes spot summary aggregates', async () => {
+    const createdAt = new Date('2026-02-25T09:00:00.000Z');
+    const divedAt = new Date('2026-02-25T12:00:00.000Z');
+
+    const tx = {
+      diveLog: {
+        update: jest.fn().mockResolvedValue({
+          id: 'log-1',
+          spotId: 'spot-1',
+          authorId: 'user-1',
+          visibilityMeters: 10,
+          currentStrength: 4,
+          notes: 'Updated',
+          photoUrls: ['https://example.com/photo.jpg'],
+          divedAt,
+          isDeleted: false,
+          deletedAt: null,
+          createdAt,
+          updatedAt: divedAt,
+          author: {
+            alias: 'Diver',
+            avatarUrl: null,
+          },
+        }),
+        aggregate: jest.fn().mockResolvedValue({
+          _avg: { visibilityMeters: 9.5 },
+          _count: { _all: 3 },
+          _max: { divedAt },
+        }),
+      },
+      diveSpot: {
+        update: jest.fn().mockResolvedValue({ id: 'spot-1' }),
+      },
+    };
+
+    prisma.$transaction.mockImplementation(
+      (callback: (trx: typeof tx) => unknown) => callback(tx),
+    );
+
+    const result = await repository.updateDiveLog('log-1', 'spot-1', {
+      visibilityMeters: 10,
+      currentStrength: 4,
+      notes: 'Updated',
+      photoUrls: ['https://example.com/photo.jpg'],
+      divedAt,
+    });
+
+    expect(tx.diveLog.update).toHaveBeenCalledWith({
+      where: { id: 'log-1' },
+      data: {
+        visibilityMeters: 10,
+        currentStrength: 4,
+        notes: 'Updated',
+        photoUrls: ['https://example.com/photo.jpg'],
+        divedAt,
+      },
+      include: {
+        author: {
+          select: {
+            alias: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+    expect(tx.diveSpot.update).toHaveBeenCalledWith({
+      where: { id: 'spot-1' },
+      data: {
+        averageVisibilityMeters: 9.5,
+        reportCount: 3,
+        latestReportAt: divedAt,
+      },
+    });
+    expect(result.currentStrength).toBe(4);
   });
 });

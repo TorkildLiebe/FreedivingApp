@@ -277,12 +277,18 @@ describe('SpotsService', () => {
         items: [
           {
             id: 'log-1',
+            spotId: 'uuid-spot-1',
+            authorId: 'uuid-user-1',
             authorAlias: 'Diver',
             authorAvatarUrl: null,
             visibilityMeters: 9,
             currentStrength: 3,
+            notes: 'Very clear',
+            photoUrls: [],
             notesPreview: 'Very clear',
             divedAt: firstDiveDate,
+            createdAt: firstDiveDate,
+            updatedAt: firstDiveDate,
           },
         ],
         page: 1,

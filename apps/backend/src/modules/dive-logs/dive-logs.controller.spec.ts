@@ -24,6 +24,7 @@ describe('DiveLogsController', () => {
           useValue: {
             create: jest.fn(),
             createPhotoUploadUrl: jest.fn(),
+            update: jest.fn(),
           },
         },
         {
@@ -91,5 +92,35 @@ describe('DiveLogsController', () => {
       mimeType: 'image/jpeg',
     });
     expect(result).toEqual(uploadResponse);
+  });
+
+  it('updates dive log through service', async () => {
+    const updated = {
+      id: 'log-1',
+      spotId: 'spot-1',
+      authorId: mockUser.userId,
+      authorAlias: 'Diver',
+      authorAvatarUrl: null,
+      visibilityMeters: 10,
+      currentStrength: 4,
+      notes: 'Updated note',
+      photoUrls: ['https://example.com/photo.jpg'],
+      divedAt: new Date('2026-02-25T10:00:00.000Z'),
+      createdAt: new Date('2026-02-25T09:00:00.000Z'),
+      updatedAt: new Date('2026-02-25T11:00:00.000Z'),
+    };
+    diveLogsService.update.mockResolvedValue(updated);
+
+    const dto = {
+      visibilityMeters: 10,
+      currentStrength: 4,
+      notes: 'Updated note',
+      photoUrls: ['https://example.com/photo.jpg'],
+    };
+
+    const result = await controller.update('log-1', dto, mockUser);
+
+    expect(diveLogsService.update).toHaveBeenCalledWith('log-1', dto, mockUser);
+    expect(result).toEqual(updated);
   });
 });

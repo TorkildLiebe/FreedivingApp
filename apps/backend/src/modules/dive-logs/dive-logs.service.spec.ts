@@ -1,5 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import {
+  DiveLogNotFoundError,
+  ForbiddenError,
   InvalidDiveLogError,
   SpotNotFoundOrDeletedError,
 } from '../../common/errors';
@@ -29,6 +31,8 @@ describe('DiveLogsService', () => {
             findActiveSpotById: jest.fn(),
             hasExistingRating: jest.fn(),
             createDiveLog: jest.fn(),
+            findDiveLogById: jest.fn(),
+            updateDiveLog: jest.fn(),
           },
         },
         {
@@ -182,5 +186,147 @@ describe('DiveLogsService', () => {
       'image/jpeg',
     );
     expect(result.publicUrl).toContain('photo.jpg');
+  });
+
+  it('updates dive log for owner within 48 hours', async () => {
+    const createdAt = new Date(Date.now() - 6 * 60 * 60 * 1000);
+    const updatedAt = new Date();
+    repository.findDiveLogById.mockResolvedValue({
+      id: 'log-1',
+      spotId: 'spot-1',
+      authorId: actor.userId,
+      visibilityMeters: 8,
+      currentStrength: 3,
+      notes: 'Original',
+      photoUrls: [],
+      divedAt: createdAt,
+      isDeleted: false,
+      deletedAt: null,
+      createdAt,
+      updatedAt: createdAt,
+      author: {
+        alias: 'Diver',
+        avatarUrl: null,
+      },
+    });
+    repository.updateDiveLog.mockResolvedValue({
+      id: 'log-1',
+      spotId: 'spot-1',
+      authorId: actor.userId,
+      visibilityMeters: 10,
+      currentStrength: 4,
+      notes: 'Updated',
+      photoUrls: ['https://example.com/photo.jpg'],
+      divedAt: updatedAt,
+      isDeleted: false,
+      deletedAt: null,
+      createdAt,
+      updatedAt,
+      author: {
+        alias: 'Diver',
+        avatarUrl: null,
+      },
+    });
+
+    const result = await service.update(
+      'log-1',
+      {
+        visibilityMeters: 10,
+        currentStrength: 4,
+        notes: 'Updated',
+        photoUrls: ['https://example.com/photo.jpg'],
+        divedAt: updatedAt.toISOString(),
+      },
+      actor,
+    );
+
+    expect(repository.updateDiveLog).toHaveBeenCalledWith(
+      'log-1',
+      'spot-1',
+      expect.objectContaining({
+        visibilityMeters: 10,
+        currentStrength: 4,
+        notes: 'Updated',
+      }),
+    );
+    expect(result.visibilityMeters).toBe(10);
+  });
+
+  it('throws DiveLogNotFoundError when log does not exist', async () => {
+    repository.findDiveLogById.mockResolvedValue(null);
+
+    await expect(
+      service.update(
+        'missing-log',
+        {
+          visibilityMeters: 9,
+        },
+        actor,
+      ),
+    ).rejects.toThrow(DiveLogNotFoundError);
+  });
+
+  it('throws ForbiddenError when actor does not own the dive log', async () => {
+    const createdAt = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    repository.findDiveLogById.mockResolvedValue({
+      id: 'log-1',
+      spotId: 'spot-1',
+      authorId: 'other-user',
+      visibilityMeters: 8,
+      currentStrength: 3,
+      notes: null,
+      photoUrls: [],
+      divedAt: createdAt,
+      isDeleted: false,
+      deletedAt: null,
+      createdAt,
+      updatedAt: createdAt,
+      author: {
+        alias: 'Other',
+        avatarUrl: null,
+      },
+    });
+
+    await expect(
+      service.update(
+        'log-1',
+        {
+          visibilityMeters: 10,
+        },
+        actor,
+      ),
+    ).rejects.toThrow(ForbiddenError);
+  });
+
+  it('throws InvalidDiveLogError when edit window is expired', async () => {
+    const createdAt = new Date(Date.now() - 49 * 60 * 60 * 1000);
+    repository.findDiveLogById.mockResolvedValue({
+      id: 'log-1',
+      spotId: 'spot-1',
+      authorId: actor.userId,
+      visibilityMeters: 8,
+      currentStrength: 3,
+      notes: null,
+      photoUrls: [],
+      divedAt: createdAt,
+      isDeleted: false,
+      deletedAt: null,
+      createdAt,
+      updatedAt: createdAt,
+      author: {
+        alias: 'Diver',
+        avatarUrl: null,
+      },
+    });
+
+    await expect(
+      service.update(
+        'log-1',
+        {
+          visibilityMeters: 10,
+        },
+        actor,
+      ),
+    ).rejects.toThrow(InvalidDiveLogError);
   });
 });
