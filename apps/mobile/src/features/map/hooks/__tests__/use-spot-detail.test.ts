@@ -33,6 +33,12 @@ const mockSpot: SpotDetail = {
   createdAt: '2025-01-01T00:00:00.000Z',
   updatedAt: '2025-01-02T00:00:00.000Z',
 };
+const mockDiveLogsResponse = {
+  items: mockSpot.diveLogs,
+  page: 1,
+  limit: 20,
+  total: 0,
+};
 
 describe('useSpotDetail', () => {
   let consoleWarnSpy: jest.SpyInstance;
@@ -55,7 +61,9 @@ describe('useSpotDetail', () => {
   });
 
   it('fetches and returns spot detail when spotId provided', async () => {
-    mockApiFetch.mockResolvedValue(mockSpot);
+    mockApiFetch
+      .mockResolvedValueOnce(mockSpot)
+      .mockResolvedValueOnce(mockDiveLogsResponse);
 
     const { result } = renderHook(() => useSpotDetail('uuid-1'));
 
@@ -66,6 +74,9 @@ describe('useSpotDetail', () => {
     });
 
     expect(mockApiFetch).toHaveBeenCalledWith('/spots/uuid-1');
+    expect(mockApiFetch).toHaveBeenCalledWith(
+      '/spots/uuid-1/dive-logs?page=1&limit=20',
+    );
     expect(result.current.spot).toEqual(mockSpot);
     expect(result.current.error).toBeNull();
   });
@@ -88,7 +99,9 @@ describe('useSpotDetail', () => {
   });
 
   it('clears spot when spotId becomes null', async () => {
-    mockApiFetch.mockResolvedValue(mockSpot);
+    mockApiFetch
+      .mockResolvedValueOnce(mockSpot)
+      .mockResolvedValueOnce(mockDiveLogsResponse);
 
     const { result, rerender } = renderHook(
       ({ spotId }: { spotId: string | null }) => useSpotDetail(spotId),
@@ -107,7 +120,11 @@ describe('useSpotDetail', () => {
 
   it('fetches new spot when spotId changes', async () => {
     const secondSpot = { ...mockSpot, id: 'uuid-2', title: 'Second Spot' };
-    mockApiFetch.mockResolvedValueOnce(mockSpot).mockResolvedValueOnce(secondSpot);
+    mockApiFetch
+      .mockResolvedValueOnce(mockSpot)
+      .mockResolvedValueOnce(mockDiveLogsResponse)
+      .mockResolvedValueOnce(secondSpot)
+      .mockResolvedValueOnce(mockDiveLogsResponse);
 
     const { result, rerender } = renderHook(
       ({ spotId }: { spotId: string | null }) => useSpotDetail(spotId),
@@ -124,12 +141,19 @@ describe('useSpotDetail', () => {
       expect(result.current.spot).toEqual(secondSpot);
     });
 
-    expect(mockApiFetch).toHaveBeenCalledTimes(2);
+    expect(mockApiFetch).toHaveBeenCalledTimes(4);
     expect(mockApiFetch).toHaveBeenCalledWith('/spots/uuid-2');
+    expect(mockApiFetch).toHaveBeenCalledWith(
+      '/spots/uuid-2/dive-logs?page=1&limit=20',
+    );
   });
 
   it('refetches when refresh is called', async () => {
-    mockApiFetch.mockResolvedValue(mockSpot);
+    mockApiFetch
+      .mockResolvedValueOnce(mockSpot)
+      .mockResolvedValueOnce(mockDiveLogsResponse)
+      .mockResolvedValueOnce(mockSpot)
+      .mockResolvedValueOnce(mockDiveLogsResponse);
 
     const { result } = renderHook(() => useSpotDetail('uuid-1'));
 
@@ -142,7 +166,7 @@ describe('useSpotDetail', () => {
     });
 
     await waitFor(() => {
-      expect(mockApiFetch).toHaveBeenCalledTimes(2);
+      expect(mockApiFetch).toHaveBeenCalledTimes(4);
     });
   });
 });

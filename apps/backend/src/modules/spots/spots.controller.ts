@@ -22,6 +22,8 @@ import { UpdateSpotDto } from './dto/update-spot.dto';
 import { AddSpotPhotoDto } from './dto/add-spot-photo.dto';
 import { CreateSpotPhotoUploadUrlDto } from './dto/create-spot-photo-upload-url.dto';
 import { SpotPhotoUploadUrlResponseDto } from './dto/spot-photo-upload-url-response.dto';
+import { ListSpotDiveLogsQueryDto } from './dto/list-spot-dive-logs-query.dto';
+import { ListSpotDiveLogsResponseDto } from './dto/list-spot-dive-logs-response.dto';
 import type { AuthenticatedUser } from '../../common/auth';
 
 @Controller('spots')
@@ -47,6 +49,14 @@ export class SpotsController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<SpotDetailResponseDto> {
     return this.spotsService.getById(id);
+  }
+
+  @Get(':id/dive-logs')
+  async listDiveLogs(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query() query: ListSpotDiveLogsQueryDto,
+  ): Promise<ListSpotDiveLogsResponseDto> {
+    return this.spotsService.listDiveLogs(id, query.page, query.limit);
   }
 
   @Post()

@@ -81,6 +81,7 @@ describe('SpotsService', () => {
             updateSpot: jest.fn(),
             updatePhotoUrls: jest.fn(),
             softDeleteSpot: jest.fn(),
+            listDiveLogsBySpot: jest.fn(),
           },
         },
       ],
@@ -169,6 +170,10 @@ describe('SpotsService', () => {
   describe('getById', () => {
     it('should return mapped spot detail with parking locations', async () => {
       repository.findById.mockResolvedValue(mockSpotDetail);
+      repository.listDiveLogsBySpot.mockResolvedValue({
+        items: [],
+        total: 0,
+      });
 
       const result = await service.getById('uuid-spot-1');
 
@@ -211,6 +216,10 @@ describe('SpotsService', () => {
         reportCount: 0,
         latestReportAt: null,
       });
+      repository.listDiveLogsBySpot.mockResolvedValue({
+        items: [],
+        total: 0,
+      });
 
       const result = await service.getById('uuid-spot-1');
 
@@ -226,6 +235,60 @@ describe('SpotsService', () => {
       await expect(service.getById('nonexistent')).rejects.toThrow(
         SpotNotFoundOrDeletedError,
       );
+    });
+  });
+
+  describe('listDiveLogs', () => {
+    it('returns paginated dive logs newest first', async () => {
+      const firstDiveDate = new Date('2026-02-25T12:00:00.000Z');
+      repository.findById.mockResolvedValue(mockSpotDetail);
+      repository.listDiveLogsBySpot.mockResolvedValue({
+        items: [
+          {
+            id: 'log-1',
+            spotId: 'uuid-spot-1',
+            authorId: 'uuid-user-1',
+            visibilityMeters: 9,
+            currentStrength: 3,
+            notes: 'Very clear',
+            photoUrls: [],
+            divedAt: firstDiveDate,
+            isDeleted: false,
+            deletedAt: null,
+            createdAt: firstDiveDate,
+            updatedAt: firstDiveDate,
+            author: {
+              alias: 'Diver',
+              avatarUrl: null,
+            },
+          },
+        ],
+        total: 1,
+      });
+
+      const result = await service.listDiveLogs('uuid-spot-1', 1, 20);
+
+      expect(repository.listDiveLogsBySpot).toHaveBeenCalledWith(
+        'uuid-spot-1',
+        0,
+        20,
+      );
+      expect(result).toEqual({
+        items: [
+          {
+            id: 'log-1',
+            authorAlias: 'Diver',
+            authorAvatarUrl: null,
+            visibilityMeters: 9,
+            currentStrength: 3,
+            notesPreview: 'Very clear',
+            divedAt: firstDiveDate,
+          },
+        ],
+        page: 1,
+        limit: 20,
+        total: 1,
+      });
     });
   });
 

@@ -7,6 +7,7 @@ describe('SpotsRepository', () => {
   let prisma: {
     diveSpot: Record<string, jest.Mock>;
     parkingLocation: Record<string, jest.Mock>;
+    diveLog: Record<string, jest.Mock>;
     $queryRaw: jest.Mock;
     $transaction: jest.Mock;
   };
@@ -33,6 +34,10 @@ describe('SpotsRepository', () => {
       parkingLocation: {
         createMany: jest.fn(),
         deleteMany: jest.fn(),
+      },
+      diveLog: {
+        findMany: jest.fn(),
+        count: jest.fn(),
       },
       $queryRaw: jest.fn(),
       $transaction: jest.fn((callback: (trx: typeof tx) => unknown) =>
@@ -284,6 +289,34 @@ describe('SpotsRepository', () => {
           isDeleted: true,
           deletedAt: expect.any(Date) as unknown as Date,
         },
+      });
+    });
+  });
+
+  describe('listDiveLogsBySpot', () => {
+    it('queries paginated dive logs and total count in one transaction', async () => {
+      const items = [
+        {
+          id: 'log-1',
+          spotId: 'spot-1',
+          visibilityMeters: 8,
+          currentStrength: 3,
+          notes: 'Clear',
+          divedAt: new Date('2026-02-25T10:00:00.000Z'),
+          author: {
+            alias: 'Diver',
+            avatarUrl: null,
+          },
+        },
+      ];
+      prisma.$transaction.mockResolvedValueOnce([items, 1]);
+
+      const result = await repository.listDiveLogsBySpot('spot-1', 20, 10);
+
+      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(result).toEqual({
+        items,
+        total: 1,
       });
     });
   });

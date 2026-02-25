@@ -18,13 +18,18 @@ import type { CreateSpotDto } from './dto/create-spot.dto';
 import type { UpdateSpotDto } from './dto/update-spot.dto';
 import { SpotPhotoStorageService } from './spot-photo-storage.service';
 import { SpotPhotoUploadUrlResponseDto } from './dto/spot-photo-upload-url-response.dto';
+import { ListSpotDiveLogsResponseDto } from './dto/list-spot-dive-logs-response.dto';
 
 const DEFAULT_LIMIT = 300;
 const MAX_LIMIT = 1000;
+const DEFAULT_DIVE_LOG_PAGE = 1;
+const DEFAULT_DIVE_LOG_LIMIT = 20;
+const MAX_DIVE_LOG_LIMIT = 50;
 const MIN_SPOT_DISTANCE_METERS = 1000;
 const MAX_PARKING_DISTANCE_METERS = 5000;
 const MIN_PARKING_SEPARATION_METERS = 2;
 const MAX_PHOTOS_PER_SPOT = 5;
+const DIVE_LOG_NOTES_PREVIEW_MAX = 120;
 
 @Injectable()
 export class SpotsService {
@@ -69,7 +74,43 @@ export class SpotsService {
       throw new SpotNotFoundOrDeletedError(spotId);
     }
 
-    return this.toSpotDetailResponse(spot);
+    const diveLogs = await this.spotsRepository.listDiveLogsBySpot(
+      spotId,
+      0,
+      DEFAULT_DIVE_LOG_LIMIT,
+    );
+
+    return this.toSpotDetailResponse(spot, diveLogs.items);
+  }
+
+  async listDiveLogs(
+    spotId: string,
+    page?: number,
+    limit?: number,
+  ): Promise<ListSpotDiveLogsResponseDto> {
+    const spot = await this.spotsRepository.findById(spotId);
+    if (!spot) {
+      throw new SpotNotFoundOrDeletedError(spotId);
+    }
+
+    const normalizedPage = Math.max(page ?? DEFAULT_DIVE_LOG_PAGE, 1);
+    const normalizedLimit = Math.min(
+      Math.max(limit ?? DEFAULT_DIVE_LOG_LIMIT, 1),
+      MAX_DIVE_LOG_LIMIT,
+    );
+    const skip = (normalizedPage - 1) * normalizedLimit;
+    const { items, total } = await this.spotsRepository.listDiveLogsBySpot(
+      spotId,
+      skip,
+      normalizedLimit,
+    );
+
+    return {
+      items: items.map((item) => this.toDiveLogPreview(item)),
+      page: normalizedPage,
+      limit: normalizedLimit,
+      total,
+    };
   }
 
   async create(
@@ -238,31 +279,44 @@ export class SpotsService {
     return this.toSpotDetailResponse(updated);
   }
 
-  private toSpotDetailResponse(spot: {
-    id: string;
-    title: string;
-    description: string;
-    centerLat: number;
-    centerLon: number;
-    createdById: string;
-    createdBy: { alias: string | null };
-    accessInfo: string | null;
-    parkingLocations: Array<{
+  private toSpotDetailResponse(
+    spot: {
       id: string;
-      lat: number;
-      lon: number;
-      label: string | null;
-    }>;
-    photoUrls: string[];
-    averageVisibilityMeters: number | null;
-    averageRating: number | null;
-    reportCount: number;
-    latestReportAt: Date | null;
-    shareUrl: string | null;
-    shareableAccessInfo: boolean | null;
-    createdAt: Date;
-    updatedAt: Date;
-  }): SpotDetailResponseDto {
+      title: string;
+      description: string;
+      centerLat: number;
+      centerLon: number;
+      createdById: string;
+      createdBy: { alias: string | null };
+      accessInfo: string | null;
+      parkingLocations: Array<{
+        id: string;
+        lat: number;
+        lon: number;
+        label: string | null;
+      }>;
+      photoUrls: string[];
+      averageVisibilityMeters: number | null;
+      averageRating: number | null;
+      reportCount: number;
+      latestReportAt: Date | null;
+      shareUrl: string | null;
+      shareableAccessInfo: boolean | null;
+      createdAt: Date;
+      updatedAt: Date;
+    },
+    diveLogs: Array<{
+      id: string;
+      visibilityMeters: number;
+      currentStrength: number;
+      notes: string | null;
+      divedAt: Date;
+      author: {
+        alias: string | null;
+        avatarUrl: string | null;
+      };
+    }> = [],
+  ): SpotDetailResponseDto {
     return {
       id: spot.id,
       title: spot.title,
@@ -284,12 +338,51 @@ export class SpotsService {
       averageRating: spot.averageRating,
       reportCount: spot.reportCount,
       latestReportAt: spot.latestReportAt,
-      diveLogs: [],
+      diveLogs: diveLogs.map((diveLog) => this.toDiveLogPreview(diveLog)),
       shareUrl: spot.shareUrl,
       shareableAccessInfo: spot.shareableAccessInfo,
       createdAt: spot.createdAt,
       updatedAt: spot.updatedAt,
     };
+  }
+
+  private toDiveLogPreview(diveLog: {
+    id: string;
+    visibilityMeters: number;
+    currentStrength: number;
+    notes: string | null;
+    divedAt: Date;
+    author: {
+      alias: string | null;
+      avatarUrl: string | null;
+    };
+  }) {
+    return {
+      id: diveLog.id,
+      authorAlias: diveLog.author.alias,
+      authorAvatarUrl: diveLog.author.avatarUrl,
+      visibilityMeters: diveLog.visibilityMeters,
+      currentStrength: diveLog.currentStrength,
+      notesPreview: this.createNotesPreview(diveLog.notes),
+      divedAt: diveLog.divedAt,
+    };
+  }
+
+  private createNotesPreview(notes: string | null): string | null {
+    if (!notes) {
+      return null;
+    }
+
+    const normalized = notes.trim();
+    if (!normalized) {
+      return null;
+    }
+
+    if (normalized.length <= DIVE_LOG_NOTES_PREVIEW_MAX) {
+      return normalized;
+    }
+
+    return `${normalized.slice(0, DIVE_LOG_NOTES_PREVIEW_MAX - 1).trimEnd()}…`;
   }
 
   private assertCanMutate(createdById: string, actor: AuthenticatedUser): void {

@@ -94,6 +94,47 @@ function formatRelativeDate(isoDate: string): string {
   return `${days} days ago`;
 }
 
+function formatDiveLogDate(isoDate: string): string {
+  const parsed = new Date(isoDate);
+  if (Number.isNaN(parsed.getTime())) {
+    return '';
+  }
+
+  return parsed.toLocaleDateString();
+}
+
+function aliasInitials(alias: string | null): string {
+  if (!alias) {
+    return 'A';
+  }
+
+  const parts = alias
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+  if (parts.length === 0) {
+    return 'A';
+  }
+
+  return parts.map((part) => part[0]?.toUpperCase() ?? '').join('');
+}
+
+function currentStrengthLabel(value: number): string {
+  switch (value) {
+    case 1:
+      return 'Calm';
+    case 2:
+      return 'Light';
+    case 3:
+      return 'Moderate';
+    case 4:
+      return 'Strong';
+    default:
+      return 'Very Strong';
+  }
+}
+
 export const SpotDetailSheet = forwardRef<
   SpotDetailSheetHandle,
   SpotDetailSheetProps
@@ -348,8 +389,22 @@ export const SpotDetailSheet = forwardRef<
               spot.diveLogs.map((log) => (
                 <View key={log.id} style={styles.logRow}>
                   <View style={styles.logTopRow}>
-                    <Text style={styles.logAuthor}>{log.authorAlias ?? 'Anonymous'}</Text>
-                    <Text style={styles.logMeta}>{formatRelativeDate(log.divedAt)}</Text>
+                    <View style={styles.logAuthorWrap}>
+                      <View style={styles.logAvatar}>
+                        <Text style={styles.logAvatarText}>
+                          {aliasInitials(log.authorAlias)}
+                        </Text>
+                      </View>
+                      <View>
+                        <Text style={styles.logAuthor}>
+                          {log.authorAlias ?? 'Anonymous'}
+                        </Text>
+                        <Text style={styles.logMeta}>
+                          {formatDiveLogDate(log.divedAt)}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.logRelativeMeta}>{formatRelativeDate(log.divedAt)}</Text>
                   </View>
                   <View style={styles.logStatsRow}>
                     <Text style={styles.logVisibility}>{`${Math.round(log.visibilityMeters)}m`}</Text>
@@ -365,6 +420,9 @@ export const SpotDetailSheet = forwardRef<
                         />
                       ))}
                     </View>
+                    <Text style={styles.logCurrentText}>
+                      {currentStrengthLabel(log.currentStrength)}
+                    </Text>
                   </View>
                   {log.notesPreview ? (
                     <Text style={styles.logNotes}>{log.notesPreview}</Text>
@@ -373,7 +431,7 @@ export const SpotDetailSheet = forwardRef<
               ))
             ) : (
               <Text testID="spot-detail-dive-log-placeholder" style={styles.placeholderText}>
-                No dive logs yet. Be the first!
+                No dives logged yet.
               </Text>
             )}
           </View>
@@ -609,7 +667,25 @@ const styles = StyleSheet.create({
   logTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  logAuthorWrap: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+  },
+  logAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.neutral[200],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logAvatarText: {
+    fontSize: 12,
+    color: colors.neutral[700],
+    fontFamily: typography.bodyBold.fontFamily,
   },
   logAuthor: {
     fontSize: 14,
@@ -617,6 +693,10 @@ const styles = StyleSheet.create({
     color: colors.neutral[900],
   },
   logMeta: {
+    fontSize: 12,
+    color: colors.neutral[500],
+  },
+  logRelativeMeta: {
     fontSize: 12,
     color: colors.neutral[500],
   },
@@ -647,6 +727,10 @@ const styles = StyleSheet.create({
   },
   currentDotFilled: {
     backgroundColor: colors.secondary[500],
+  },
+  logCurrentText: {
+    fontSize: 12,
+    color: colors.neutral[600],
   },
   logNotes: {
     fontSize: 13,
