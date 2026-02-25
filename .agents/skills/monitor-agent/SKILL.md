@@ -1,6 +1,6 @@
 ---
 name: monitor-agent-sop
-description: Codex-native unattended milestone orchestration SOP for FreedivingApp.
+description: Codex-native milestone orchestration SOP for FreedivingApp with two run modes: autonomous (`use the monitor-agent role to run milestone <MILESTONE>`) and guided (`use the monitor-agent role to run milestone <MILESTONE> guided`) for high-impact business-rule and user-flow decisions.
 ---
 
 # Monitor Agent Skill
@@ -9,13 +9,36 @@ Use this skill when running a full milestone from the prompt window with no exte
 
 ## Start Command
 
-Use a fixed trigger phrase:
+Use one of two trigger phrases:
 
 `use the monitor-agent role to run milestone <MILESTONE>`
+`use the monitor-agent role to run milestone <MILESTONE> guided`
 
 Example:
 
 `use the monitor-agent role to run milestone M2`
+`use the monitor-agent role to run milestone M2 guided`
+
+## Run Modes
+
+- `autonomous` (default trigger without suffix):
+  - Never ask the user.
+  - Resolve high-impact ambiguities by precedence:
+    1. issue acceptance criteria/title/body
+    2. domain/usecase/rules docs
+    3. existing code/contracts and patterns
+    4. lowest-risk reversible option
+  - Append each resolved decision to the decision artifact with `decision_source: agent`.
+
+- `guided` (trigger with `guided` suffix):
+  - Ask only for unresolved high-impact ambiguities that change business rules, acceptance criteria interpretation, or user-flow behavior.
+  - Ask with this structure:
+    - context summary
+    - ambiguity class (`business-rule|user-flow`)
+    - 2-4 options
+    - recommended option
+    - impact for each option
+  - If no answer is available, pause run immediately (do not fallback to autonomous mode).
 
 ## Run Defaults
 
@@ -33,7 +56,20 @@ For run id `<run-id>`:
 - `docs/orchestration/runs/<run-id>/roadmap.md`
 - `docs/orchestration/runs/<run-id>/issues/<issue-number>-plan.md`
 - `docs/orchestration/runs/<run-id>/issues/<issue-number>-report.md`
+- `docs/orchestration/runs/<run-id>/issues/<issue-number>-decisions.md` (append-only)
 - `docs/orchestration/improvements/<run-id>.md`
+
+Decision artifact entries must include:
+- timestamp
+- mode (`autonomous|guided`)
+- decision id/title
+- ambiguity class (`business-rule|user-flow`)
+- context summary
+- options (+ impact)
+- recommended option
+- selected option
+- decision source (`user|agent`)
+- rationale and affected scope
 
 ## Worker Delegation
 
@@ -78,6 +114,10 @@ For mobile/UI-impacting issues, require these evidence labels in worker report s
 - Validate every worker report with:
   - `pnpm orchestrator:validate-worker-report -- --report-path docs/orchestration/runs/<run-id>/issues/<issue-number>-report.md --issue-number <n>`
 - If validation fails (including missing Design OS intake/parity evidence for UI issues), treat it as a failed attempt and enter retry flow.
+- In guided mode, unanswered required decisions are not failed attempts:
+  - mark issue blocked with `pending decision`
+  - persist `blocked_issue` and `stop_reason: awaiting_user_decision`
+  - stop run without consuming retry budget
 - Before UI-runtime verification work, run mobile auth preflight:
   - `pnpm orchestrator:mobile-auth-check`
 
@@ -94,5 +134,6 @@ For mobile/UI-impacting issues, require these evidence labels in worker report s
 
 - Every completed issue is committed on its issue branch.
 - Run artifacts and roadmap are updated after each transition.
+- For reused runs with `stop_reason: awaiting_user_decision`, resolve pending decisions first and continue the blocked issue.
 - Milestone run stops on unresolved failure after retries.
 - Milestone end includes retrospective with self-improvement actions.

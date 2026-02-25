@@ -5,7 +5,7 @@ multi_agent = true
 config_file = ".codex/agents.toml"
 
 [agents.monitor-agent]
-description = "Milestone orchestrator that runs issue-by-issue and resumes from run artifacts."
+description = "Milestone orchestrator with autonomous and guided run modes; resumes from run artifacts and pauses on pending high-impact decisions in guided mode."
 config_file = ".codex/agents/monitor-agent.md"
 
 [agents.vertical-slice-implementor]

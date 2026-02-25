@@ -7,10 +7,12 @@ FreedivingApp now uses an agent-first orchestration flow instead of the legacy N
 Start runs from the Codex prompt window:
 
 `use the monitor-agent role to run milestone <MILESTONE>`
+`use the monitor-agent role to run milestone <MILESTONE> guided`
 
 Example:
 
 `use the monitor-agent role to run milestone M2`
+`use the monitor-agent role to run milestone M2 guided`
 
 ## Roles
 
@@ -30,6 +32,23 @@ Role registration is configured in:
 - Retry delay: 5 minutes
 - Push policy: manual only (no auto-push)
 
+## Run Modes
+
+- `autonomous` (default):
+  - Triggered by: `use the monitor-agent role to run milestone <MILESTONE>`
+  - Never asks the user.
+  - Resolves high-impact ambiguities in deterministic order:
+    1. issue acceptance criteria/title/body
+    2. domain/usecase/rules docs
+    3. existing code/contracts and patterns
+    4. lowest-risk reversible option
+
+- `guided`:
+  - Triggered by: `use the monitor-agent role to run milestone <MILESTONE> guided`
+  - Asks only for unresolved high-impact ambiguities that materially change business rules, acceptance criteria interpretation, or user-flow behavior.
+  - Each question must include context, 2-4 options, recommendation, and impact per option.
+  - Unanswered required decisions pause the run; no fallback to autonomous mode.
+
 ## Artifact Contract
 
 For run id `<run-id>`:
@@ -38,6 +57,7 @@ For run id `<run-id>`:
 - `docs/orchestration/runs/<run-id>/roadmap.md`
 - `docs/orchestration/runs/<run-id>/issues/<issue-number>-plan.md`
 - `docs/orchestration/runs/<run-id>/issues/<issue-number>-report.md`
+- `docs/orchestration/runs/<run-id>/issues/<issue-number>-decisions.md` (append-only decision log)
 - `docs/orchestration/improvements/<run-id>.md`
 - `docs/orchestration/vertical-slice-improvements/<issue-number>.md` (append-on-rerun)
 
@@ -57,6 +77,19 @@ For run id `<run-id>`:
 
 Per-issue entry extension (backward-compatible):
 - optional `commit_sha` to persist commit evidence for guarded close transitions.
+
+Decision log entry extension (append-only, backward-compatible):
+- timestamp
+- mode (`autonomous|guided`)
+- decision id/title
+- ambiguity class (`business-rule|user-flow`)
+- context summary
+- options (+ impact)
+- recommended option
+- selected option
+- decision source (`user|agent`)
+- rationale
+- affected scope
 
 `roadmap.md` uses status transitions:
 
@@ -112,6 +145,12 @@ The milestone retrospective artifact remains:
 ## Resume Behavior
 
 Monitor-agent auto-resumes the latest unfinished run for the same milestone by reading run artifacts in `docs/orchestration/runs/`.
+
+If a run is paused with `stop_reason: awaiting_user_decision`:
+- reuse the same run id
+- resolve pending guided decisions first
+- continue the previously blocked issue
+- do not consume retry attempts for this pause reason
 
 ## Legacy Runner Status
 
