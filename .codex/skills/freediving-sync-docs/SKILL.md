@@ -8,13 +8,13 @@ description: Use to keep FreedivingApp documentation synchronized with behavior,
 Use when implementation changes may require documentation updates.
 
 ## Load These Sources
-- `/Users/torkildliebe/FreedivingApp/.claude/skills/sync-docs/SKILL.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/CLAUDE.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/workflow.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/domain.md`
-- `/Users/torkildliebe/FreedivingApp/docs/DOMAIN.md`
-- `/Users/torkildliebe/FreedivingApp/docs/CONTRIBUTING.md`
-- `/Users/torkildliebe/FreedivingApp/docs/design-os-plan/`
+- `.claude/skills/sync-docs/SKILL.md`
+- `.claude/CLAUDE.md`
+- `.claude/rules/workflow.md`
+- `.claude/rules/domain.md`
+- `docs/DOMAIN.md`
+- `docs/CONTRIBUTING.md`
+- `docs/design-os-plan/`
 
 ## Operating Workflow
 1. Determine whether behavior or contracts changed.

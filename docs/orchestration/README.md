@@ -103,6 +103,8 @@ Run these from repository root:
   - `pnpm orchestrator:transition-issue-commit -- --run-id <run-id> --issue <n> --commit-sha <sha> [--note "..."]`
 - Guarded milestone close transition:
   - `pnpm orchestrator:close-milestone-run -- --run-id <run-id> [--milestone-branch <branch>]`
+- Worker report contract validation:
+  - `pnpm orchestrator:validate-worker-report -- --report-path docs/orchestration/runs/<run-id>/issues/<issue-number>-report.md --issue-number <n>`
 
 The milestone retrospective artifact remains:
 - `docs/orchestration/improvements/<run-id>.md`

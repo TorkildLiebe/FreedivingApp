@@ -24,6 +24,12 @@ Additional codex-native requirements:
    - For mobile/UI-impacting issues, require iOS simulator verification evidence before PASS.
    - For backend/docs-only issues, set `MOBILE_UI_TOUCHED: false` and `IOS_VERIFIED: false`.
    - Android verification is currently non-blocking and must be stated in `Risk notes` when omitted.
+   - Before UI runtime verification, run: `pnpm orchestrator:mobile-auth-check`
+   - For M2 map/spots runtime evidence when applicable, use:
+     - `pnpm orchestrator:capture-ios-m2-core -- --run-id <run-id> --issue-number <n> [--device "<name>"]`
+   - `VERIFICATION: FAIL` cannot be paired with `RESULT: PASS`.
+   - If `MOBILE_UI_TOUCHED: true`, `IOS_VERIFIED` must be `true`.
+   - If `MOBILE_UI_TOUCHED: false`, `IOS_VERIFIED` must be `false`.
 
 5. Design OS gate for mobile/UI-impacting issues:
    - Use only `docs/design-os-plan` as canonical UI source.

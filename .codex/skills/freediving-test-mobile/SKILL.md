@@ -8,13 +8,13 @@ description: Use to add or update mobile tests in FreedivingApp for React Native
 Use when creating or updating tests for `apps/mobile/**`.
 
 ## Load These Sources
-- `/Users/torkildliebe/FreedivingApp/.claude/skills/test-mobile/SKILL.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/skills/frontend-dev/testing-mobile.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/testing.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/mobile.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/domain.md`
-- `/Users/torkildliebe/FreedivingApp/docs/design-os-plan/sections/`
-- `/Users/torkildliebe/FreedivingApp/docs/design-os-plan/instructions/incremental/`
+- `.claude/skills/test-mobile/SKILL.md`
+- `.claude/skills/frontend-dev/testing-mobile.md`
+- `.claude/rules/testing.md`
+- `.claude/rules/mobile.md`
+- `.claude/rules/domain.md`
+- `docs/design-os-plan/sections/`
+- `docs/design-os-plan/instructions/incremental/`
 
 ## Operating Workflow
 1. Treat `docs/design-os-plan` as canonical for UI behavior and copy expectations.

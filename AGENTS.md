@@ -1,13 +1,13 @@
 # Codex Project Profile for FreedivingApp
 
-Apply these rules when working in `/Users/torkildliebe/FreedivingApp`.
+Apply these rules when working in this repository root.
 
 ## Source of Truth
 
-- Canonical guidance remains in `/Users/torkildliebe/FreedivingApp/.claude/`.
-- Core memory: `/Users/torkildliebe/FreedivingApp/.claude/CLAUDE.md`
-- Rules: `/Users/torkildliebe/FreedivingApp/.claude/rules/`
-- Skills: `/Users/torkildliebe/FreedivingApp/.claude/skills/` and codex-native skills under `.agents/skills/`
+- Canonical guidance remains in `.claude/`.
+- Core memory: `.claude/CLAUDE.md`
+- Rules: `.claude/rules/`
+- Skills: `.claude/skills/` and codex-native skills under `.agents/skills/`
 
 ## Skills-First + MCP-When-Useful
 
@@ -46,7 +46,7 @@ Final delivery for implementation and review tasks must include:
 
 ## Verification Policy (Risk-Tiered)
 
-Use `/Users/torkildliebe/FreedivingApp/.claude/rules/testing.md` as authority.
+Use `.claude/rules/testing.md` as authority.
 
 - Low risk:
   - Localized docs/text/config with no behavior change.
@@ -70,12 +70,12 @@ Frontend and mobile UI verification (mandatory when UI changes):
 
 Use and follow these files:
 
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/backend.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/mobile.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/domain.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/auth.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/prisma.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/workflow.md`
+- `.claude/rules/backend.md`
+- `.claude/rules/mobile.md`
+- `.claude/rules/domain.md`
+- `.claude/rules/auth.md`
+- `.claude/rules/prisma.md`
+- `.claude/rules/workflow.md`
 
 Non-negotiables:
 
@@ -126,7 +126,7 @@ Compatibility fallback commands:
 
 ## MCP Workspace Policy
 
-Keep MCP workspace-scoped and use `/Users/torkildliebe/FreedivingApp/.mcp.json` as source of truth.
+Keep MCP workspace-scoped and use `.mcp.json` as source of truth.
 
 When available, prefer:
 

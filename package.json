@@ -10,6 +10,7 @@
     "orchestrator:capture-ios-m2-core": "node scripts/orchestrator/capture-ios-m2-core.mjs",
     "orchestrator:transition-issue-commit": "node scripts/orchestrator/transition-issue-commit.mjs",
     "orchestrator:close-milestone-run": "node scripts/orchestrator/close-milestone-run.mjs",
+    "orchestrator:validate-worker-report": "node scripts/orchestrator/validate-worker-report.mjs",
     "test:orchestration-state": "node --test scripts/orchestrator/__tests__/*.test.mjs",
     "codex:hook:pre-edit": ".codex/hooks/run-hook.sh pre-edit",
     "codex:hook:post-edit": ".codex/hooks/run-hook.sh post-edit",

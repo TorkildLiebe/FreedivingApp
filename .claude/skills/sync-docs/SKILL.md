@@ -24,6 +24,17 @@ For UI work, treat `docs/design-os-plan` as the canonical design reference.
 - If divergence is intended to persist, update canonical product docs to reflect the new behavior and avoid silent drift.
 - If divergence is temporary or blocked by constraints, document residual risk and follow-up actions.
 
+## Orchestration Contract Sync
+
+When worker/monitor reporting contracts change, update all affected orchestration docs together:
+- `docs/orchestration/README.md`
+- `.codex/agents/monitor-agent.md`
+- `.claude/agents/vertical-slice-implementor.md`
+- `.codex/agents/vertical-slice-implementor.md`
+- `.agents/skills/monitor-agent/SKILL.md`
+
+Keep section headings, trailer keys, and PASS/FAIL semantics consistent across these files.
+
 ## What to Update When
 
 ### Domain Entity Changes

@@ -16,6 +16,7 @@ import {
   renderRoadmapMarkdown,
   recordIssueAttempt,
   setIssueStatus,
+  validateWorkerReportContract,
   validateWorkerTrailer,
 } from '../lib/core.mjs';
 
@@ -171,4 +172,136 @@ test('verification failure helper uses text and trailer data', () => {
   assert.equal(hasVerificationFailure('pnpm test failed'), true);
   assert.equal(hasVerificationFailure('All passed', { VERIFICATION: 'PASS' }), false);
   assert.equal(hasVerificationFailure('All passed', { VERIFICATION: 'FAIL' }), true);
+});
+
+test('worker report contract validator passes for valid mobile UI report', () => {
+  const markdown = `## Changes made
+Updated map UI and detail sheet.
+Design OS assets used: docs/design-os-plan/product-overview.md
+Component mapping: MarkerChip -> apps/mobile/src/features/map/components/MarkerChip.tsx
+
+## Verification run
+All passed on iOS runtime.
+Design parity evidence: docs/orchestration/runs/screenshots/issue-900/ios-map-screen.png
+
+## Not run / limitations
+Android runtime verification not run in this environment.
+
+## Risk notes
+Approved deviations: none.
+
+RESULT: PASS
+VERIFICATION: PASS
+MOBILE_UI_TOUCHED: true
+IOS_VERIFIED: true
+ISSUE_NUMBER: 900`;
+
+  const { trailer } = validateWorkerReportContract(markdown, {
+    expectedIssueNumber: 900,
+  });
+  assert.equal(trailer.RESULT, 'PASS');
+  assert.equal(trailer.MOBILE_UI_TOUCHED, true);
+});
+
+test('worker report contract validator rejects mobile UI report without iOS verification', () => {
+  const markdown = `## Changes made
+Updated UI.
+Design OS assets used: docs/design-os-plan/product-overview.md
+Component mapping: A -> B
+
+## Verification run
+Passed tests.
+Design parity evidence: screenshot.png
+
+## Not run / limitations
+None.
+
+## Risk notes
+Approved deviations: none.
+
+RESULT: PASS
+VERIFICATION: PASS
+MOBILE_UI_TOUCHED: true
+IOS_VERIFIED: false
+ISSUE_NUMBER: 901`;
+
+  assert.throws(
+    () => validateWorkerReportContract(markdown, { expectedIssueNumber: 901 }),
+    /Mobile UI reports must set IOS_VERIFIED: true/,
+  );
+});
+
+test('worker report contract validator rejects missing UI evidence labels', () => {
+  const markdown = `## Changes made
+Updated UI.
+
+## Verification run
+Passed tests.
+
+## Not run / limitations
+Android not run.
+
+## Risk notes
+Residual risk documented.
+
+RESULT: PASS
+VERIFICATION: PASS
+MOBILE_UI_TOUCHED: true
+IOS_VERIFIED: true
+ISSUE_NUMBER: 902`;
+
+  assert.throws(
+    () => validateWorkerReportContract(markdown, { expectedIssueNumber: 902 }),
+    /Missing required UI evidence labels/,
+  );
+});
+
+test('worker report contract validator rejects PASS result when verification fails', () => {
+  const markdown = `## Changes made
+Backend only changes.
+
+## Verification run
+Failed lint.
+
+## Not run / limitations
+None.
+
+## Risk notes
+Residual risk documented.
+
+RESULT: PASS
+VERIFICATION: FAIL
+MOBILE_UI_TOUCHED: false
+IOS_VERIFIED: false
+ISSUE_NUMBER: 903`;
+
+  assert.throws(
+    () => validateWorkerReportContract(markdown, { expectedIssueNumber: 903 }),
+    /RESULT cannot be PASS when VERIFICATION is FAIL/,
+  );
+});
+
+test('worker report contract validator rejects non-mobile report with IOS_VERIFIED true', () => {
+  const markdown = `## Changes made
+Backend only changes.
+
+## Verification run
+All passed.
+
+## Not run / limitations
+None.
+
+## Risk notes
+Residual risk documented.
+
+RESULT: PASS
+VERIFICATION: PASS
+MOBILE_UI_TOUCHED: false
+IOS_VERIFIED: true
+ISSUE_NUMBER: 904`;
+
+  assert.throws(
+    () => validateWorkerReportContract(markdown, { expectedIssueNumber: 904 }),
+    /Non-mobile reports must set IOS_VERIFIED: false/,
+  );
 });

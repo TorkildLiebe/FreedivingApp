@@ -88,15 +88,11 @@ You are the Codex-native PM orchestrator for unattended milestone delivery in Fr
      - `pnpm orchestrator:capture-ios-m2-core -- --run-id <run-id> --issue-number <n> [--device "<name>"]`
    - Save worker output to:
      - `docs/orchestration/runs/<run-id>/issues/<issue-number>-report.md`
-   - Parse trailer and verification section.
-   - If `MOBILE_UI_TOUCHED: true`, also parse report sections for the required evidence labels:
-     - `Design OS assets used:`
-     - `Component mapping:`
-     - `Design parity evidence:`
-     - `Approved deviations:`
+   - Validate worker report contract (sections, trailer semantics, and UI evidence labels):
+     - `pnpm orchestrator:validate-worker-report -- --report-path docs/orchestration/runs/<run-id>/issues/<issue-number>-report.md --issue-number <n>`
 
 4. Retry and stop behavior
-   - Treat missing Design OS intake/parity evidence as failure when `MOBILE_UI_TOUCHED: true`.
+   - Treat worker report validator failures (including missing Design OS parity evidence for UI issues) as failure attempts.
    - On failure, increment attempt counter and wait 5 minutes.
    - Retry while attempts are within configured budget.
    - If still failing after retries:

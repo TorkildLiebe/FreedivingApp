@@ -8,18 +8,18 @@ description: Use for FreedivingApp mobile work in apps/mobile, including route-t
 Use when working in `apps/mobile/**`.
 
 ## Load These Sources
-- `/Users/torkildliebe/FreedivingApp/.claude/skills/frontend-dev/SKILL.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/skills/frontend-dev/mobile-patterns.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/skills/frontend-dev/testing-mobile.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/skills/frontend-dev/expo-setup.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/mobile.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/domain.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/testing.md`
-- `/Users/torkildliebe/FreedivingApp/docs/design-os-plan/product-overview.md`
-- `/Users/torkildliebe/FreedivingApp/docs/design-os-plan/instructions/incremental/`
-- `/Users/torkildliebe/FreedivingApp/docs/design-os-plan/sections/`
-- `/Users/torkildliebe/FreedivingApp/docs/design-os-plan/shell/`
-- `/Users/torkildliebe/FreedivingApp/docs/design-os-plan/design-system/`
+- `.claude/skills/frontend-dev/SKILL.md`
+- `.claude/skills/frontend-dev/mobile-patterns.md`
+- `.claude/skills/frontend-dev/testing-mobile.md`
+- `.claude/skills/frontend-dev/expo-setup.md`
+- `.claude/rules/mobile.md`
+- `.claude/rules/domain.md`
+- `.claude/rules/testing.md`
+- `docs/design-os-plan/product-overview.md`
+- `docs/design-os-plan/instructions/incremental/`
+- `docs/design-os-plan/sections/`
+- `docs/design-os-plan/shell/`
+- `docs/design-os-plan/design-system/`
 
 ## Operating Workflow
 1. Treat `docs/design-os-plan` as the only canonical UI design source.

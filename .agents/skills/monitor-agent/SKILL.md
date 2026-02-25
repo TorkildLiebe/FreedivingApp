@@ -75,7 +75,9 @@ For mobile/UI-impacting issues, require these evidence labels in worker report s
 - iOS verification is required only when issue impact is mobile UI.
 - Backend/docs issues can skip iOS verification with explicit reason.
 - Android verification is currently informational and should be listed as residual risk when not run.
-- If `MOBILE_UI_TOUCHED: true`, missing Design OS intake/parity evidence is a failed attempt and enters retry flow.
+- Validate every worker report with:
+  - `pnpm orchestrator:validate-worker-report -- --report-path docs/orchestration/runs/<run-id>/issues/<issue-number>-report.md --issue-number <n>`
+- If validation fails (including missing Design OS intake/parity evidence for UI issues), treat it as a failed attempt and enter retry flow.
 - Before UI-runtime verification work, run mobile auth preflight:
   - `pnpm orchestrator:mobile-auth-check`
 

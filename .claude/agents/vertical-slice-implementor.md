@@ -124,7 +124,10 @@ Mobile touched:
 - Targeted: `pnpm --filter mobile test -- <pattern>`
 - Medium/high: `pnpm test:mobile`
 - Static checks: `pnpm lint:mobile`, `pnpm --filter mobile run type-check`
+- Before UI runtime verification, run auth preflight: `pnpm orchestrator:mobile-auth-check`
 - UI changes: capture iOS screenshot evidence before declaring success.
+- For M2 map/spots runtime evidence capture, use deterministic command when applicable:
+  - `pnpm orchestrator:capture-ios-m2-core -- --run-id <run-id> --issue-number <n> [--device "<name>"]`
 - Android verification is currently non-blocking and must be called out in `Risk notes` when not run.
 - UI changes: compare screenshots against the matching Design OS screenshot references and record parity outcome.
 - UI changes: deviations are allowed only when explicitly justified and listed in report sections.
@@ -171,3 +174,13 @@ After these sections, append this machine-readable trailer block:
 - `MOBILE_UI_TOUCHED: true|false`
 - `IOS_VERIFIED: true|false`
 - `ISSUE_NUMBER: <issue-number>`
+
+Strict PASS gate semantics:
+- `VERIFICATION: FAIL` cannot be paired with `RESULT: PASS`.
+- If `MOBILE_UI_TOUCHED: true`, then `IOS_VERIFIED` must be `true`.
+- If `MOBILE_UI_TOUCHED: false`, then `IOS_VERIFIED` must be `false`.
+- If `MOBILE_UI_TOUCHED: true`, all required UI evidence labels must be present in report sections:
+  - `Design OS assets used:`
+  - `Component mapping:`
+  - `Design parity evidence:`
+  - `Approved deviations:`

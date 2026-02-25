@@ -4,6 +4,12 @@ const DEFAULT_REQUIRED_REPORT_SECTIONS = [
   'Not run / limitations',
   'Risk notes',
 ];
+const DEFAULT_REQUIRED_UI_EVIDENCE_LABELS = [
+  'Design OS assets used:',
+  'Component mapping:',
+  'Design parity evidence:',
+  'Approved deviations:',
+];
 
 const REQUIRED_TRAILER_FIELDS = [
   'RESULT',
@@ -158,6 +164,55 @@ export function validateWorkerTrailer(trailer, expectedIssueNumber = null) {
     IOS_VERIFIED: normalizeBoolean(trailer.IOS_VERIFIED),
     ISSUE_NUMBER: issueNumber,
   };
+}
+
+function findMissingUiEvidenceLabels(sections, requiredUiEvidenceLabels) {
+  const combinedSectionsText = Object.values(sections)
+    .map((section) => String(section))
+    .join('\n');
+
+  return requiredUiEvidenceLabels.filter((label) => !combinedSectionsText.includes(label));
+}
+
+export function validateWorkerReportContract(
+  markdown,
+  {
+    expectedIssueNumber = null,
+    requiredSections = DEFAULT_REQUIRED_REPORT_SECTIONS,
+    requiredUiEvidenceLabels = DEFAULT_REQUIRED_UI_EVIDENCE_LABELS,
+  } = {},
+) {
+  const sections = parseWorkerReport(markdown, requiredSections);
+  const trailer = validateWorkerTrailer(parseWorkerTrailer(markdown), expectedIssueNumber);
+  const errors = [];
+
+  if (trailer.VERIFICATION === 'FAIL' && trailer.RESULT === 'PASS') {
+    errors.push('RESULT cannot be PASS when VERIFICATION is FAIL.');
+  }
+
+  if (trailer.MOBILE_UI_TOUCHED) {
+    if (!trailer.IOS_VERIFIED) {
+      errors.push('Mobile UI reports must set IOS_VERIFIED: true.');
+    }
+
+    const missingEvidenceLabels = findMissingUiEvidenceLabels(
+      sections,
+      requiredUiEvidenceLabels,
+    );
+    if (missingEvidenceLabels.length > 0) {
+      errors.push(
+        `Missing required UI evidence labels: ${missingEvidenceLabels.join(', ')}`,
+      );
+    }
+  } else if (trailer.IOS_VERIFIED) {
+    errors.push('Non-mobile reports must set IOS_VERIFIED: false.');
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Worker report contract validation failed:\n- ${errors.join('\n- ')}`);
+  }
+
+  return { sections, trailer };
 }
 
 export function hasVerificationFailure(verificationSection, trailer = null) {
@@ -396,3 +451,4 @@ export function renderRoadmapMarkdown(state, issueMetadata = {}) {
 
 export const REQUIRED_REPORT_SECTIONS = DEFAULT_REQUIRED_REPORT_SECTIONS;
 export const REQUIRED_TRAILER_KEYS = REQUIRED_TRAILER_FIELDS;
+export const REQUIRED_UI_EVIDENCE_LABELS = DEFAULT_REQUIRED_UI_EVIDENCE_LABELS;
