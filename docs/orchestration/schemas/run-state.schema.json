@@ -111,6 +111,13 @@
               "null"
             ]
           },
+          "commit_sha": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-fA-F]{7,40}$"
+          },
           "history": {
             "type": "array",
             "items": {

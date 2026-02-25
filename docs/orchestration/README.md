@@ -39,6 +39,7 @@ For run id `<run-id>`:
 - `docs/orchestration/runs/<run-id>/issues/<issue-number>-plan.md`
 - `docs/orchestration/runs/<run-id>/issues/<issue-number>-report.md`
 - `docs/orchestration/improvements/<run-id>.md`
+- `docs/orchestration/vertical-slice-improvements/<issue-number>.md` (append-on-rerun)
 
 `run.json` required fields:
 
@@ -53,6 +54,9 @@ For run id `<run-id>`:
 - `completed_issues`
 - `blocked_issue`
 - `stop_reason`
+
+Per-issue entry extension (backward-compatible):
+- optional `commit_sha` to persist commit evidence for guarded close transitions.
 
 `roadmap.md` uses status transitions:
 
@@ -86,6 +90,22 @@ Then append trailer lines:
 - Always run targeted verification for behavior changes.
 - iOS simulator verification is required only for mobile/UI-impacting issues.
 - Android verification is currently non-blocking and should be documented as residual risk when skipped.
+
+## Orchestrator Utility Scripts
+
+Run these from repository root:
+
+- Mobile auth preflight:
+  - `pnpm orchestrator:mobile-auth-check`
+- Deterministic iOS M2 screenshot capture:
+  - `pnpm orchestrator:capture-ios-m2-core -- --run-id <run-id> --issue-number <n> [--device "<name>"]`
+- Atomic per-issue commit transition:
+  - `pnpm orchestrator:transition-issue-commit -- --run-id <run-id> --issue <n> --commit-sha <sha> [--note "..."]`
+- Guarded milestone close transition:
+  - `pnpm orchestrator:close-milestone-run -- --run-id <run-id> [--milestone-branch <branch>]`
+
+The milestone retrospective artifact remains:
+- `docs/orchestration/improvements/<run-id>.md`
 
 ## Resume Behavior
 

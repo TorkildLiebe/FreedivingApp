@@ -37,7 +37,13 @@ export default function MapScreen() {
   const sheetRef = useRef<SpotDetailSheetHandle>(null);
   const [activeLayer, setActiveLayer] = useState<MapLayer>('topo');
   const [bbox, setBbox] = useState<BBox | null>(null);
-  const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
+  const devSelectedSpotId =
+    process.env.NODE_ENV === 'development'
+      ? process.env.EXPO_PUBLIC_DEV_SELECTED_SPOT_ID
+      : undefined;
+  const [selectedSpotId, setSelectedSpotId] = useState<string | null>(
+    devSelectedSpotId?.trim() ? devSelectedSpotId : null,
+  );
   const [searchQuery, setSearchQuery] = useState<string>('');
   const devCreateStep =
     process.env.NODE_ENV === 'development'

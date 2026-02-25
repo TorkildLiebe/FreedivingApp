@@ -1,8 +1,7 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import { MapFloatingButton } from '@/src/features/map/components/map-floating-button';
-
 import '@/src/__tests__/mocks/expo-vector-icons.mock';
+import { MapFloatingButton } from '@/src/features/map/components/map-floating-button';
 
 describe('MapFloatingButton', () => {
   it('renders without crashing', () => {
@@ -14,10 +13,14 @@ describe('MapFloatingButton', () => {
 
   it('calls onPress when pressed', () => {
     const onPress = jest.fn();
-    const { root } = render(
-      <MapFloatingButton onPress={onPress} iconName="crosshairs" />,
+    const { getByTestId } = render(
+      <MapFloatingButton
+        onPress={onPress}
+        iconName="crosshairs"
+        testID="map-floating-button"
+      />,
     );
-    fireEvent.press(root);
+    fireEvent.press(getByTestId('map-floating-button'));
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 });

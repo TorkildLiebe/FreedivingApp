@@ -15,10 +15,20 @@ Use when working in `apps/mobile/**`.
 - `/Users/torkildliebe/FreedivingApp/.claude/rules/mobile.md`
 - `/Users/torkildliebe/FreedivingApp/.claude/rules/domain.md`
 - `/Users/torkildliebe/FreedivingApp/.claude/rules/testing.md`
+- `/Users/torkildliebe/FreedivingApp/docs/design-os-plan/product-overview.md`
+- `/Users/torkildliebe/FreedivingApp/docs/design-os-plan/instructions/incremental/`
+- `/Users/torkildliebe/FreedivingApp/docs/design-os-plan/sections/`
+- `/Users/torkildliebe/FreedivingApp/docs/design-os-plan/shell/`
+- `/Users/torkildliebe/FreedivingApp/docs/design-os-plan/design-system/`
 
 ## Operating Workflow
-1. Keep route files thin; keep logic in feature hooks and services.
-2. Preserve allowed dependency direction and avoid cross-feature coupling.
-3. Maintain loading, error, and empty states on networked flows.
-4. Keep payload handling typed and minimal.
-5. Verify iOS and Android behavior as required by risk tier.
+1. Treat `docs/design-os-plan` as the only canonical UI design source.
+2. Load Design OS assets in order: product overview -> incremental instruction -> section assets/tests/components/types/screenshots.
+3. Reuse/adapt finished Design OS components before introducing custom UI structure.
+4. Preserve design copy, labels, placeholders, tokens, and state flow semantics unless deviation is required.
+5. Document and justify approved visual/interaction deviations.
+6. Keep route files thin; keep logic in feature hooks and services.
+7. Preserve allowed dependency direction and avoid cross-feature coupling.
+8. Maintain loading, error, and empty states on networked flows.
+9. Keep payload handling typed and minimal.
+10. Verify iOS and Android behavior as required by risk tier.

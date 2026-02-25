@@ -17,6 +17,25 @@ Use this skill when:
 - Managing auth context and user state
 - Writing mobile tests
 
+## Design OS Integration Workflow
+
+Use this workflow for mobile/UI implementation. `docs/design-os-plan` is the only canonical UI source.
+
+1. Intake files in this order:
+   - `docs/design-os-plan/product-overview.md`
+   - matching incremental milestone instruction in `docs/design-os-plan/instructions/incremental/`
+   - matching section assets in `docs/design-os-plan/sections/<section>/`:
+     - `README.md`
+     - `tests.md`
+     - `components/`
+     - `types.ts`
+     - screenshot references
+   - shell assets from `docs/design-os-plan/shell/` when shell chrome is touched
+   - design tokens from `docs/design-os-plan/design-system/` when styling is touched
+2. Reuse/adapt finished Design OS section components before introducing custom UI structure.
+3. Preserve design tokens, labels, placeholders, and state flow semantics from Design OS files.
+4. If divergence is required, document the deviation and the reason in delivery output.
+
 ## Feature-Based Architecture
 
 Each feature is self-contained:

@@ -24,6 +24,8 @@ export const ISSUE_STATUSES = [
   'blocked',
 ];
 
+const COMMIT_SHA_REGEX = /^[0-9a-f]{7,40}$/i;
+
 function normalizeHeading(value) {
   return value.trim().toLowerCase();
 }
@@ -178,6 +180,7 @@ function createIssueState(now) {
     status: 'pending',
     attempts: 0,
     note: null,
+    commit_sha: null,
     history: [{ status: 'pending', at: now }],
   };
 }
@@ -265,6 +268,21 @@ export function setIssueStatus(state, issueNumber, status, timestamp = nowIso(),
   return clone;
 }
 
+export function isValidCommitSha(value) {
+  return COMMIT_SHA_REGEX.test(String(value).trim());
+}
+
+export function setIssueCommitSha(state, issueNumber, commitSha, timestamp = nowIso()) {
+  if (!isValidCommitSha(commitSha)) {
+    throw new Error(`Invalid commit SHA: ${commitSha}`);
+  }
+
+  const clone = withUpdatedTimestamp(state, timestamp);
+  const key = assertKnownIssue(clone, issueNumber);
+  clone.issues[key].commit_sha = String(commitSha).trim();
+  return clone;
+}
+
 export function recordIssueAttempt(state, issueNumber, timestamp = nowIso()) {
   const clone = withUpdatedTimestamp(state, timestamp);
   const key = assertKnownIssue(clone, issueNumber);
@@ -279,9 +297,13 @@ export function canRetryIssue(state, issueNumber, retryBudget) {
   return attempts <= retryBudget;
 }
 
-export function markIssueCompleted(state, issueNumber, timestamp = nowIso()) {
+export function markIssueCompleted(state, issueNumber, timestamp = nowIso(), commitSha = null) {
   let clone = setIssueStatus(state, issueNumber, 'committed', timestamp);
   const normalized = ensureNumericIssueNumber(issueNumber);
+
+  if (commitSha != null) {
+    clone = setIssueCommitSha(clone, normalized, commitSha, timestamp);
+  }
 
   if (!clone.completed_issues.includes(normalized)) {
     clone.completed_issues.push(normalized);

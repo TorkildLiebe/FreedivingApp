@@ -1,6 +1,7 @@
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
+import LoginScreen from '@/src/features/auth/screens/login-screen';
 
 jest.spyOn(Alert, 'alert');
 
@@ -13,8 +14,6 @@ jest.mock('@/src/features/auth/context/auth-context', () => ({
     signUp: mockSignUp,
   }),
 }));
-
-import LoginScreen from '@/src/features/auth/screens/login-screen';
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -63,7 +62,9 @@ describe('LoginScreen', () => {
     fireEvent.changeText(getByPlaceholderText('Password'), 'password123');
 
     const signInButtons = getAllByText('Sign In');
-    fireEvent.press(signInButtons[signInButtons.length - 1]);
+    await act(async () => {
+      fireEvent.press(signInButtons[signInButtons.length - 1]);
+    });
 
     await waitFor(() => {
       expect(mockSignIn).toHaveBeenCalledWith('test@example.com', 'password123');
@@ -76,7 +77,9 @@ describe('LoginScreen', () => {
     fireEvent.press(getByText("Don't have an account? Sign Up"));
     fireEvent.changeText(getByPlaceholderText('Email'), 'new@example.com');
     fireEvent.changeText(getByPlaceholderText('Password'), 'password123');
-    fireEvent.press(getByText('Sign Up'));
+    await act(async () => {
+      fireEvent.press(getByText('Sign Up'));
+    });
 
     await waitFor(() => {
       expect(mockSignUp).toHaveBeenCalledWith('new@example.com', 'password123');
@@ -94,7 +97,9 @@ describe('LoginScreen', () => {
     fireEvent.changeText(getByPlaceholderText('Password'), 'wrong');
 
     const signInButtons = getAllByText('Sign In');
-    fireEvent.press(signInButtons[signInButtons.length - 1]);
+    await act(async () => {
+      fireEvent.press(signInButtons[signInButtons.length - 1]);
+    });
 
     await waitFor(() => {
       expect(Alert.alert).toHaveBeenCalledWith('Error', 'Invalid credentials');
@@ -110,7 +115,7 @@ describe('LoginScreen', () => {
       }),
     );
 
-    const { getByPlaceholderText, getAllByText, queryByText } = render(
+    const { getByPlaceholderText, getAllByText } = render(
       <LoginScreen />,
     );
 
@@ -118,7 +123,9 @@ describe('LoginScreen', () => {
     fireEvent.changeText(getByPlaceholderText('Password'), 'password123');
 
     const signInButtons = getAllByText('Sign In');
-    fireEvent.press(signInButtons[signInButtons.length - 1]);
+    await act(async () => {
+      fireEvent.press(signInButtons[signInButtons.length - 1]);
+    });
 
     // During loading, the button text should be replaced by ActivityIndicator
     await waitFor(() => {
@@ -128,6 +135,8 @@ describe('LoginScreen', () => {
     });
 
     // Resolve to clean up
-    resolveSignIn!({ error: null });
+    await act(async () => {
+      resolveSignIn!({ error: null });
+    });
   });
 });

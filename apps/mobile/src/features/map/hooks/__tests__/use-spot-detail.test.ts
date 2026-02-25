@@ -35,8 +35,15 @@ const mockSpot: SpotDetail = {
 };
 
 describe('useSpotDetail', () => {
+  let consoleWarnSpy: jest.SpyInstance;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    consoleWarnSpy.mockRestore();
   });
 
   it('returns null when spotId is null', () => {
@@ -74,6 +81,10 @@ describe('useSpotDetail', () => {
 
     expect(result.current.spot).toBeNull();
     expect(result.current.error).toBe('Failed to load spot details');
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      'Failed to fetch spot detail:',
+      expect.any(Error),
+    );
   });
 
   it('clears spot when spotId becomes null', async () => {

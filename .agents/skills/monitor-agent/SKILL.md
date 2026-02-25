@@ -53,11 +53,40 @@ Require worker output:
   - `IOS_VERIFIED: true|false`
   - `ISSUE_NUMBER: <n>`
 
+For mobile/UI-impacting issues, require these evidence labels in worker report sections:
+- `Design OS assets used:`
+- `Component mapping:`
+- `Design parity evidence:`
+- `Approved deviations:`
+
+## Design OS Source Rule
+
+- Canonical UI design source is only `docs/design-os-plan`.
+- For UI issues, require the worker intake to include:
+  - `docs/design-os-plan/product-overview.md`
+  - one matching incremental instruction file under `docs/design-os-plan/instructions/incremental/`
+  - matching design assets:
+    - `shell`: shell `README.md`, `components/`, and screenshot files
+    - `map-and-spots` / `dive-reports` / `auth-and-profiles`: section `README.md`, `tests.md`, `components/`, `types.ts`, and screenshot files
+- Pass these exact file paths to `vertical-slice-implementor` via implementation notes.
+
 ## Gate Logic
 
 - iOS verification is required only when issue impact is mobile UI.
 - Backend/docs issues can skip iOS verification with explicit reason.
 - Android verification is currently informational and should be listed as residual risk when not run.
+- If `MOBILE_UI_TOUCHED: true`, missing Design OS intake/parity evidence is a failed attempt and enters retry flow.
+- Before UI-runtime verification work, run mobile auth preflight:
+  - `pnpm orchestrator:mobile-auth-check`
+
+## State Transition Commands
+
+- After a successful issue commit, transition run-state + roadmap atomically:
+  - `pnpm orchestrator:transition-issue-commit -- --run-id <run-id> --issue <n> --commit-sha <sha> [--note "..."]`
+- At milestone end, perform guarded close transition:
+  - `pnpm orchestrator:close-milestone-run -- --run-id <run-id> [--milestone-branch <branch>]`
+- For deterministic M2 iOS evidence capture when UI states must be proven:
+  - `pnpm orchestrator:capture-ios-m2-core -- --run-id <run-id> --issue-number <n> [--device "<name>"]`
 
 ## Done Criteria
 

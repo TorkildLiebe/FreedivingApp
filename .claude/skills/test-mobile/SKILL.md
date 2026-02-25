@@ -15,6 +15,16 @@ Use this skill to:
 - Generate mocks for Expo modules and MapLibre
 - Achieve ≥80% test coverage
 
+## Design Fidelity Test Requirements
+
+For mobile/UI changes, use `docs/design-os-plan` as the design source.
+
+1. Pull behavior test cases from `docs/design-os-plan/sections/<section>/tests.md`.
+2. Add assertions for UX copy and state transitions that are explicitly specified in Design OS docs.
+3. Keep tests aligned with Design OS callbacks, labels, and empty/loading/error state expectations.
+4. Run screenshot-based visual verification for changed UI states and compare against section screenshot references.
+5. Document any approved visual mismatches and why they are acceptable.
+
 ## Test Types
 
 ### Component Tests

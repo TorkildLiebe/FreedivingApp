@@ -16,6 +16,14 @@ Use this skill to:
 - Ensure DOMAIN.md matches validation code
 - Update folder structure examples
 
+## Design Drift Sync
+
+For UI work, treat `docs/design-os-plan` as the canonical design reference.
+
+- When implementation intentionally diverges from Design OS guidance, record explicit drift in delivery/reporting with rationale.
+- If divergence is intended to persist, update canonical product docs to reflect the new behavior and avoid silent drift.
+- If divergence is temporary or blocked by constraints, document residual risk and follow-up actions.
+
 ## What to Update When
 
 ### Domain Entity Changes

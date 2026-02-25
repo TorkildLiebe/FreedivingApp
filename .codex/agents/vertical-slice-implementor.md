@@ -24,3 +24,25 @@ Additional codex-native requirements:
    - For mobile/UI-impacting issues, require iOS simulator verification evidence before PASS.
    - For backend/docs-only issues, set `MOBILE_UI_TOUCHED: false` and `IOS_VERIFIED: false`.
    - Android verification is currently non-blocking and must be stated in `Risk notes` when omitted.
+
+5. Design OS gate for mobile/UI-impacting issues:
+   - Use only `docs/design-os-plan` as canonical UI source.
+   - Load `docs/design-os-plan/product-overview.md`, one matching incremental instruction file, and matching design assets:
+     - `shell`: shell `README.md`, `components/`, screenshot references.
+     - `map-and-spots` / `dive-reports` / `auth-and-profiles`: section `README.md`, `tests.md`, `components/`, `types.ts`, screenshot references.
+   - Produce and follow a component mapping from Design OS components to target React Native files before edits.
+
+6. Required UI evidence lines (inside existing required report sections):
+   - `Design OS assets used:`
+   - `Component mapping:`
+   - `Design parity evidence:`
+   - `Approved deviations:`
+   - Missing these labels for `MOBILE_UI_TOUCHED: true` implies verification failure.
+
+7. Implementer improvement artifact (append-only):
+   - Write/update `docs/orchestration/vertical-slice-improvements/<issue-number>.md` for every issue run.
+   - Append a new dated section per run with:
+     - timestamp + run-id (or `run-id: standalone`)
+     - `What slowed execution`
+     - `Suggested process improvements`
+   - Do not change existing final response section/trailer contracts.
