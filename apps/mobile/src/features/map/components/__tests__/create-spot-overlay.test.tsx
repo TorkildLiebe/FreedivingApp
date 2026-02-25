@@ -1,7 +1,39 @@
 import React from 'react';
-import { fireEvent, render } from '@testing-library/react-native';
+import { act, fireEvent, render } from '@testing-library/react-native';
 import '@/src/__tests__/mocks/expo-vector-icons.mock';
 import { CreateSpotOverlay } from '@/src/features/map/components/create-spot-overlay';
+
+jest.mock('@gorhom/bottom-sheet', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const React = require('react');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { ScrollView, View } = require('react-native');
+
+  // eslint-disable-next-line react/display-name
+  const BottomSheet = React.forwardRef(({ children, ...props }: any, ref: any) => {
+    React.useImperativeHandle(ref, () => ({
+      snapToIndex: jest.fn(),
+      close: jest.fn(),
+    }));
+
+    return React.createElement(
+      View,
+      { testID: 'bottom-sheet', ...props },
+      children,
+    );
+  });
+
+  return {
+    __esModule: true,
+    default: BottomSheet,
+    BottomSheetScrollView: ({ children, ...props }: any) =>
+      React.createElement(
+        ScrollView,
+        { testID: 'create-spot-form-scroll', ...props },
+        children,
+      ),
+  };
+});
 
 describe('CreateSpotOverlay', () => {
   const baseProps = {
@@ -19,13 +51,13 @@ describe('CreateSpotOverlay', () => {
     error: null,
     onCancel: jest.fn(),
     onConfirmPin: jest.fn(),
-    onBackToPin: jest.fn(),
     onSubmit: jest.fn(),
     onPickPhotos: jest.fn(),
     onRemovePhoto: jest.fn(),
     onTitleChange: jest.fn(),
     onDescriptionChange: jest.fn(),
     onAccessInfoChange: jest.fn(),
+    onFormSheetIndexChange: jest.fn(),
     onStartParkingPlacement: jest.fn(),
     onCancelParkingPlacement: jest.fn(),
     onParkingLabelChange: jest.fn(),
@@ -63,6 +95,52 @@ describe('CreateSpotOverlay', () => {
     expect(submitButton).toBeEnabled();
     fireEvent.press(submitButton);
     expect(baseProps.onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses drag sheet configuration for the form step', () => {
+    const { getByTestId, queryByTestId } = render(
+      <CreateSpotOverlay {...baseProps} step="form" title="New Spot" />,
+    );
+
+    const formSheet = getByTestId('bottom-sheet');
+    expect(formSheet.props.snapPoints).toEqual(['25%', '55%', '90%']);
+    expect(formSheet.props.enablePanDownToClose).toBe(false);
+    expect(queryByTestId('create-spot-minimize-button')).toBeNull();
+  });
+
+  it('emits form sheet index changes', () => {
+    const { getByTestId } = render(
+      <CreateSpotOverlay {...baseProps} step="form" title="New Spot" />,
+    );
+
+    act(() => {
+      getByTestId('bottom-sheet').props.onChange(0);
+    });
+
+    expect(baseProps.onFormSheetIndexChange).toHaveBeenCalledWith(0);
+  });
+
+  it('uses cancel action as form secondary action', () => {
+    const { getByTestId } = render(
+      <CreateSpotOverlay {...baseProps} step="form" title="New Spot" />,
+    );
+
+    fireEvent.press(getByTestId('create-spot-cancel-form-button'));
+    expect(baseProps.onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows placement error text when provided', () => {
+    const { getByTestId, getByText } = render(
+      <CreateSpotOverlay
+        {...baseProps}
+        error="A dive spot already exists within 1000m of this location."
+      />,
+    );
+
+    expect(getByTestId('create-spot-error-text')).toBeTruthy();
+    expect(
+      getByText('A dive spot already exists within 1000m of this location.'),
+    ).toBeTruthy();
   });
 
   it('renders parking step and confirms parking placement', () => {

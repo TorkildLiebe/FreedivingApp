@@ -30,6 +30,20 @@ interface SpotPhotoUploadUrlResponse {
   publicUrl: string;
 }
 
+function isApiErrorWithMessage(
+  value: unknown,
+): value is { status: number; message: string } {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as { status?: unknown; message?: unknown };
+  return (
+    typeof candidate.status === 'number' &&
+    typeof candidate.message === 'string'
+  );
+}
+
 export function useCreateSpot() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +87,12 @@ export function useCreateSpot() {
 
       for (const photo of photoAssets) {
         const mimeType = photo.mimeType ?? 'image/jpeg';
+        const localUri = photo.uri?.trim();
+        if (!localUri) {
+          throw new Error(
+            'Failed to read one of the selected photos. Please select photos again.',
+          );
+        }
 
         const uploadTarget = await apiFetch<SpotPhotoUploadUrlResponse>(
           `/spots/${createdSpot.id}/photos/upload-url`,
@@ -82,7 +102,10 @@ export function useCreateSpot() {
           },
         );
 
-        const localResponse = await fetch(photo.uri);
+        const localResponse = await fetch(localUri);
+        if (!localResponse.ok) {
+          throw new Error('Failed to read one of the selected photos.');
+        }
         const localBlob = await localResponse.blob();
 
         const uploadResponse = await fetch(uploadTarget.uploadUrl, {
@@ -105,8 +128,9 @@ export function useCreateSpot() {
 
       return latestSpot;
     } catch (submitError) {
-      const message =
-        submitError instanceof Error
+      const message = isApiErrorWithMessage(submitError)
+        ? submitError.message
+        : submitError instanceof Error
           ? submitError.message
           : 'Failed to create spot. Please try again.';
       setError(message);

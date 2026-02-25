@@ -1,13 +1,14 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import type {
   PendingParkingLocation,
@@ -32,13 +33,13 @@ interface CreateSpotOverlayProps {
   error: string | null;
   onCancel: () => void;
   onConfirmPin: () => void;
-  onBackToPin: () => void;
   onSubmit: () => void;
   onPickPhotos: () => void;
   onRemovePhoto: (index: number) => void;
   onTitleChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onAccessInfoChange: (value: string) => void;
+  onFormSheetIndexChange?: (index: number) => void;
   onStartParkingPlacement: () => void;
   onCancelParkingPlacement: () => void;
   onParkingLabelChange: (value: string) => void;
@@ -61,19 +62,37 @@ export function CreateSpotOverlay({
   error,
   onCancel,
   onConfirmPin,
-  onBackToPin,
   onSubmit,
   onPickPhotos,
   onRemovePhoto,
   onTitleChange,
   onDescriptionChange,
   onAccessInfoChange,
+  onFormSheetIndexChange,
   onStartParkingPlacement,
   onCancelParkingPlacement,
   onParkingLabelChange,
   onConfirmParkingPlacement,
   onRemoveParkingLocation,
 }: CreateSpotOverlayProps) {
+  const snapPoints = useMemo(() => ['25%', '55%', '90%'], []);
+  const [formSheetIndex, setFormSheetIndex] = useState(2);
+
+  useEffect(() => {
+    if (step === 'form') {
+      setFormSheetIndex(2);
+      onFormSheetIndexChange?.(2);
+    }
+  }, [onFormSheetIndexChange, step]);
+
+  const handleFormSheetChange = useCallback(
+    (index: number) => {
+      setFormSheetIndex(index);
+      onFormSheetIndexChange?.(index);
+    },
+    [onFormSheetIndexChange],
+  );
+
   if (!visible) {
     return null;
   }
@@ -109,6 +128,11 @@ export function CreateSpotOverlay({
               {pinCoordinate.lat.toFixed(5)}, {pinCoordinate.lng.toFixed(5)}
             </Text>
           ) : null}
+          {error ? (
+            <Text testID="create-spot-error-text" style={styles.errorText}>
+              {error}
+            </Text>
+          ) : null}
           <TouchableOpacity
             testID="create-spot-confirm-pin-button"
             style={styles.primaryButton}
@@ -127,149 +151,164 @@ export function CreateSpotOverlay({
       ) : null}
 
       {showFormStep ? (
-        <View testID="create-spot-form-step" style={[styles.panel, styles.formPanel]}>
-          <Text style={styles.panelTitle}>Create Dive Spot</Text>
-          <ScrollView keyboardShouldPersistTaps="handled">
-            <View style={styles.formField}>
-              <Text style={styles.fieldLabel}>Spot Name</Text>
-              <TextInput
-                testID="create-spot-title-input"
-                value={title}
-                onChangeText={onTitleChange}
-                placeholder="e.g. Nakholmen South"
-                placeholderTextColor={colors.neutral[500]}
-                style={styles.input}
-                maxLength={80}
-              />
-            </View>
-
-            <View style={styles.formField}>
-              <Text style={styles.fieldLabel}>Description</Text>
-              <TextInput
-                testID="create-spot-description-input"
-                value={description}
-                onChangeText={onDescriptionChange}
-                placeholder="Describe the site, depths, marine life..."
-                placeholderTextColor={colors.neutral[500]}
-                style={[styles.input, styles.textArea]}
-                multiline
-                maxLength={2000}
-              />
-            </View>
-
-            <View style={styles.formField}>
-              <Text style={styles.fieldLabel}>Access Info</Text>
-              <TextInput
-                testID="create-spot-access-input"
-                value={accessInfo}
-                onChangeText={onAccessInfoChange}
-                placeholder="How to get there, entry point..."
-                placeholderTextColor={colors.neutral[500]}
-                style={[styles.input, styles.textArea]}
-                multiline
-                maxLength={1000}
-              />
-            </View>
-
-            <View style={styles.formField}>
-              <View style={styles.photoHeaderRow}>
-                <Text style={styles.fieldLabel}>Photos</Text>
-                <Text testID="create-spot-photo-count" style={styles.photoCountText}>
-                  {photos.length}/5
-                </Text>
+        <BottomSheet
+          index={formSheetIndex}
+          snapPoints={snapPoints}
+          onChange={handleFormSheetChange}
+          enablePanDownToClose={false}
+          backgroundStyle={styles.formSheetBackground}
+          handleIndicatorStyle={styles.formSheetHandle}
+        >
+          <View testID="create-spot-form-step" style={styles.formSheetBody}>
+            <Text style={styles.panelTitle}>Create Dive Spot</Text>
+            <BottomSheetScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.formField}>
+                <Text style={styles.fieldLabel}>Spot Name</Text>
+                <TextInput
+                  testID="create-spot-title-input"
+                  value={title}
+                  onChangeText={onTitleChange}
+                  placeholder="e.g. Nakholmen South"
+                  placeholderTextColor={colors.neutral[500]}
+                  style={styles.input}
+                  maxLength={80}
+                />
               </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <TouchableOpacity
-                  testID="create-spot-add-photos-button"
-                  style={[
-                    styles.addPhotoButton,
-                    (photos.length >= 5 || isPickingPhotos || isSubmitting) &&
-                      styles.addPhotoButtonDisabled,
-                  ]}
-                  onPress={onPickPhotos}
-                  disabled={photos.length >= 5 || isPickingPhotos || isSubmitting}
-                >
-                  {isPickingPhotos ? (
-                    <ActivityIndicator size="small" color={colors.neutral[50]} />
-                  ) : (
-                    <Text style={styles.addPhotoButtonText}>+ Add</Text>
-                  )}
-                </TouchableOpacity>
-                {photos.map((photo, index) => (
-                  <View key={`${photo.uri}-${index}`} style={styles.photoPreviewContainer}>
-                    <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
+
+              <View style={styles.formField}>
+                <Text style={styles.fieldLabel}>Description</Text>
+                <TextInput
+                  testID="create-spot-description-input"
+                  value={description}
+                  onChangeText={onDescriptionChange}
+                  placeholder="Describe the site, depths, marine life..."
+                  placeholderTextColor={colors.neutral[500]}
+                  style={[styles.input, styles.textArea]}
+                  multiline
+                  maxLength={2000}
+                />
+              </View>
+
+              <View style={styles.formField}>
+                <Text style={styles.fieldLabel}>Access Info</Text>
+                <TextInput
+                  testID="create-spot-access-input"
+                  value={accessInfo}
+                  onChangeText={onAccessInfoChange}
+                  placeholder="How to get there, entry point..."
+                  placeholderTextColor={colors.neutral[500]}
+                  style={[styles.input, styles.textArea]}
+                  multiline
+                  maxLength={1000}
+                />
+              </View>
+
+              <View style={styles.formField}>
+                <View style={styles.photoHeaderRow}>
+                  <Text style={styles.fieldLabel}>Photos</Text>
+                  <Text testID="create-spot-photo-count" style={styles.photoCountText}>
+                    {photos.length}/5
+                  </Text>
+                </View>
+                <BottomSheetScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <TouchableOpacity
+                    testID="create-spot-add-photos-button"
+                    style={[
+                      styles.addPhotoButton,
+                      (photos.length >= 5 || isPickingPhotos || isSubmitting) &&
+                        styles.addPhotoButtonDisabled,
+                    ]}
+                    onPress={onPickPhotos}
+                    disabled={photos.length >= 5 || isPickingPhotos || isSubmitting}
+                  >
+                    {isPickingPhotos ? (
+                      <ActivityIndicator size="small" color={colors.neutral[700]} />
+                    ) : (
+                      <>
+                        <FontAwesome name="camera" size={18} color={colors.neutral[500]} />
+                        <Text style={styles.addPhotoButtonText}>Add</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  {photos.map((photo, index) => (
+                    <View key={`${photo.uri}-${index}`} style={styles.photoPreviewContainer}>
+                      <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
+                      <TouchableOpacity
+                        testID={`create-spot-remove-photo-${index}`}
+                        style={styles.removePhotoButton}
+                        onPress={() => onRemovePhoto(index)}
+                        disabled={isSubmitting}
+                      >
+                        <FontAwesome name="close" size={12} color={colors.neutral[50]} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </BottomSheetScrollView>
+              </View>
+
+              <View style={styles.formField}>
+                <Text style={styles.fieldLabel}>Parking Locations</Text>
+                {parkingLocations.map((parking, index) => (
+                  <View key={`parking-${index}`} style={styles.parkingRow}>
+                    <Text style={styles.parkingLabelText} numberOfLines={1}>
+                      {parking.label?.trim().length
+                        ? parking.label
+                        : `Parking (${parking.lat.toFixed(4)}, ${parking.lon.toFixed(4)})`}
+                    </Text>
                     <TouchableOpacity
-                      testID={`create-spot-remove-photo-${index}`}
-                      style={styles.removePhotoButton}
-                      onPress={() => onRemovePhoto(index)}
+                      testID={`create-spot-remove-parking-${index}`}
+                      onPress={() => onRemoveParkingLocation(index)}
                       disabled={isSubmitting}
                     >
-                      <FontAwesome name="close" size={12} color={colors.neutral[50]} />
+                      <FontAwesome name="close" size={14} color={colors.neutral[600]} />
                     </TouchableOpacity>
                   </View>
                 ))}
-              </ScrollView>
-            </View>
+                <TouchableOpacity
+                  testID="create-spot-add-parking-button"
+                  style={styles.parkingAddButton}
+                  onPress={onStartParkingPlacement}
+                  disabled={isSubmitting}
+                >
+                  <Text style={styles.parkingAddButtonText}>+ Add Parking Location</Text>
+                </TouchableOpacity>
+              </View>
 
-            <View style={styles.formField}>
-              <Text style={styles.fieldLabel}>Parking Locations</Text>
-              {parkingLocations.map((parking, index) => (
-                <View key={`parking-${index}`} style={styles.parkingRow}>
-                  <Text style={styles.parkingLabelText} numberOfLines={1}>
-                    {parking.label?.trim().length
-                      ? parking.label
-                      : `Parking (${parking.lat.toFixed(4)}, ${parking.lon.toFixed(4)})`}
-                  </Text>
-                  <TouchableOpacity
-                    testID={`create-spot-remove-parking-${index}`}
-                    onPress={() => onRemoveParkingLocation(index)}
-                    disabled={isSubmitting}
-                  >
-                    <FontAwesome name="close" size={14} color={colors.neutral[600]} />
-                  </TouchableOpacity>
-                </View>
-              ))}
-              <TouchableOpacity
-                testID="create-spot-add-parking-button"
-                style={styles.parkingAddButton}
-                onPress={onStartParkingPlacement}
-                disabled={isSubmitting}
-              >
-                <Text style={styles.parkingAddButtonText}>+ Add Parking Location</Text>
-              </TouchableOpacity>
-            </View>
+              {error ? (
+                <Text testID="create-spot-error-text" style={styles.errorText}>
+                  {error}
+                </Text>
+              ) : null}
+            </BottomSheetScrollView>
 
-            {error ? (
-              <Text testID="create-spot-error-text" style={styles.errorText}>
-                {error}
-              </Text>
-            ) : null}
-          </ScrollView>
-
-          <TouchableOpacity
-            testID="create-spot-submit-button"
-            style={[
-              styles.primaryButton,
-              (title.trim().length === 0 || isSubmitting) && styles.primaryButtonDisabled,
-            ]}
-            disabled={title.trim().length === 0 || isSubmitting}
-            onPress={onSubmit}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator size="small" color={colors.neutral[50]} />
-            ) : (
-              <Text style={styles.primaryButtonText}>Create Dive Spot</Text>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity
-            testID="create-spot-back-button"
-            style={styles.secondaryButton}
-            onPress={onBackToPin}
-            disabled={isSubmitting}
-          >
-            <Text style={styles.secondaryButtonText}>Back to pin placement</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              testID="create-spot-submit-button"
+              style={[
+                styles.primaryButton,
+                (title.trim().length === 0 || isSubmitting) && styles.primaryButtonDisabled,
+              ]}
+              disabled={title.trim().length === 0 || isSubmitting}
+              onPress={onSubmit}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color={colors.neutral[50]} />
+              ) : (
+                <Text style={styles.primaryButtonText}>Create Dive Spot</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              testID="create-spot-cancel-form-button"
+              style={styles.secondaryButton}
+              onPress={onCancel}
+              disabled={isSubmitting}
+            >
+              <Text style={styles.secondaryButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </BottomSheet>
       ) : null}
 
       {showParkingStep ? (
@@ -338,7 +377,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary[400],
   },
   panel: {
-    backgroundColor: colors.neutral[50],
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 16,
@@ -347,8 +386,18 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: colors.neutral[200],
   },
-  formPanel: {
-    maxHeight: '74%',
+  formSheetBackground: {
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+  },
+  formSheetHandle: {
+    backgroundColor: colors.neutral[900],
+    opacity: 0.3,
+  },
+  formSheetBody: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 24,
   },
   panelTitle: {
     fontSize: 24,
@@ -385,7 +434,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.neutral[300],
     borderRadius: 10,
-    backgroundColor: colors.neutral[100],
+    backgroundColor: colors.neutral[50],
     color: colors.neutral[900],
     fontSize: 15,
     paddingHorizontal: 12,
@@ -413,16 +462,20 @@ const styles = StyleSheet.create({
     width: 84,
     height: 84,
     borderRadius: 10,
-    backgroundColor: colors.primary[500],
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.neutral[300],
+    backgroundColor: colors.neutral[50],
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
+    gap: 6,
   },
   addPhotoButtonDisabled: {
     opacity: 0.5,
   },
   addPhotoButtonText: {
-    color: colors.neutral[50],
+    color: colors.neutral[600],
     fontSize: 14,
     fontFamily: typography.body.fontFamily,
     fontWeight: '600',
@@ -454,7 +507,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderWidth: 1,
     borderColor: colors.neutral[300],
-    backgroundColor: colors.neutral[100],
+    backgroundColor: colors.neutral[50],
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -468,7 +521,7 @@ const styles = StyleSheet.create({
   },
   parkingAddButton: {
     borderWidth: 1,
-    borderColor: colors.secondary[500],
+    borderColor: colors.secondary[400],
     borderStyle: 'dashed',
     borderRadius: 10,
     paddingVertical: 10,
@@ -484,13 +537,12 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#dc2626',
     fontSize: 13,
-    marginTop: 4,
     marginBottom: 8,
   },
   primaryButton: {
     marginTop: 12,
     borderRadius: 12,
-    backgroundColor: colors.primary[500],
+    backgroundColor: colors.primary[600],
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 48,

@@ -8,6 +8,7 @@ import {
 import { StyleSheet, Text, View } from 'react-native';
 import { spotsToGeoJSON } from '@/src/features/map/utils/spots-to-geojson';
 import { parkingToGeoJSON } from '@/src/features/map/utils/parking-to-geojson';
+import { colors } from '@/src/shared/theme';
 import type { MapViewHandle, MapViewProps } from './map-view-types';
 
 // Try to load MapLibre — will fail in Expo Go (no native module)
@@ -50,6 +51,69 @@ const resolvedMapLibre = isJest ? mapLibreTestShim : MapLibreGL;
 
 export type { MapViewHandle };
 
+function parseCenterFromValue(
+  rawCenter: unknown,
+): { lat: number; lng: number } | null {
+  if (Array.isArray(rawCenter) && rawCenter.length >= 2) {
+    const [lng, lat] = rawCenter;
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      return { lat, lng };
+    }
+    return null;
+  }
+
+  if (!rawCenter || typeof rawCenter !== 'object') {
+    return null;
+  }
+
+  const center = rawCenter as {
+    lat?: unknown;
+    lng?: unknown;
+    lon?: unknown;
+  };
+  const lat = center.lat;
+  const lng = center.lng ?? center.lon;
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    return { lat: lat as number, lng: lng as number };
+  }
+
+  return null;
+}
+
+function parseCenterFromVisibleBounds(
+  bounds: unknown,
+): { lat: number; lng: number } | null {
+  if (!Array.isArray(bounds) || bounds.length < 2) {
+    return null;
+  }
+
+  const [ne, sw] = bounds;
+  if (
+    !Array.isArray(ne) ||
+    !Array.isArray(sw) ||
+    ne.length < 2 ||
+    sw.length < 2
+  ) {
+    return null;
+  }
+
+  const [neLng, neLat] = ne;
+  const [swLng, swLat] = sw;
+  if (
+    !Number.isFinite(neLat) ||
+    !Number.isFinite(swLat) ||
+    !Number.isFinite(neLng) ||
+    !Number.isFinite(swLng)
+  ) {
+    return null;
+  }
+
+  return {
+    lat: ((swLat as number) + (neLat as number)) / 2,
+    lng: ((swLng as number) + (neLng as number)) / 2,
+  };
+}
+
 export const MapView = forwardRef<MapViewHandle, MapViewProps>(
   function MapView(
     {
@@ -60,7 +124,10 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
       selectedSpotId,
       spots,
       parkingLocations,
+      draftSpotCoordinate,
+      draftParkingLocations,
       onRegionDidChange,
+      onMapCenterDidChange,
       onSpotPress,
       onParkingPress,
     },
@@ -74,6 +141,38 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
       () => parkingToGeoJSON(parkingLocations ?? []),
       [parkingLocations],
     );
+    const draftSpotGeojson = useMemo(() => {
+      if (!draftSpotCoordinate) {
+        return { type: 'FeatureCollection', features: [] };
+      }
+
+      return {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [draftSpotCoordinate.lng, draftSpotCoordinate.lat],
+            },
+            properties: { id: 'draft-spot' },
+          },
+        ],
+      };
+    }, [draftSpotCoordinate]);
+    const draftParkingGeojson = useMemo(() => {
+      return {
+        type: 'FeatureCollection',
+        features: (draftParkingLocations ?? []).map((parking, index) => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [parking.lon, parking.lat],
+          },
+          properties: { id: `draft-parking-${index}` },
+        })),
+      };
+    }, [draftParkingLocations]);
 
     useImperativeHandle(ref, () => ({
       flyTo(coords, flyZoom = 14) {
@@ -87,19 +186,35 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
 
     const handleRegionDidChange = useCallback(
       (feature: any) => {
-        if (!onRegionDidChange) return;
         const bounds = feature?.properties?.visibleBounds;
-        if (!bounds || bounds.length < 2) return;
-        // visibleBounds: [[ne_lng, ne_lat], [sw_lng, sw_lat]]
-        const [ne, sw] = bounds;
-        onRegionDidChange({
-          latMin: sw[1],
-          latMax: ne[1],
-          lonMin: sw[0],
-          lonMax: ne[0],
-        });
+        if (onRegionDidChange && Array.isArray(bounds) && bounds.length >= 2) {
+          // visibleBounds: [[ne_lng, ne_lat], [sw_lng, sw_lat]]
+          const [ne, sw] = bounds;
+          if (
+            Array.isArray(ne) &&
+            Array.isArray(sw) &&
+            ne.length >= 2 &&
+            sw.length >= 2
+          ) {
+            onRegionDidChange({
+              latMin: sw[1],
+              latMax: ne[1],
+              lonMin: sw[0],
+              lonMax: ne[0],
+            });
+          }
+        }
+
+        if (onMapCenterDidChange) {
+          const centerFromEvent = parseCenterFromValue(feature?.properties?.center);
+          const centerFromBounds = parseCenterFromVisibleBounds(bounds);
+          const parsedCenter = centerFromEvent ?? centerFromBounds;
+          if (parsedCenter) {
+            onMapCenterDidChange(parsedCenter);
+          }
+        }
       },
-      [onRegionDidChange],
+      [onMapCenterDidChange, onRegionDidChange],
     );
 
     const handleShapePress = useCallback(
@@ -182,7 +297,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
             id="spot-clusters"
             filter={['has', 'point_count']}
             style={{
-              circleColor: '#E8632B',
+              circleColor: colors.primary[500],
               circleRadius: [
                 'step',
                 ['get', 'point_count'],
@@ -194,7 +309,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
               ],
               circleOpacity: 0.85,
               circleStrokeWidth: 2,
-              circleStrokeColor: '#fff',
+              circleStrokeColor: colors.neutral[50],
             }}
           />
           <resolvedMapLibre.SymbolLayer
@@ -203,7 +318,7 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
             style={{
               textField: ['get', 'point_count_abbreviated'],
               textSize: 12,
-              textColor: '#fff',
+              textColor: colors.neutral[50],
               textPitchAlignment: 'map',
             }}
           />
@@ -214,8 +329,8 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
               circleColor: [
                 'case',
                 ['==', ['get', 'id'], selectedSpotId ?? ''],
-                '#0C4A6E',
-                '#E8632B',
+                colors.primary[700],
+                colors.primary[500],
               ],
               circleRadius: [
                 'case',
@@ -224,10 +339,27 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
                 7,
               ],
               circleStrokeWidth: 2,
-              circleStrokeColor: '#fff',
+              circleStrokeColor: colors.neutral[50],
             }}
           />
         </resolvedMapLibre.ShapeSource>
+        {draftSpotCoordinate ? (
+          <resolvedMapLibre.ShapeSource
+            id="draft-spot-source"
+            shape={draftSpotGeojson}
+          >
+            <resolvedMapLibre.CircleLayer
+              id="draft-spot-marker"
+              style={{
+                circleColor: colors.primary[600],
+                circleRadius: 9,
+                circleOpacity: 0.9,
+                circleStrokeWidth: 2,
+                circleStrokeColor: colors.neutral[50],
+              }}
+            />
+          </resolvedMapLibre.ShapeSource>
+        ) : null}
         {parkingLocations && parkingLocations.length > 0 && (
           <resolvedMapLibre.ShapeSource
             id="parking-source"
@@ -245,14 +377,31 @@ export const MapView = forwardRef<MapViewHandle, MapViewProps>(
             <resolvedMapLibre.CircleLayer
               id="parking-markers"
               style={{
-                circleColor: '#2196F3',
+                circleColor: colors.secondary[500],
                 circleRadius: 8,
                 circleStrokeWidth: 2,
-                circleStrokeColor: '#fff',
+                circleStrokeColor: colors.neutral[50],
               }}
             />
           </resolvedMapLibre.ShapeSource>
         )}
+        {draftParkingLocations && draftParkingLocations.length > 0 ? (
+          <resolvedMapLibre.ShapeSource
+            id="draft-parking-source"
+            shape={draftParkingGeojson}
+          >
+            <resolvedMapLibre.CircleLayer
+              id="draft-parking-markers"
+              style={{
+                circleColor: colors.secondary[600],
+                circleRadius: 7,
+                circleOpacity: 0.9,
+                circleStrokeWidth: 2,
+                circleStrokeColor: colors.neutral[50],
+              }}
+            />
+          </resolvedMapLibre.ShapeSource>
+        ) : null}
       </resolvedMapLibre.MapView>
     );
   },

@@ -44,12 +44,19 @@ export function useSpotPhotoUpload(options?: UseSpotPhotoUploadOptions) {
           allowsEditing: false,
         });
 
-        if (result.canceled || result.assets.length === 0) {
+        if (
+          result.canceled ||
+          !Array.isArray(result.assets) ||
+          result.assets.length === 0
+        ) {
           return;
         }
 
-        const selectedAsset = result.assets[0];
-        if (!selectedAsset) {
+        const selectedAsset = result.assets.find(
+          (asset) => typeof asset.uri === 'string' && asset.uri.trim().length > 0,
+        );
+        if (!selectedAsset?.uri) {
+          setError('Failed to read the selected photo. Please try another image.');
           return;
         }
 
@@ -64,6 +71,9 @@ export function useSpotPhotoUpload(options?: UseSpotPhotoUploadOptions) {
         );
 
         const assetResponse = await fetch(selectedAsset.uri);
+        if (!assetResponse.ok) {
+          throw new Error('Failed to read selected photo.');
+        }
         const assetBlob = await assetResponse.blob();
 
         const uploadResponse = await fetch(uploadTarget.uploadUrl, {

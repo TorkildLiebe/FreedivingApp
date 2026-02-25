@@ -115,7 +115,7 @@ describe('useSpotPhotoUpload', () => {
     const onUploaded = jest.fn();
     const blob = {} as Blob;
     mockFetch
-      .mockResolvedValueOnce({ blob: async () => blob } as Response)
+      .mockResolvedValueOnce({ ok: true, blob: async () => blob } as Response)
       .mockResolvedValueOnce({ ok: true } as Response);
 
     const { result } = renderHook(() => useSpotPhotoUpload({ onUploaded }));

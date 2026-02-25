@@ -1,7 +1,7 @@
 import { mockSupabase } from '@/src/__tests__/mocks/supabase-client.mock';
 import { mockSession } from '@/src/__tests__/fixtures/users.fixture';
 
-import { apiFetch } from '@/src/infrastructure/api/client';
+import { ApiError, apiFetch } from '@/src/infrastructure/api/client';
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
@@ -57,9 +57,40 @@ describe('apiFetch', () => {
   });
 
   it('throws on non-ok response', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      headers: { get: () => 'application/json' },
+      json: () =>
+        Promise.resolve({
+          statusCode: 404,
+          error: 'NotFoundError',
+          message: 'Spot not found',
+        }),
+    });
 
-    await expect(apiFetch('/test')).rejects.toThrow('API error: 404');
+    const promise = apiFetch('/test');
+    await expect(promise).rejects.toThrow(ApiError);
+    await expect(promise).rejects.toMatchObject({
+      status: 404,
+      message: 'Spot not found',
+      code: 'NotFoundError',
+    });
+  });
+
+  it('falls back to status-based message when error body is plain text', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      headers: { get: () => 'text/plain' },
+      text: () => Promise.resolve(''),
+    });
+
+    await expect(apiFetch('/test')).rejects.toMatchObject({
+      status: 500,
+      message: 'API error: 500',
+      code: null,
+    });
   });
 
   it('passes custom method from options', async () => {

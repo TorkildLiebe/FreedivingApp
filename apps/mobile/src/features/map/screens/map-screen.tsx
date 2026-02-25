@@ -1,7 +1,7 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import {
   DEFAULT_CENTER,
   DEFAULT_ZOOM,
@@ -29,8 +29,20 @@ import type { BBox, ParkingLocation, SpotDetail } from '@/src/features/map/types
 import { FrostedGlass } from '@/src/shared/components/FrostedGlass';
 import { colors } from '@/src/shared/theme';
 
+function isConflictError(
+  error: unknown,
+): error is { status: number; message: string } {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const candidate = error as { status?: unknown; message?: unknown };
+  return candidate.status === 409 && typeof candidate.message === 'string';
+}
+
 export default function MapScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { isAuthenticated, favoriteSpotIds, toggleFavoriteSpot } =
     useFavoriteSpots();
   const { location } = useLocation();
@@ -52,8 +64,10 @@ export default function MapScreen() {
       : undefined;
   const devCreateLat = Number(process.env.EXPO_PUBLIC_DEV_CREATE_LAT);
   const devCreateLon = Number(process.env.EXPO_PUBLIC_DEV_CREATE_LON);
-  const initialCreateStep: 'idle' | 'placing' | 'form' =
-    devCreateStep === 'placing' || devCreateStep === 'form'
+  const initialCreateStep: 'idle' | 'placing' | 'form' | 'parking' =
+    devCreateStep === 'placing' ||
+    devCreateStep === 'form' ||
+    devCreateStep === 'parking'
       ? devCreateStep
       : 'idle';
 
@@ -68,6 +82,11 @@ export default function MapScreen() {
     PendingParkingLocation[]
   >([]);
   const [createParkingLabel, setCreateParkingLabel] = useState('');
+  const [createPinnedCoordinate, setCreatePinnedCoordinate] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [createFormSheetIndex, setCreateFormSheetIndex] = useState(2);
   const [createLocalError, setCreateLocalError] = useState<string | null>(null);
   const [isPickingCreatePhotos, setIsPickingCreatePhotos] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
@@ -89,7 +108,7 @@ export default function MapScreen() {
   } = useCreateSpot();
 
   const center = location ?? DEFAULT_CENTER;
-  const mapCenter = useMemo(() => {
+  const initialLiveMapCenter = useMemo(() => {
     if (
       process.env.NODE_ENV === 'development' &&
       Number.isFinite(devCreateLat) &&
@@ -98,15 +117,16 @@ export default function MapScreen() {
       return { lat: devCreateLat, lng: devCreateLon };
     }
 
-    return bbox
-      ? {
-          lat: (bbox.latMin + bbox.latMax) / 2,
-          lng: (bbox.lonMin + bbox.lonMax) / 2,
-        }
-      : center;
-  }, [bbox, center, devCreateLat, devCreateLon]);
+    return center;
+  }, [center, devCreateLat, devCreateLon]);
+  const [liveMapCenter, setLiveMapCenter] = useState(initialLiveMapCenter);
 
   const activeCreateError = createLocalError ?? createError;
+  const hasPinnedSpot = createPinnedCoordinate !== null;
+  const shouldShowDraftMarkers =
+    hasPinnedSpot &&
+    (createStep === 'parking' ||
+      (createStep === 'form' && createFormSheetIndex === 0));
   const spotWithFavorite = useMemo(() => {
     if (!spot) {
       return null;
@@ -126,6 +146,22 @@ export default function MapScreen() {
   const filteredSpots = searchQuery.trim()
     ? spots.filter((s) => s.title.toLowerCase().includes(searchQuery.toLowerCase()))
     : spots;
+
+  useEffect(() => {
+    navigation.setOptions({
+      tabBarStyle: createStep === 'idle' ? undefined : { display: 'none' },
+    });
+
+    return () => {
+      navigation.setOptions({ tabBarStyle: undefined });
+    };
+  }, [createStep, navigation]);
+
+  useEffect(() => {
+    if (createStep === 'idle') {
+      setLiveMapCenter(initialLiveMapCenter);
+    }
+  }, [createStep, initialLiveMapCenter]);
 
   function handleCenterOnMe() {
     if (!location) {
@@ -211,6 +247,8 @@ export default function MapScreen() {
     setCreatePhotos([]);
     setCreateParkingLocations([]);
     setCreateParkingLabel('');
+    setCreatePinnedCoordinate(null);
+    setCreateFormSheetIndex(2);
     setCreateLocalError(null);
     clearCreateError();
   }, [clearCreateError]);
@@ -220,6 +258,8 @@ export default function MapScreen() {
     setSelectedSpotId(null);
     setCreateLocalError(null);
     clearCreateError();
+    setCreatePinnedCoordinate(null);
+    setCreateFormSheetIndex(2);
     setCreateStep('placing');
   }, [clearCreateError, clearPhotoUploadError]);
 
@@ -246,13 +286,27 @@ export default function MapScreen() {
         selectionLimit: 5 - createPhotos.length,
       });
 
-      if (result.canceled || result.assets.length === 0) {
+      if (
+        result.canceled ||
+        !Array.isArray(result.assets) ||
+        result.assets.length === 0
+      ) {
+        return;
+      }
+
+      const validAssets = result.assets.filter(
+        (asset) => typeof asset.uri === 'string' && asset.uri.trim().length > 0,
+      );
+      if (validAssets.length === 0) {
+        setCreateLocalError(
+          'Failed to read the selected photos. Please choose different photos.',
+        );
         return;
       }
 
       setCreatePhotos((previous) => {
         const remainingSlots = 5 - previous.length;
-        const nextPhotos = result.assets.slice(0, remainingSlots).map((asset) => ({
+        const nextPhotos = validAssets.slice(0, remainingSlots).map((asset) => ({
           uri: asset.uri,
           mimeType: asset.mimeType ?? 'image/jpeg',
         }));
@@ -276,12 +330,13 @@ export default function MapScreen() {
     clearCreateError();
 
     try {
+      const pinnedCoordinate = createPinnedCoordinate ?? liveMapCenter;
       const createdSpot = await createSpot({
         title: createTitle,
         description: createDescription,
         accessInfo: createAccessInfo,
-        centerLat: mapCenter.lat,
-        centerLon: mapCenter.lng,
+        centerLat: pinnedCoordinate.lat,
+        centerLon: pinnedCoordinate.lng,
         photos: createPhotos,
         parkingLocations: createParkingLocations,
       });
@@ -296,19 +351,25 @@ export default function MapScreen() {
         },
         14,
       );
-    } catch {
-      // Hook already stores and exposes user-facing error text.
+    } catch (createSpotError) {
+      if (isConflictError(createSpotError)) {
+        const conflictMessage = createSpotError.message.replace(/[.\s]+$/, '');
+        setCreateStep('placing');
+        setCreateLocalError(
+          `${conflictMessage}. Move the pin and try again.`,
+        );
+      }
     }
   }, [
     clearCreateError,
+    createPinnedCoordinate,
     createAccessInfo,
     createDescription,
     createParkingLocations,
     createPhotos,
     createSpot,
     createTitle,
-    mapCenter.lat,
-    mapCenter.lng,
+    liveMapCenter,
     refreshSpots,
     resetCreateForm,
   ]);
@@ -332,7 +393,7 @@ export default function MapScreen() {
             testID="map-search-input"
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search spots..."
+            placeholder="Search dive spots..."
             placeholderTextColor={colors.neutral[400]}
             style={styles.searchInput}
             returnKeyType="search"
@@ -349,7 +410,10 @@ export default function MapScreen() {
         selectedSpotId={selectedSpotId}
         spots={filteredSpots}
         parkingLocations={spot?.parkingLocations}
+        draftSpotCoordinate={shouldShowDraftMarkers ? createPinnedCoordinate : null}
+        draftParkingLocations={shouldShowDraftMarkers ? createParkingLocations : []}
         onRegionDidChange={setBbox}
+        onMapCenterDidChange={setLiveMapCenter}
         onSpotPress={handleSpotPress}
         onParkingPress={handleParkingPress}
       />
@@ -399,7 +463,7 @@ export default function MapScreen() {
               ? 'parking'
               : 'form'
         }
-        pinCoordinate={mapCenter}
+        pinCoordinate={liveMapCenter}
         title={createTitle}
         description={createDescription}
         accessInfo={createAccessInfo}
@@ -410,13 +474,23 @@ export default function MapScreen() {
         isPickingPhotos={isPickingCreatePhotos}
         error={activeCreateError}
         onCancel={resetCreateForm}
-        onConfirmPin={() => setCreateStep('form')}
-        onBackToPin={() => setCreateStep('placing')}
+        onConfirmPin={() => {
+          setCreateLocalError(null);
+          setCreatePinnedCoordinate(liveMapCenter);
+          setCreateFormSheetIndex(2);
+          setCreateStep('form');
+        }}
+        onFormSheetIndexChange={setCreateFormSheetIndex}
         onStartParkingPlacement={() => {
+          setCreateLocalError(null);
           setCreateParkingLabel('');
+          setCreateFormSheetIndex(2);
           setCreateStep('parking');
         }}
-        onCancelParkingPlacement={() => setCreateStep('form')}
+        onCancelParkingPlacement={() => {
+          setCreateFormSheetIndex(2);
+          setCreateStep('form');
+        }}
         onParkingLabelChange={setCreateParkingLabel}
         onConfirmParkingPlacement={() => {
           setCreateParkingLocations((previous) => {
@@ -426,13 +500,14 @@ export default function MapScreen() {
             return [
               ...previous,
               {
-                lat: mapCenter.lat,
-                lon: mapCenter.lng,
+                lat: liveMapCenter.lat,
+                lon: liveMapCenter.lng,
                 label: createParkingLabel,
               },
             ];
           });
           setCreateParkingLabel('');
+          setCreateFormSheetIndex(2);
           setCreateStep('form');
         }}
         onRemoveParkingLocation={(index) => {

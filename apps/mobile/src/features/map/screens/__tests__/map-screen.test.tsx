@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert } from 'react-native';
-import { act, fireEvent, render } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import type { SpotDetail } from '@/src/features/map/types';
 import '@/src/__tests__/mocks/expo-vector-icons.mock';
@@ -12,7 +12,9 @@ const mockUseSpotPhotoUpload = jest.fn();
 const mockUseCreateSpot = jest.fn();
 const mockUseFavoriteSpots = jest.fn();
 const mockUseRouter = jest.fn();
+const mockUseNavigation = jest.fn();
 const mockPush = jest.fn();
+const mockSetOptions = jest.fn();
 const mockToggleFavoriteSpot = jest.fn();
 
 jest.mock('@/src/features/map/hooks/use-location', () => ({
@@ -41,6 +43,7 @@ jest.mock('@/src/features/map/hooks/use-favorite-spots', () => ({
 
 jest.mock('expo-router', () => ({
   useRouter: (...args: unknown[]) => mockUseRouter(...args),
+  useNavigation: (...args: unknown[]) => mockUseNavigation(...args),
 }));
 
 const mockRequestMediaLibraryPermissionsAsync = jest.fn();
@@ -62,9 +65,10 @@ jest.mock('@/src/features/map/components/map-view', () => {
   const mockReact = require('react');
   return {
     __esModule: true,
-    MapView: mockReact.forwardRef((props: any, ref: any) =>
-      mockReact.createElement(View, { testID: 'map-view', ref, ...props }),
-    ),
+    MapView: mockReact.forwardRef((props: any, ref: any) => {
+      mockReact.useImperativeHandle(ref, () => ({ flyTo: jest.fn() }));
+      return mockReact.createElement(View, { testID: 'map-view', ...props });
+    }),
   };
 });
 
@@ -173,6 +177,7 @@ beforeEach(() => {
   });
 
   mockUseRouter.mockReturnValue({ push: mockPush });
+  mockUseNavigation.mockReturnValue({ setOptions: mockSetOptions });
 });
 
 describe('MapScreen', () => {
@@ -192,6 +197,13 @@ describe('MapScreen', () => {
     expect(mapView.props.tileUrl).toContain('kartverket');
     expect(mapView.props.zoom).toBe(10);
     expect(mapView.props.center).toEqual({ lat: 59.9139, lng: 10.7522 });
+  });
+
+  it('uses Design OS search placeholder copy', () => {
+    const { getByTestId } = render(<MapScreen />);
+    expect(getByTestId('map-search-input').props.placeholder).toBe(
+      'Search dive spots...',
+    );
   });
 
   it('passes onSpotPress and onParkingPress to MapView', () => {
@@ -326,5 +338,180 @@ describe('MapScreen', () => {
 
     expect(getByTestId('create-spot-overlay')).toBeTruthy();
     expect(getByTestId('create-spot-overlay').props.step).toBe('placing');
+  });
+
+  it('hides tab bar while creating a spot', () => {
+    const { getByTestId } = render(<MapScreen />);
+
+    fireEvent.press(getByTestId('map-start-create-spot-button'));
+
+    expect(mockSetOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tabBarStyle: { display: 'none' },
+      }),
+    );
+  });
+
+  it('updates pin coordinate text source from live map center callback', () => {
+    const { getByTestId } = render(<MapScreen />);
+
+    fireEvent.press(getByTestId('map-start-create-spot-button'));
+    const mapView = getByTestId('map-view');
+
+    act(() => {
+      mapView.props.onMapCenterDidChange({ lat: 60.1234, lng: 11.5678 });
+    });
+
+    expect(getByTestId('create-spot-overlay').props.pinCoordinate).toEqual({
+      lat: 60.1234,
+      lng: 11.5678,
+    });
+  });
+
+  it('shows draft markers only when form sheet is collapsed', () => {
+    const { getByTestId } = render(<MapScreen />);
+    const mapView = getByTestId('map-view');
+
+    fireEvent.press(getByTestId('map-start-create-spot-button'));
+    act(() => {
+      getByTestId('create-spot-overlay').props.onConfirmPin();
+    });
+
+    expect(mapView.props.draftSpotCoordinate).toBeNull();
+    expect(mapView.props.draftParkingLocations).toEqual([]);
+
+    act(() => {
+      getByTestId('create-spot-overlay').props.onStartParkingPlacement();
+      getByTestId('create-spot-overlay').props.onConfirmParkingPlacement();
+    });
+
+    expect(getByTestId('map-view').props.draftSpotCoordinate).toBeNull();
+    expect(getByTestId('map-view').props.draftParkingLocations).toEqual([]);
+
+    act(() => {
+      getByTestId('create-spot-overlay').props.onFormSheetIndexChange(0);
+    });
+
+    expect(getByTestId('map-view').props.draftSpotCoordinate).toEqual({
+      lat: 59.9139,
+      lng: 10.7522,
+    });
+    expect(getByTestId('map-view').props.draftParkingLocations).toEqual([
+      { lat: 59.9139, lon: 10.7522, label: '' },
+    ]);
+  });
+
+  it('submits create payload with the latest center selected by the user', async () => {
+    const createSpot = jest.fn().mockRejectedValue(new Error('create failed'));
+    mockUseCreateSpot.mockReturnValue({
+      createSpot,
+      isSubmitting: false,
+      error: null,
+      clearError: jest.fn(),
+    });
+
+    const { getByTestId } = render(<MapScreen />);
+    const mapView = getByTestId('map-view');
+
+    fireEvent.press(getByTestId('map-start-create-spot-button'));
+    act(() => {
+      mapView.props.onMapCenterDidChange({ lat: 60.4321, lng: 11.2345 });
+    });
+    expect(getByTestId('create-spot-overlay').props.pinCoordinate).toEqual({
+      lat: 60.4321,
+      lng: 11.2345,
+    });
+    act(() => {
+      getByTestId('create-spot-overlay').props.onConfirmPin();
+    });
+    act(() => {
+      getByTestId('create-spot-overlay').props.onTitleChange('Updated center');
+    });
+    act(() => {
+      getByTestId('create-spot-overlay').props.onSubmit();
+    });
+
+    await waitFor(() => {
+      expect(createSpot).toHaveBeenCalledWith(
+        expect.objectContaining({
+          centerLat: 60.4321,
+          centerLon: 11.2345,
+        }),
+      );
+    });
+  });
+
+  it('returns to placing on 409 and accepts a retried center after panning', async () => {
+    const createSpot = jest
+      .fn()
+      .mockRejectedValueOnce({
+        status: 409,
+        message: 'A dive spot already exists within 1000m of this location',
+      })
+      .mockRejectedValueOnce(new Error('retry create failed'));
+    mockUseCreateSpot.mockReturnValue({
+      createSpot,
+      isSubmitting: false,
+      error: null,
+      clearError: jest.fn(),
+    });
+
+    const { getByTestId } = render(<MapScreen />);
+    const mapView = getByTestId('map-view');
+
+    fireEvent.press(getByTestId('map-start-create-spot-button'));
+    act(() => {
+      mapView.props.onMapCenterDidChange({ lat: 59.9139, lng: 10.7522 });
+    });
+    expect(getByTestId('create-spot-overlay').props.pinCoordinate).toEqual({
+      lat: 59.9139,
+      lng: 10.7522,
+    });
+    act(() => {
+      getByTestId('create-spot-overlay').props.onConfirmPin();
+    });
+    act(() => {
+      getByTestId('create-spot-overlay').props.onTitleChange('Too close');
+    });
+    act(() => {
+      getByTestId('create-spot-overlay').props.onSubmit();
+    });
+
+    await waitFor(() => {
+      const overlay = getByTestId('create-spot-overlay');
+      expect(overlay.props.step).toBe('placing');
+      expect(overlay.props.error).toContain('Move the pin and try again.');
+    });
+
+    act(() => {
+      mapView.props.onMapCenterDidChange({ lat: 60.5, lng: 11.5 });
+    });
+    expect(getByTestId('create-spot-overlay').props.pinCoordinate).toEqual({
+      lat: 60.5,
+      lng: 11.5,
+    });
+    act(() => {
+      getByTestId('create-spot-overlay').props.onConfirmPin();
+    });
+    act(() => {
+      getByTestId('create-spot-overlay').props.onSubmit();
+    });
+
+    await waitFor(() => {
+      expect(createSpot).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          centerLat: 59.9139,
+          centerLon: 10.7522,
+        }),
+      );
+      expect(createSpot).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          centerLat: 60.5,
+          centerLon: 11.5,
+        }),
+      );
+    });
   });
 });

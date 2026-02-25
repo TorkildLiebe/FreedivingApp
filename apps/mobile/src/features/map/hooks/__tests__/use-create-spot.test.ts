@@ -121,9 +121,9 @@ describe('useCreateSpot', () => {
 
     const blob = {} as Blob;
     mockFetch
-      .mockResolvedValueOnce({ blob: async () => blob } as Response)
+      .mockResolvedValueOnce({ ok: true, blob: async () => blob } as Response)
       .mockResolvedValueOnce({ ok: true } as Response)
-      .mockResolvedValueOnce({ blob: async () => blob } as Response)
+      .mockResolvedValueOnce({ ok: true, blob: async () => blob } as Response)
       .mockResolvedValueOnce({ ok: true } as Response);
 
     const { result } = renderHook(() => useCreateSpot());
@@ -176,5 +176,48 @@ describe('useCreateSpot', () => {
       'https://upload.example.com/1',
       expect.objectContaining({ method: 'PUT' }),
     );
+  });
+
+  it('surfaces conflict message from create endpoint', async () => {
+    mockApiFetch.mockRejectedValueOnce({
+      status: 409,
+      message: 'A dive spot already exists within 1000m of this location',
+    });
+
+    const { result } = renderHook(() => useCreateSpot());
+
+    await act(async () => {
+      await expect(
+        result.current.createSpot({
+          title: 'Too close',
+          centerLat: 59.9,
+          centerLon: 10.7,
+        }),
+      ).rejects.toMatchObject({ status: 409 });
+    });
+
+    expect(result.current.error).toBe(
+      'A dive spot already exists within 1000m of this location',
+    );
+  });
+
+  it('fails gracefully when selected photo is missing URI', async () => {
+    mockApiFetch.mockResolvedValueOnce(makeSpot());
+
+    const { result } = renderHook(() => useCreateSpot());
+
+    await act(async () => {
+      await expect(
+        result.current.createSpot({
+          title: 'New Spot',
+          centerLat: 59.9,
+          centerLon: 10.7,
+          photos: [{ uri: '   ', mimeType: 'image/jpeg' }],
+        }),
+      ).rejects.toThrow('Failed to read one of the selected photos');
+    });
+
+    expect(mockApiFetch).toHaveBeenCalledTimes(1);
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 });
