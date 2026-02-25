@@ -89,3 +89,10 @@ export interface CreateDiveLogResponse {
   diveLog: DiveLogPreview;
   shouldPromptRating: boolean;
 }
+
+export interface ListSpotDiveLogsResponse {
+  items: DiveLogPreview[];
+  page: number;
+  limit: number;
+  total: number;
+}

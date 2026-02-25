@@ -61,6 +61,7 @@ describe('SpotsController', () => {
           useValue: {
             listByBBox: jest.fn(),
             getById: jest.fn(),
+            listDiveLogs: jest.fn(),
             create: jest.fn(),
             update: jest.fn(),
             createPhotoUploadUrl: jest.fn(),
@@ -123,6 +124,26 @@ describe('SpotsController', () => {
 
       expect(spotsService.getById).toHaveBeenCalledWith('uuid-1');
       expect(result).toEqual(mockDetailResponse);
+    });
+  });
+
+  describe('listDiveLogs', () => {
+    it('should call service with id and pagination query', async () => {
+      const response = {
+        items: [],
+        page: 1,
+        limit: 20,
+        total: 0,
+      };
+      spotsService.listDiveLogs.mockResolvedValue(response);
+
+      const result = await controller.listDiveLogs('uuid-1', {
+        page: 1,
+        limit: 20,
+      });
+
+      expect(spotsService.listDiveLogs).toHaveBeenCalledWith('uuid-1', 1, 20);
+      expect(result).toEqual(response);
     });
   });
 

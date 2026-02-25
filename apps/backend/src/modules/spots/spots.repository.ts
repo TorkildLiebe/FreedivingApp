@@ -14,6 +14,15 @@ const SPOT_DETAIL_INCLUDE = {
   createdBy: { select: { alias: true } },
 } as const;
 
+const SPOT_DIVE_LOG_INCLUDE = {
+  author: {
+    select: {
+      alias: true,
+      avatarUrl: true,
+    },
+  },
+} as const;
+
 @Injectable()
 export class SpotsRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -158,5 +167,22 @@ export class SpotsRepository {
       where: { id, isDeleted: false },
       data: { isDeleted: true, deletedAt: new Date() },
     });
+  }
+
+  async listDiveLogsBySpot(spotId: string, skip: number, take: number) {
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.diveLog.findMany({
+        where: { spotId, isDeleted: false },
+        include: SPOT_DIVE_LOG_INCLUDE,
+        orderBy: [{ divedAt: 'desc' }, { createdAt: 'desc' }],
+        skip,
+        take,
+      }),
+      this.prisma.diveLog.count({
+        where: { spotId, isDeleted: false },
+      }),
+    ]);
+
+    return { items, total };
   }
 }

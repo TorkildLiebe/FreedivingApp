@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '@/src/infrastructure/api/client';
-import type { SpotDetail } from '@/src/features/map/types';
+import type {
+  ListSpotDiveLogsResponse,
+  SpotDetail,
+} from '@/src/features/map/types';
 
 export function useSpotDetail(spotId: string | null) {
   const [spot, setSpot] = useState<SpotDetail | null>(null);
@@ -25,9 +28,17 @@ export function useSpotDetail(spotId: string | null) {
       setIsLoading(true);
       setError(null);
       try {
-        const data = await apiFetch<SpotDetail>(`/spots/${spotId}`);
+        const [detail, diveLogs] = await Promise.all([
+          apiFetch<SpotDetail>(`/spots/${spotId}`),
+          apiFetch<ListSpotDiveLogsResponse>(
+            `/spots/${spotId}/dive-logs?page=1&limit=20`,
+          ),
+        ]);
         if (!cancelled) {
-          setSpot(data);
+          setSpot({
+            ...detail,
+            diveLogs: diveLogs.items,
+          });
         }
       } catch (err) {
         console.warn('Failed to fetch spot detail:', err);

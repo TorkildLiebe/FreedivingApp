@@ -3,14 +3,14 @@
   "milestone": "M3",
   "status": "running",
   "started_at": "2026-02-25T15:39:13.282Z",
-  "updated_at": "2026-02-25T15:59:34.353Z",
+  "updated_at": "2026-02-25T16:08:43.449Z",
   "issue_order": [
     92,
     93,
     94,
     95
   ],
-  "current_issue": 93,
+  "current_issue": 94,
   "attempts_by_issue": {
     "92": 0,
     "93": 0,
@@ -18,7 +18,8 @@
     "95": 0
   },
   "completed_issues": [
-    92
+    92,
+    93
   ],
   "blocked_issue": null,
   "stop_reason": null,
@@ -52,14 +53,30 @@
       ]
     },
     "93": {
-      "status": "pending",
+      "status": "committed",
       "attempts": 0,
-      "note": null,
-      "commit_sha": null,
+      "note": "Issue #93 committed",
+      "commit_sha": "bffa2a0",
       "history": [
         {
           "status": "pending",
           "at": "2026-02-25T15:39:13.282Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-25T16:01:12.513Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-25T16:05:20.621Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-25T16:07:36.551Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-25T16:08:43.449Z"
         }
       ]
     },
