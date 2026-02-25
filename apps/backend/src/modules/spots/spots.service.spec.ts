@@ -82,6 +82,7 @@ describe('SpotsService', () => {
             updatePhotoUrls: jest.fn(),
             softDeleteSpot: jest.fn(),
             listDiveLogsBySpot: jest.fn(),
+            upsertSpotRatingAndRefreshAverage: jest.fn(),
           },
         },
       ],
@@ -623,6 +624,54 @@ describe('SpotsService', () => {
       await expect(
         service.addPhoto('uuid-spot-1', 'https://example.com/6.jpg'),
       ).rejects.toThrow(TooManyPhotosError);
+    });
+  });
+
+  describe('upsertRating', () => {
+    it('upserts user rating and returns refreshed average', async () => {
+      repository.findById.mockResolvedValue(mockSpotDetail);
+      repository.upsertSpotRatingAndRefreshAverage.mockResolvedValue({
+        rating: {
+          id: 'rating-1',
+          spotId: 'uuid-spot-1',
+          userId: actor.userId,
+          rating: 4,
+          createdAt: new Date('2026-02-25T10:00:00.000Z'),
+          updatedAt: new Date('2026-02-25T11:00:00.000Z'),
+        },
+        averageRating: 4.25,
+        ratingCount: 8,
+      });
+
+      const result = await service.upsertRating(
+        'uuid-spot-1',
+        { rating: 4 },
+        actor,
+      );
+
+      expect(repository.upsertSpotRatingAndRefreshAverage).toHaveBeenCalledWith(
+        'uuid-spot-1',
+        actor.userId,
+        4,
+      );
+      expect(result).toEqual({
+        id: 'rating-1',
+        spotId: 'uuid-spot-1',
+        userId: actor.userId,
+        rating: 4,
+        averageRating: 4.25,
+        ratingCount: 8,
+        createdAt: new Date('2026-02-25T10:00:00.000Z'),
+        updatedAt: new Date('2026-02-25T11:00:00.000Z'),
+      });
+    });
+
+    it('throws SpotNotFoundOrDeletedError when rating target spot does not exist', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(
+        service.upsertRating('missing-spot', { rating: 5 }, actor),
+      ).rejects.toThrow(SpotNotFoundOrDeletedError);
     });
   });
 

@@ -12,8 +12,8 @@ import { colors, typography } from '@/src/shared/theme';
 
 const RATING_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
   1: 'Not great',
-  2: 'It was okay',
-  3: 'Pretty good',
+  2: 'Below average',
+  3: 'Average',
   4: 'Really good',
   5: 'Outstanding',
 };

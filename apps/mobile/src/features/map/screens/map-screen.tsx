@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRouter } from 'expo-router';
+import { ApiError, apiFetch } from '@/src/infrastructure/api/client';
 import {
   DEFAULT_CENTER,
   DEFAULT_ZOOM,
@@ -33,6 +34,7 @@ import type {
   DiveLogPreview,
   ParkingLocation,
   SpotDetail,
+  UpsertSpotRatingResponse,
 } from '@/src/features/map/types';
 import { FrostedGlass } from '@/src/shared/components/FrostedGlass';
 import { colors } from '@/src/shared/theme';
@@ -108,6 +110,9 @@ export default function MapScreen() {
     spotId: string;
     spotName: string;
   } | null>(null);
+  const [dismissedRatingPromptSpotIds, setDismissedRatingPromptSpotIds] =
+    useState<string[]>([]);
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const { spots, refresh: refreshSpots } = useSpots(bbox);
   const { spot, isLoading: isSpotLoading, refresh } = useSpotDetail(selectedSpotId);
   const {
@@ -472,7 +477,10 @@ export default function MapScreen() {
             existingPhotoUrls,
           });
 
-          if (response.shouldPromptRating) {
+          if (
+            response.shouldPromptRating &&
+            !dismissedRatingPromptSpotIds.includes(addDiveTargetSpot.id)
+          ) {
             setRatingTargetSpot({
               spotId: addDiveTargetSpot.id,
               spotName: addDiveTargetSpot.title,
@@ -486,7 +494,25 @@ export default function MapScreen() {
         // Error surface is handled in the add-dive sheet via hook state.
       }
     },
-    [addDiveTargetSpot, editingDiveLog, submitDiveLog, updateDiveLog],
+    [
+      addDiveTargetSpot,
+      dismissedRatingPromptSpotIds,
+      editingDiveLog,
+      submitDiveLog,
+      updateDiveLog,
+    ],
+  );
+
+  const submitSpotRating = useCallback(
+    async (spotId: string, rating: 1 | 2 | 3 | 4 | 5) => {
+      await apiFetch<UpsertSpotRatingResponse>(`/spots/${spotId}/ratings`, {
+        method: 'POST',
+        body: JSON.stringify({ rating }),
+      });
+      await refresh();
+      refreshSpots();
+    },
+    [refresh, refreshSpots],
   );
 
   const handleRateAfterDive = useCallback(
@@ -495,20 +521,39 @@ export default function MapScreen() {
         return;
       }
 
-      Alert.alert(
-        'Rating selected',
-        `You rated ${ratingTargetSpot.spotName} ${rating} stars.`,
-      );
-      setRatingTargetSpot(null);
+      setIsSubmittingRating(true);
+      try {
+        await submitSpotRating(ratingTargetSpot.spotId, rating);
+        setDismissedRatingPromptSpotIds((previous) =>
+          previous.filter((spotId) => spotId !== ratingTargetSpot.spotId),
+        );
+        setRatingTargetSpot(null);
+      } catch (error) {
+        const message =
+          error instanceof ApiError
+            ? error.message
+            : 'Failed to save rating. Please try again.';
+        Alert.alert('Rating failed', message);
+      } finally {
+        setIsSubmittingRating(false);
+      }
     },
-    [ratingTargetSpot],
+    [ratingTargetSpot, submitSpotRating],
   );
 
   const handleUpdateRating = useCallback(
-    (_targetSpot: SpotDetail, rating: 1 | 2 | 3 | 4 | 5) => {
-      Alert.alert('Rating saved', `You rated this spot ${rating} stars.`);
+    async (targetSpot: SpotDetail, rating: 1 | 2 | 3 | 4 | 5) => {
+      try {
+        await submitSpotRating(targetSpot.id, rating);
+      } catch (error) {
+        const message =
+          error instanceof ApiError
+            ? error.message
+            : 'Failed to save rating. Please try again.';
+        Alert.alert('Rating failed', message);
+      }
     },
-    [],
+    [submitSpotRating],
   );
 
   return (
@@ -688,9 +733,17 @@ export default function MapScreen() {
       <RatingSheet
         visible={ratingTargetSpot !== null}
         spotName={ratingTargetSpot?.spotName ?? ''}
-        isSubmitting={false}
+        isSubmitting={isSubmittingRating}
         onRate={handleRateAfterDive}
         onDismiss={() => {
+          if (ratingTargetSpot) {
+            setDismissedRatingPromptSpotIds((previous) => {
+              if (previous.includes(ratingTargetSpot.spotId)) {
+                return previous;
+              }
+              return [...previous, ratingTargetSpot.spotId];
+            });
+          }
           setRatingTargetSpot(null);
         }}
       />

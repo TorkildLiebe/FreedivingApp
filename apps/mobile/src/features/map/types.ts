@@ -96,3 +96,14 @@ export interface ListSpotDiveLogsResponse {
   limit: number;
   total: number;
 }
+
+export interface UpsertSpotRatingResponse {
+  id: string;
+  spotId: string;
+  userId: string;
+  rating: 1 | 2 | 3 | 4 | 5;
+  averageRating: number | null;
+  ratingCount: number;
+  createdAt: string;
+  updatedAt: string;
+}

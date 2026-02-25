@@ -14,6 +14,7 @@ const mockUseCreateSpot = jest.fn();
 const mockUseFavoriteSpots = jest.fn();
 const mockUseRouter = jest.fn();
 const mockUseNavigation = jest.fn();
+const mockApiFetch = jest.fn();
 const mockPush = jest.fn();
 const mockSetOptions = jest.fn();
 const mockToggleFavoriteSpot = jest.fn();
@@ -49,6 +50,16 @@ jest.mock('@/src/features/map/hooks/use-favorite-spots', () => ({
 jest.mock('expo-router', () => ({
   useRouter: (...args: unknown[]) => mockUseRouter(...args),
   useNavigation: (...args: unknown[]) => mockUseNavigation(...args),
+}));
+
+jest.mock('@/src/infrastructure/api/client', () => ({
+  apiFetch: (...args: unknown[]) => mockApiFetch(...args),
+  ApiError: class ApiError extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = 'ApiError';
+    }
+  },
 }));
 
 const mockRequestMediaLibraryPermissionsAsync = jest.fn();
@@ -111,6 +122,20 @@ jest.mock('@/src/features/map/components/create-spot-overlay', () => {
   };
 });
 
+jest.mock('@/src/features/map/components/rating-sheet', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { View } = require('react-native');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const mockReact = require('react');
+  return {
+    __esModule: true,
+    RatingSheet: (props: any) =>
+      props.visible
+        ? mockReact.createElement(View, { testID: 'rating-sheet', ...props })
+        : null,
+  };
+});
+
 // eslint-disable-next-line import/first
 import MapScreen from '@/src/features/map/screens/map-screen';
 
@@ -139,6 +164,7 @@ const mockSpot: SpotDetail = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockApiFetch.mockResolvedValue({} as never);
 
   mockUseLocation.mockReturnValue({
     location: null,
@@ -530,5 +556,101 @@ describe('MapScreen', () => {
         }),
       );
     });
+  });
+
+  it('posts spot rating when selecting a post-dive star', async () => {
+    const submitDiveLog = jest.fn().mockResolvedValue({
+      shouldPromptRating: true,
+    });
+    mockUseDiveLogSubmit.mockReturnValue({
+      submitDiveLog,
+      updateDiveLog: jest.fn(),
+      isSubmitting: false,
+      isUploadingPhotos: false,
+      error: null,
+      clearError: jest.fn(),
+    });
+    mockUseSpotDetail.mockReturnValue({
+      spot: mockSpot,
+      isLoading: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+
+    const { getByTestId } = render(<MapScreen />);
+    const sheet = getByTestId('spot-detail-sheet');
+
+    act(() => {
+      sheet.props.onAddDive(mockSpot);
+    });
+    fireEvent.press(getByTestId('add-dive-next-button'));
+    await act(async () => {
+      fireEvent.press(getByTestId('add-dive-submit-button'));
+    });
+
+    await waitFor(() => {
+      expect(getByTestId('rating-sheet')).toBeTruthy();
+    });
+
+    await act(async () => {
+      await getByTestId('rating-sheet').props.onRate(4);
+    });
+
+    expect(mockApiFetch).toHaveBeenCalledWith('/spots/spot-123/ratings', {
+      method: 'POST',
+      body: JSON.stringify({ rating: 4 }),
+    });
+  });
+
+  it('does not re-prompt rating in the same session after dismissing Not now', async () => {
+    const submitDiveLog = jest.fn().mockResolvedValue({
+      shouldPromptRating: true,
+    });
+    mockUseDiveLogSubmit.mockReturnValue({
+      submitDiveLog,
+      updateDiveLog: jest.fn(),
+      isSubmitting: false,
+      isUploadingPhotos: false,
+      error: null,
+      clearError: jest.fn(),
+    });
+    mockUseSpotDetail.mockReturnValue({
+      spot: mockSpot,
+      isLoading: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+
+    const { getByTestId, queryByTestId } = render(<MapScreen />);
+    const sheet = getByTestId('spot-detail-sheet');
+
+    act(() => {
+      sheet.props.onAddDive(mockSpot);
+    });
+    fireEvent.press(getByTestId('add-dive-next-button'));
+    await act(async () => {
+      fireEvent.press(getByTestId('add-dive-submit-button'));
+    });
+    await waitFor(() => {
+      expect(getByTestId('rating-sheet')).toBeTruthy();
+    });
+
+    act(() => {
+      getByTestId('rating-sheet').props.onDismiss();
+    });
+    expect(queryByTestId('rating-sheet')).toBeNull();
+
+    act(() => {
+      sheet.props.onAddDive(mockSpot);
+    });
+    fireEvent.press(getByTestId('add-dive-next-button'));
+    await act(async () => {
+      fireEvent.press(getByTestId('add-dive-submit-button'));
+    });
+
+    await waitFor(() => {
+      expect(submitDiveLog).toHaveBeenCalledTimes(2);
+    });
+    expect(queryByTestId('rating-sheet')).toBeNull();
   });
 });

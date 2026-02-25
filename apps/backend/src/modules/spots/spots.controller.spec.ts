@@ -66,6 +66,7 @@ describe('SpotsController', () => {
             update: jest.fn(),
             createPhotoUploadUrl: jest.fn(),
             addPhoto: jest.fn(),
+            upsertRating: jest.fn(),
             softDelete: jest.fn(),
           },
         },
@@ -210,6 +211,35 @@ describe('SpotsController', () => {
         'https://example.com/photo.jpg',
       );
       expect(result).toEqual(mockDetailResponse);
+    });
+  });
+
+  describe('upsertRating', () => {
+    it('should call service with spot id, rating dto and current user', async () => {
+      const ratingResponse = {
+        id: 'rating-1',
+        spotId: 'uuid-1',
+        userId: 'uuid-user-1',
+        rating: 4,
+        averageRating: 4.2,
+        ratingCount: 5,
+        createdAt: new Date('2026-02-25T10:00:00.000Z'),
+        updatedAt: new Date('2026-02-25T11:00:00.000Z'),
+      };
+      spotsService.upsertRating.mockResolvedValue(ratingResponse);
+
+      const result = await controller.upsertRating(
+        'uuid-1',
+        { rating: 4 },
+        mockUser,
+      );
+
+      expect(spotsService.upsertRating).toHaveBeenCalledWith(
+        'uuid-1',
+        { rating: 4 },
+        mockUser,
+      );
+      expect(result).toEqual(ratingResponse);
     });
   });
 
