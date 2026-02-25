@@ -6,4 +6,5 @@ export class GetMeResponseDto {
   avatarUrl!: string | null;
   role!: string;
   preferredLanguage!: string;
+  favoriteSpotIds!: string[];
 }

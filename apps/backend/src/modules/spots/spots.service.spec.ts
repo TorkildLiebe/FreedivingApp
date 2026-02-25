@@ -4,19 +4,24 @@ import { validateSync } from 'class-validator';
 import { SpotsService } from './spots.service';
 import { SpotsRepository } from './spots.repository';
 import {
+  DuplicatePhotoUrlError,
   DuplicateParkingLocationError,
   ForbiddenError,
   InvalidBBoxError,
   InvalidParkingLocationError,
+  InvalidPhotoUrlError,
   SpotNotFoundOrDeletedError,
+  TooManyPhotosError,
   TooCloseToExistingSpotError,
 } from '../../common/errors';
 import type { AuthenticatedUser } from '../../common/auth';
 import { UpdateSpotDto } from './dto/update-spot.dto';
+import { SpotPhotoStorageService } from './spot-photo-storage.service';
 
 describe('SpotsService', () => {
   let service: SpotsService;
   let repository: jest.Mocked<SpotsRepository>;
+  let spotPhotoStorage: jest.Mocked<SpotPhotoStorageService>;
 
   const actor: AuthenticatedUser = {
     userId: 'uuid-user-1',
@@ -33,6 +38,10 @@ describe('SpotsService', () => {
     createdById: 'uuid-user-1',
     createdBy: { alias: 'TestUser' },
     accessInfo: 'Park at the pier',
+    averageVisibilityMeters: 8.2,
+    averageRating: 4.5,
+    reportCount: 12,
+    latestReportAt: new Date('2026-01-01'),
     shareUrl: null,
     shareableAccessInfo: null,
     isDeleted: false,
@@ -48,12 +57,19 @@ describe('SpotsService', () => {
         spotId: 'uuid-spot-1',
       },
     ],
+    photoUrls: [],
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SpotsService,
+        {
+          provide: SpotPhotoStorageService,
+          useValue: {
+            createUploadUrl: jest.fn(),
+          },
+        },
         {
           provide: SpotsRepository,
           useValue: {
@@ -63,6 +79,7 @@ describe('SpotsService', () => {
             findNearbyCenters: jest.fn(),
             createSpot: jest.fn(),
             updateSpot: jest.fn(),
+            updatePhotoUrls: jest.fn(),
             softDeleteSpot: jest.fn(),
           },
         },
@@ -71,6 +88,7 @@ describe('SpotsService', () => {
 
     service = module.get<SpotsService>(SpotsService);
     repository = module.get(SpotsRepository);
+    spotPhotoStorage = module.get(SpotPhotoStorageService);
   });
 
   describe('listByBBox', () => {
@@ -171,11 +189,35 @@ describe('SpotsService', () => {
             label: 'Main parking',
           },
         ],
+        photoUrls: [],
+        isFavorite: false,
+        averageVisibilityMeters: 8.2,
+        averageRating: 4.5,
+        reportCount: 12,
+        latestReportAt: new Date('2026-01-01'),
+        diveLogs: [],
         shareUrl: null,
         shareableAccessInfo: null,
         createdAt: new Date('2025-01-01'),
         updatedAt: new Date('2025-01-02'),
       });
+    });
+
+    it('should preserve null summary values when no report aggregates exist', async () => {
+      repository.findById.mockResolvedValue({
+        ...mockSpotDetail,
+        averageVisibilityMeters: null,
+        averageRating: null,
+        reportCount: 0,
+        latestReportAt: null,
+      });
+
+      const result = await service.getById('uuid-spot-1');
+
+      expect(result.averageVisibilityMeters).toBeNull();
+      expect(result.averageRating).toBeNull();
+      expect(result.reportCount).toBe(0);
+      expect(result.latestReportAt).toBeNull();
     });
 
     it('should throw SpotNotFoundOrDeletedError when spot not found', async () => {
@@ -400,6 +442,118 @@ describe('SpotsService', () => {
       await service.softDelete('uuid-spot-1', actor);
 
       expect(repository.softDeleteSpot).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('createPhotoUploadUrl', () => {
+    it('should return signed upload URL when spot exists and has capacity', async () => {
+      repository.findByIdAnyState.mockResolvedValue({
+        ...mockSpotDetail,
+        photoUrls: ['https://example.com/1.jpg'],
+      });
+      spotPhotoStorage.createUploadUrl.mockResolvedValue({
+        uploadUrl:
+          'https://storage.example.com/upload/sign/spot-photos/spots/uuid-1/file.jpg?token=abc',
+        publicUrl:
+          'https://storage.example.com/object/public/spot-photos/spots/uuid-1/file.jpg',
+        expiresAt: '2026-02-24T21:00:00.000Z',
+      });
+
+      const result = await service.createPhotoUploadUrl(
+        'uuid-spot-1',
+        'image/jpeg',
+      );
+
+      expect(spotPhotoStorage.createUploadUrl).toHaveBeenCalledWith(
+        'uuid-spot-1',
+        'image/jpeg',
+      );
+      expect(result.uploadUrl).toContain('/upload/sign/');
+    });
+
+    it('should throw SpotNotFoundOrDeletedError when spot does not exist', async () => {
+      repository.findByIdAnyState.mockResolvedValue(null);
+
+      await expect(
+        service.createPhotoUploadUrl('missing-spot', 'image/jpeg'),
+      ).rejects.toThrow(SpotNotFoundOrDeletedError);
+    });
+
+    it('should throw TooManyPhotosError when spot already has 5 photos', async () => {
+      repository.findByIdAnyState.mockResolvedValue({
+        ...mockSpotDetail,
+        photoUrls: [
+          'https://example.com/1.jpg',
+          'https://example.com/2.jpg',
+          'https://example.com/3.jpg',
+          'https://example.com/4.jpg',
+          'https://example.com/5.jpg',
+        ],
+      });
+
+      await expect(
+        service.createPhotoUploadUrl('uuid-spot-1', 'image/jpeg'),
+      ).rejects.toThrow(TooManyPhotosError);
+    });
+  });
+
+  describe('addPhoto', () => {
+    it('should append photo URL when valid and under limit', async () => {
+      repository.findByIdAnyState.mockResolvedValue({
+        ...mockSpotDetail,
+        photoUrls: ['https://example.com/1.jpg'],
+      });
+      repository.updatePhotoUrls.mockResolvedValue({
+        ...mockSpotDetail,
+        photoUrls: ['https://example.com/1.jpg', 'https://example.com/new.jpg'],
+      });
+
+      const result = await service.addPhoto(
+        'uuid-spot-1',
+        'https://example.com/new.jpg',
+      );
+
+      expect(repository.updatePhotoUrls).toHaveBeenCalledWith('uuid-spot-1', [
+        'https://example.com/1.jpg',
+        'https://example.com/new.jpg',
+      ]);
+      expect(result.photoUrls).toContain('https://example.com/new.jpg');
+    });
+
+    it('should throw InvalidPhotoUrlError for non-https URL', async () => {
+      repository.findByIdAnyState.mockResolvedValue(mockSpotDetail);
+
+      await expect(
+        service.addPhoto('uuid-spot-1', 'http://example.com/unsafe.jpg'),
+      ).rejects.toThrow(InvalidPhotoUrlError);
+    });
+
+    it('should throw DuplicatePhotoUrlError for case-insensitive duplicate URL', async () => {
+      repository.findByIdAnyState.mockResolvedValue({
+        ...mockSpotDetail,
+        photoUrls: ['https://example.com/PHOTO.jpg'],
+      });
+
+      await expect(
+        service.addPhoto('uuid-spot-1', 'https://example.com/photo.jpg'),
+      ).rejects.toThrow(DuplicatePhotoUrlError);
+    });
+
+    it('should throw TooManyPhotosError when adding a 6th photo', async () => {
+      repository.findByIdAnyState.mockResolvedValue({
+        ...mockSpotDetail,
+        photoUrls: [
+          'https://example.com/1.jpg',
+          'https://example.com/2.jpg',
+          'https://example.com/3.jpg',
+          'https://example.com/4.jpg',
+          'https://example.com/5.jpg',
+        ],
+      });
+
+      await expect(
+        service.addPhoto('uuid-spot-1', 'https://example.com/6.jpg'),
+      ).rejects.toThrow(TooManyPhotosError);
     });
   });
 

@@ -1,0 +1,7 @@
+[agents.monitor-agent]
+description = "Milestone orchestrator with autonomous and guided run modes; resumes from run artifacts and pauses on pending high-impact decisions in guided mode."
+config_file = ".codex/agents/monitor-agent.md"
+
+[agents.vertical-slice-implementor]
+description = "Issue implementation worker with mandatory verification and report contract."
+config_file = ".codex/agents/vertical-slice-implementor.md"

@@ -1,6 +1,7 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import type { SpotSummary } from '@/src/features/map/types';
+import { colors } from '@/src/shared/theme';
 
 const mockComponents: Record<string, any> = {};
 
@@ -26,6 +27,7 @@ jest.mock('@maplibre/maplibre-react-native', () => {
       PointAnnotation: create('PointAnnotation'),
       ShapeSource: create('ShapeSource'),
       CircleLayer: create('CircleLayer'),
+      SymbolLayer: create('SymbolLayer'),
       RasterSource: create('RasterSource'),
       RasterLayer: create('RasterLayer'),
     },
@@ -34,6 +36,7 @@ jest.mock('@maplibre/maplibre-react-native', () => {
     PointAnnotation: create('PointAnnotation'),
     ShapeSource: create('ShapeSource'),
     CircleLayer: create('CircleLayer'),
+    SymbolLayer: create('SymbolLayer'),
     RasterSource: create('RasterSource'),
     RasterLayer: create('RasterLayer'),
   };
@@ -86,6 +89,50 @@ describe('MapView.native', () => {
     expect(layers[1].props.id).toBe('spot-unclustered');
   });
 
+  it('uses themed marker colors for spot clusters and selected spots', () => {
+    const { getAllByTestId } = render(
+      <MapView {...defaultProps} spots={spots} selectedSpotId="2" />,
+    );
+    const layers = getAllByTestId('CircleLayer');
+    const clusterLayer = layers.find((layer) => layer.props.id === 'spot-clusters');
+    const spotLayer = layers.find((layer) => layer.props.id === 'spot-unclustered');
+
+    expect(clusterLayer?.props.style.circleColor).toBe(colors.primary[500]);
+    expect(spotLayer?.props.style.circleColor).toEqual([
+      'case',
+      ['==', ['get', 'id'], '2'],
+      colors.primary[700],
+      colors.primary[500],
+    ]);
+  });
+
+  it('renders SymbolLayer for cluster count labels', () => {
+    const { getByTestId } = render(
+      <MapView {...defaultProps} spots={spots} />,
+    );
+    const labelLayer = getByTestId('SymbolLayer');
+    expect(labelLayer.props.id).toBe('spot-cluster-count');
+    expect(labelLayer.props.style.textField).toEqual([
+      'get',
+      'point_count_abbreviated',
+    ]);
+  });
+
+  it('highlights selected marker with larger radius style', () => {
+    const { getAllByTestId } = render(
+      <MapView {...defaultProps} spots={spots} selectedSpotId="2" />,
+    );
+    const layers = getAllByTestId('CircleLayer');
+    const unclustered = layers.find((layer) => layer.props.id === 'spot-unclustered');
+    expect(unclustered).toBeDefined();
+    expect(unclustered?.props.style.circleRadius).toEqual([
+      'case',
+      ['==', ['get', 'id'], '2'],
+      11,
+      7,
+    ]);
+  });
+
   it('renders user location PointAnnotation when location provided', () => {
     const { getByTestId } = render(
       <MapView
@@ -103,6 +150,73 @@ describe('MapView.native', () => {
     const { getByTestId } = render(<MapView {...defaultProps} />);
     const source = getByTestId('ShapeSource');
     expect(source.props.shape.features).toHaveLength(0);
+  });
+
+  it('renders draft spot and parking markers when provided', () => {
+    const { getAllByTestId } = render(
+      <MapView
+        {...defaultProps}
+        spots={spots}
+        draftSpotCoordinate={{ lat: 59.9139, lng: 10.7522 }}
+        draftParkingLocations={[{ lat: 59.914, lon: 10.753 }]}
+      />,
+    );
+
+    const layers = getAllByTestId('CircleLayer');
+    const draftSpotLayer = layers.find(
+      (layer) => layer.props.id === 'draft-spot-marker',
+    );
+    const draftParkingLayer = layers.find(
+      (layer) => layer.props.id === 'draft-parking-markers',
+    );
+
+    expect(draftSpotLayer?.props.style.circleColor).toBe(colors.primary[600]);
+    expect(draftParkingLayer?.props.style.circleColor).toBe(colors.secondary[600]);
+  });
+
+  it('emits map center from direct center coordinates in region change events', () => {
+    const onMapCenterDidChange = jest.fn();
+    const { getByTestId } = render(
+      <MapView
+        {...defaultProps}
+        spots={spots}
+        onMapCenterDidChange={onMapCenterDidChange}
+      />,
+    );
+
+    getByTestId('MapView').props.onRegionDidChange({
+      properties: { center: [10.7522, 59.9139] },
+    });
+
+    expect(onMapCenterDidChange).toHaveBeenCalledWith({
+      lat: 59.9139,
+      lng: 10.7522,
+    });
+  });
+
+  it('falls back to visibleBounds midpoint when center is missing', () => {
+    const onMapCenterDidChange = jest.fn();
+    const { getByTestId } = render(
+      <MapView
+        {...defaultProps}
+        spots={spots}
+        onMapCenterDidChange={onMapCenterDidChange}
+      />,
+    );
+
+    getByTestId('MapView').props.onRegionDidChange({
+      properties: {
+        visibleBounds: [
+          [11.0, 60.0],
+          [10.0, 59.0],
+        ],
+      },
+    });
+
+    expect(onMapCenterDidChange).toHaveBeenCalledWith({
+      lat: 59.5,
+      lng: 10.5,
+    });
   });
 
   it('renders RasterSource with correct tile URL template', () => {

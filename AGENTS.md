@@ -1,13 +1,13 @@
 # Codex Project Profile for FreedivingApp
 
-Apply these rules when working in `/Users/torkildliebe/FreedivingApp`.
+Apply these rules when working in this repository root.
 
 ## Source of Truth
 
-- Canonical guidance remains in `/Users/torkildliebe/FreedivingApp/.claude/`.
-- Core memory: `/Users/torkildliebe/FreedivingApp/.claude/CLAUDE.md`
-- Rules: `/Users/torkildliebe/FreedivingApp/.claude/rules/`
-- Skills: `/Users/torkildliebe/FreedivingApp/.claude/skills/`
+- Canonical guidance remains in `.claude/`.
+- Core memory: `.claude/CLAUDE.md`
+- Rules: `.claude/rules/`
+- Skills: `.claude/skills/` and codex-native skills under `.agents/skills/`
 
 ## Skills-First + MCP-When-Useful
 
@@ -21,7 +21,9 @@ Apply these rules when working in `/Users/torkildliebe/FreedivingApp`.
 - Testing and verification: `test-backend`, `test-mobile`, `ios-simulator-skill`
 - Quality and policy: `audit-rules`, `security`
 - Product and documentation: `product-copilot`, `sync-docs`
-- Dedicated agent: `vertical-slice-implementor` in `.claude/agents/vertical-slice-implementor.md`
+- Dedicated agents:
+  - `monitor-agent` via codex role config in `.codex/agents.toml`
+  - `vertical-slice-implementor` in `.claude/agents/vertical-slice-implementor.md`
 
 ## Mandatory Lifecycle
 
@@ -44,7 +46,7 @@ Final delivery for implementation and review tasks must include:
 
 ## Verification Policy (Risk-Tiered)
 
-Use `/Users/torkildliebe/FreedivingApp/.claude/rules/testing.md` as authority.
+Use `.claude/rules/testing.md` as authority.
 
 - Low risk:
   - Localized docs/text/config with no behavior change.
@@ -68,12 +70,12 @@ Frontend and mobile UI verification (mandatory when UI changes):
 
 Use and follow these files:
 
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/backend.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/mobile.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/domain.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/auth.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/prisma.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/workflow.md`
+- `.claude/rules/backend.md`
+- `.claude/rules/mobile.md`
+- `.claude/rules/domain.md`
+- `.claude/rules/auth.md`
+- `.claude/rules/prisma.md`
+- `.claude/rules/workflow.md`
 
 Non-negotiables:
 
@@ -107,6 +109,15 @@ Mirror `.claude/hooks` behavior through explicit task flow:
 
 Use these explicit commands to run hook-equivalent checks in Codex:
 
+- `./.codex/hooks/run-hook.sh pre-edit -- <file_path>`
+- `./.codex/hooks/run-hook.sh post-edit -- <file_path>`
+- `./.codex/hooks/run-hook.sh pre-edit -- <file1> <file2> <file3>` (batch, fail-fast)
+- `./.codex/hooks/run-hook.sh post-edit -- <file1> <file2> <file3>` (batch, fail-fast)
+- `./.codex/hooks/run-hook.sh pre-commit`
+- `./.codex/hooks/run-hook.sh post-test -- "<command_string>"`
+
+Compatibility fallback commands:
+
 - `pnpm codex:hook:pre-edit -- <file_path>`
 - `pnpm codex:hook:post-edit -- <file_path>`
 - `pnpm codex:hook:pre-commit`
@@ -115,7 +126,7 @@ Use these explicit commands to run hook-equivalent checks in Codex:
 
 ## MCP Workspace Policy
 
-Keep MCP workspace-scoped and use `/Users/torkildliebe/FreedivingApp/.mcp.json` as source of truth.
+Keep MCP workspace-scoped and use `.mcp.json` as source of truth.
 
 When available, prefer:
 

@@ -15,6 +15,34 @@ Use this skill to:
 - Generate mocks for Expo modules and MapLibre
 - Achieve ≥80% test coverage
 
+## Design Fidelity Test Requirements
+
+For mobile/UI changes, use `docs/design-os-plan` as the design source.
+
+1. Pull behavior test cases from `docs/design-os-plan/sections/<section>/tests.md`.
+2. Add assertions for UX copy and state transitions that are explicitly specified in Design OS docs.
+3. Keep tests aligned with Design OS callbacks, labels, and empty/loading/error state expectations.
+4. Run screenshot-based visual verification for changed UI states and compare against section screenshot references.
+5. Document any approved visual mismatches and why they are acceptable.
+
+## Orchestration Runtime Evidence Requirements
+
+For vertical-slice orchestration runs:
+
+1. Run mobile auth preflight before runtime verification:
+   - `pnpm orchestrator:mobile-auth-check`
+2. For deterministic M2 map/spots evidence capture when applicable, run:
+   - `pnpm orchestrator:capture-ios-m2-core -- --run-id <run-id> --issue-number <n> [--device "<name>"]`
+3. Ensure report output includes these UI evidence labels:
+   - `Design OS assets used:`
+   - `Component mapping:`
+   - `Design parity evidence:`
+   - `Approved deviations:`
+4. Enforce strict UI PASS semantics:
+   - `MOBILE_UI_TOUCHED: true` requires `IOS_VERIFIED: true`
+   - `MOBILE_UI_TOUCHED: false` requires `IOS_VERIFIED: false`
+   - `VERIFICATION: FAIL` cannot be paired with `RESULT: PASS`
+
 ## Test Types
 
 ### Component Tests

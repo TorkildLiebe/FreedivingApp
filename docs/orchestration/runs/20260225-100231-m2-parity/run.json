@@ -1,0 +1,193 @@
+{
+  "run_id": "20260225-100231-m2-parity",
+  "milestone": "M2",
+  "status": "completed",
+  "started_at": "2026-02-25T10:02:46.263Z",
+  "updated_at": "2026-02-25T10:18:04.429Z",
+  "issue_order": [
+    85,
+    86,
+    87,
+    88,
+    89
+  ],
+  "current_issue": null,
+  "attempts_by_issue": {
+    "85": 1,
+    "86": 1,
+    "87": 1,
+    "88": 1,
+    "89": 1
+  },
+  "completed_issues": [
+    85,
+    86,
+    87,
+    88,
+    89
+  ],
+  "blocked_issue": null,
+  "stop_reason": null,
+  "issues": {
+    "85": {
+      "status": "merged_local",
+      "attempts": 1,
+      "note": "Design OS parity sweep committed",
+      "commit_sha": "3b68c52f02b561fd84bdcee2d507f69a238c4cb0",
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-25T10:02:46.263Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-25T10:17:51.703Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-25T10:17:51.703Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-25T10:17:51.703Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-25T10:17:57.810Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-25T10:18:04.429Z"
+        }
+      ]
+    },
+    "86": {
+      "status": "merged_local",
+      "attempts": 1,
+      "note": "Design OS parity sweep committed",
+      "commit_sha": "3b68c52f02b561fd84bdcee2d507f69a238c4cb0",
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-25T10:02:46.263Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-25T10:17:51.704Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-25T10:17:51.704Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-25T10:17:51.704Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-25T10:17:58.280Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-25T10:18:04.429Z"
+        }
+      ]
+    },
+    "87": {
+      "status": "merged_local",
+      "attempts": 1,
+      "note": "Design OS parity sweep committed",
+      "commit_sha": "3b68c52f02b561fd84bdcee2d507f69a238c4cb0",
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-25T10:02:46.263Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-25T10:17:51.704Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-25T10:17:51.704Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-25T10:17:51.704Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-25T10:17:58.742Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-25T10:18:04.429Z"
+        }
+      ]
+    },
+    "88": {
+      "status": "merged_local",
+      "attempts": 1,
+      "note": "Design OS parity sweep committed",
+      "commit_sha": "3b68c52f02b561fd84bdcee2d507f69a238c4cb0",
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-25T10:02:46.263Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-25T10:17:51.704Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-25T10:17:51.704Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-25T10:17:51.704Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-25T10:17:59.199Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-25T10:18:04.429Z"
+        }
+      ]
+    },
+    "89": {
+      "status": "merged_local",
+      "attempts": 1,
+      "note": "Design OS parity sweep committed",
+      "commit_sha": "3b68c52f02b561fd84bdcee2d507f69a238c4cb0",
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-25T10:02:46.263Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-25T10:17:51.704Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-25T10:17:51.704Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-25T10:17:51.704Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-25T10:17:59.660Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-25T10:18:04.429Z"
+        }
+      ]
+    }
+  }
+}

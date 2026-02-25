@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
 import type { SpotDetail } from '@/src/features/map/types';
 
 import '@/src/__tests__/mocks/expo-vector-icons.mock';
@@ -8,22 +8,16 @@ jest.mock('@gorhom/bottom-sheet', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require('react');
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { View, ScrollView } = require('react-native');
+  const { ScrollView, View } = require('react-native');
 
   // eslint-disable-next-line react/display-name
-  const BottomSheet = React.forwardRef(
-    ({ children, ...props }: any, ref: any) => {
-      React.useImperativeHandle(ref, () => ({
-        snapToIndex: jest.fn(),
-        close: jest.fn(),
-      }));
-      return React.createElement(
-        View,
-        { testID: 'bottom-sheet', ...props },
-        children,
-      );
-    },
-  );
+  const BottomSheet = React.forwardRef(({ children, ...props }: any, ref: any) => {
+    React.useImperativeHandle(ref, () => ({
+      snapToIndex: jest.fn(),
+      close: jest.fn(),
+    }));
+    return React.createElement(View, { testID: 'bottom-sheet', ...props }, children);
+  });
 
   return {
     __esModule: true,
@@ -36,19 +30,27 @@ jest.mock('@gorhom/bottom-sheet', () => {
 // eslint-disable-next-line import/first
 import { SpotDetailSheet } from '@/src/features/map/components/spot-detail-sheet';
 
+const freshReportDate = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString();
+
 const mockSpot: SpotDetail = {
   id: 'uuid-1',
   title: 'Test Dive Spot',
   description: 'A great dive spot for beginners',
-  centerLat: 60.0,
-  centerLon: 5.0,
+  centerLat: 60,
+  centerLon: 5,
   createdById: 'uuid-user-1',
   creatorDisplayName: 'TestUser',
   accessInfo: 'Park at the pier and walk 200m',
   parkingLocations: [
     { id: 'p-1', lat: 60.01, lon: 5.01, label: 'Main parking' },
-    { id: 'p-2', lat: 60.02, lon: 5.02, label: null },
   ],
+  photoUrls: [],
+  isFavorite: false,
+  averageVisibilityMeters: 8.2,
+  averageRating: 4.5,
+  reportCount: 12,
+  latestReportAt: freshReportDate,
+  diveLogs: [],
   shareUrl: null,
   shareableAccessInfo: null,
   createdAt: '2025-01-01T00:00:00.000Z',
@@ -61,6 +63,13 @@ describe('SpotDetailSheet', () => {
     isLoading: false,
     onDismiss: jest.fn(),
     onParkingPress: jest.fn(),
+    onToggleFavorite: jest.fn(),
+    isTogglingFavorite: false,
+    onAddPhoto: jest.fn(),
+    isUploadingPhoto: false,
+    photoUploadError: null as string | null,
+    onAddDive: jest.fn(),
+    onUpdateRating: jest.fn(),
   };
 
   beforeEach(() => {
@@ -72,74 +81,67 @@ describe('SpotDetailSheet', () => {
     expect(toJSON()).toBeNull();
   });
 
-  it('shows loading indicator when isLoading and no spot', () => {
-    const { getByTestId } = render(
-      <SpotDetailSheet {...defaultProps} isLoading />,
-    );
-    expect(getByTestId('bottom-sheet')).toBeTruthy();
-  });
-
-  it('renders spot title and creator name', () => {
-    const { getByText } = render(
+  it('renders spot title and header controls', () => {
+    const { getByTestId, getByText } = render(
       <SpotDetailSheet {...defaultProps} spot={mockSpot} />,
     );
+
     expect(getByText('Test Dive Spot')).toBeTruthy();
-    expect(getByText('TestUser')).toBeTruthy();
+    expect(getByTestId('spot-detail-favorite-toggle')).toBeTruthy();
+    expect(getByTestId('spot-detail-close-button')).toBeTruthy();
   });
 
-  it('shows Anonymous when creator display name is null', () => {
-    const spotWithoutCreator = { ...mockSpot, creatorDisplayName: null };
-    const { getByText } = render(
-      <SpotDetailSheet {...defaultProps} spot={spotWithoutCreator} />,
-    );
-    expect(getByText('Anonymous')).toBeTruthy();
-  });
-
-  it('renders description and access info', () => {
+  it('shows visibility text from latest report state', () => {
     const { getByText } = render(
       <SpotDetailSheet {...defaultProps} spot={mockSpot} />,
     );
-    expect(getByText('A great dive spot for beginners')).toBeTruthy();
-    expect(getByText('Park at the pier and walk 200m')).toBeTruthy();
+
+    expect(getByText(/8m/)).toBeTruthy();
   });
 
-  it('renders parking locations as tappable items', () => {
-    const onParkingPress = jest.fn();
+  it('renders no-data visibility fallback when latest report missing', () => {
     const { getByText } = render(
       <SpotDetailSheet
         {...defaultProps}
-        spot={mockSpot}
-        onParkingPress={onParkingPress}
+        spot={{ ...mockSpot, latestReportAt: null, averageVisibilityMeters: null }}
       />,
     );
 
-    const parkingItem = getByText('Main parking');
-    expect(parkingItem).toBeTruthy();
-
-    fireEvent.press(parkingItem);
-    expect(onParkingPress).toHaveBeenCalledWith(mockSpot.parkingLocations[0]);
+    expect(getByText('No data yet')).toBeTruthy();
   });
 
-  it('shows coordinate fallback for parking without label', () => {
-    const { getByText } = render(
+  it('calls onAddDive when add dive button is pressed', () => {
+    const onAddDive = jest.fn();
+    const { getByTestId } = render(
+      <SpotDetailSheet {...defaultProps} spot={mockSpot} onAddDive={onAddDive} />,
+    );
+
+    fireEvent.press(getByTestId('spot-detail-add-dive-button'));
+    expect(onAddDive).toHaveBeenCalledWith(mockSpot);
+  });
+
+  it('opens rating modal and submits selected rating', () => {
+    const onUpdateRating = jest.fn();
+    const { getByTestId } = render(
+      <SpotDetailSheet
+        {...defaultProps}
+        spot={mockSpot}
+        onUpdateRating={onUpdateRating}
+      />,
+    );
+
+    fireEvent.press(getByTestId('spot-detail-open-rating'));
+    fireEvent.press(getByTestId('spot-detail-rate-4'));
+    expect(onUpdateRating).toHaveBeenCalledWith(mockSpot, 4);
+  });
+
+  it('renders photos placeholder and dive log placeholder when empty', () => {
+    const { getByTestId, getByText } = render(
       <SpotDetailSheet {...defaultProps} spot={mockSpot} />,
     );
-    expect(getByText(/60\.0200.*5\.0200/)).toBeTruthy();
-  });
 
-  it('renders created and updated dates', () => {
-    const { getByText } = render(
-      <SpotDetailSheet {...defaultProps} spot={mockSpot} />,
-    );
-    expect(getByText(/Created/)).toBeTruthy();
-    expect(getByText(/Updated/)).toBeTruthy();
-  });
-
-  it('does not show updated date when same as created', () => {
-    const spotSameDate = { ...mockSpot, updatedAt: mockSpot.createdAt };
-    const { queryByText } = render(
-      <SpotDetailSheet {...defaultProps} spot={spotSameDate} />,
-    );
-    expect(queryByText(/Updated/)).toBeNull();
+    expect(getByText('No photos yet.')).toBeTruthy();
+    expect(getByTestId('spot-detail-add-photo-button')).toBeTruthy();
+    expect(getByTestId('spot-detail-dive-log-placeholder')).toBeTruthy();
   });
 });

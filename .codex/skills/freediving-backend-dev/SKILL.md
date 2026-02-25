@@ -8,15 +8,15 @@ description: Use for FreedivingApp backend work in apps/backend, including DTO v
 Use when working in `apps/backend/**`.
 
 ## Load These Sources
-- `/Users/torkildliebe/FreedivingApp/.claude/skills/backend-dev/SKILL.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/skills/backend-dev/auth-flow.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/skills/backend-dev/backend-patterns.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/skills/backend-dev/testing-backend.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/backend.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/auth.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/prisma.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/domain.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/testing.md`
+- `.claude/skills/backend-dev/SKILL.md`
+- `.claude/skills/backend-dev/auth-flow.md`
+- `.claude/skills/backend-dev/backend-patterns.md`
+- `.claude/skills/backend-dev/testing-backend.md`
+- `.claude/rules/backend.md`
+- `.claude/rules/auth.md`
+- `.claude/rules/prisma.md`
+- `.claude/rules/domain.md`
+- `.claude/rules/testing.md`
 
 ## Operating Workflow
 1. Confirm module flow: `controller -> dto -> service -> repository`.

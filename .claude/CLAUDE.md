@@ -50,6 +50,11 @@ Dedicated agents in `.claude/agents/`:
 
 - `vertical-slice-implementor`: issue-to-feature implementation with mandatory tests and risk-tier verification
 
+Codex-native role registry in `.codex/agents.toml`:
+
+- `monitor-agent`: unattended milestone orchestration (prompt entrypoint)
+- `vertical-slice-implementor`: implementation worker role bridge
+
 MCP servers from `.mcp.json` and primary usage:
 
 - `ios-simulator`: UI flows, simulator automation, screenshot-based verification

@@ -34,6 +34,8 @@ describe('UsersController', () => {
           useValue: {
             findById: jest.fn(),
             getOrCreate: jest.fn(),
+            addFavoriteSpot: jest.fn(),
+            removeFavoriteSpot: jest.fn(),
           },
         },
         {
@@ -67,6 +69,7 @@ describe('UsersController', () => {
         avatarUrl: null,
         role: 'user',
         preferredLanguage: 'no',
+        favoriteSpotIds: [],
       });
     });
 
@@ -80,6 +83,46 @@ describe('UsersController', () => {
           role: 'user',
         }),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('favorite endpoints', () => {
+    it('should add favorite spot for current user', async () => {
+      usersService.addFavoriteSpot.mockResolvedValue(['spot-1']);
+
+      const result = await controller.addFavoriteSpot(
+        {
+          userId: 'uuid-1',
+          externalId: 'ext-1',
+          role: 'user',
+        },
+        '00000000-0000-0000-0000-000000000001',
+      );
+
+      expect(usersService.addFavoriteSpot).toHaveBeenCalledWith(
+        'uuid-1',
+        '00000000-0000-0000-0000-000000000001',
+      );
+      expect(result).toEqual({ favoriteSpotIds: ['spot-1'] });
+    });
+
+    it('should remove favorite spot for current user', async () => {
+      usersService.removeFavoriteSpot.mockResolvedValue([]);
+
+      const result = await controller.removeFavoriteSpot(
+        {
+          userId: 'uuid-1',
+          externalId: 'ext-1',
+          role: 'user',
+        },
+        '00000000-0000-0000-0000-000000000001',
+      );
+
+      expect(usersService.removeFavoriteSpot).toHaveBeenCalledWith(
+        'uuid-1',
+        '00000000-0000-0000-0000-000000000001',
+      );
+      expect(result).toEqual({ favoriteSpotIds: [] });
     });
   });
 });

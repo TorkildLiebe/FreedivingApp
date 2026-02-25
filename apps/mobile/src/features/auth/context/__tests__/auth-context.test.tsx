@@ -24,11 +24,15 @@ beforeEach(() => {
 });
 
 describe('AuthProvider + useAuth', () => {
-  it('starts in loading state', () => {
+  it('starts in loading state', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.session).toBeNull();
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
   });
 
   it('loads session from getSession', async () => {
@@ -86,11 +90,12 @@ describe('AuthProvider + useAuth', () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    const { error } = await act(() =>
-      result.current.signIn('test@example.com', 'password'),
-    );
+    let signInResult: { error: Error | null } | undefined;
+    await act(async () => {
+      signInResult = await result.current.signIn('test@example.com', 'password');
+    });
 
-    expect(error).toBeNull();
+    expect(signInResult?.error).toBeNull();
     expect(mockSupabase.auth.signInWithPassword).toHaveBeenCalledWith({
       email: 'test@example.com',
       password: 'password',
@@ -109,12 +114,13 @@ describe('AuthProvider + useAuth', () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    const { error } = await act(() =>
-      result.current.signIn('test@example.com', 'wrong'),
-    );
+    let signInResult: { error: Error | null } | undefined;
+    await act(async () => {
+      signInResult = await result.current.signIn('test@example.com', 'wrong');
+    });
 
-    expect(error).toBeInstanceOf(Error);
-    expect(error!.message).toBe('Invalid credentials');
+    expect(signInResult?.error).toBeInstanceOf(Error);
+    expect(signInResult?.error?.message).toBe('Invalid credentials');
   });
 
   it('signUp delegates to supabase', async () => {
@@ -129,11 +135,12 @@ describe('AuthProvider + useAuth', () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    const { error } = await act(() =>
-      result.current.signUp('new@example.com', 'password'),
-    );
+    let signUpResult: { error: Error | null } | undefined;
+    await act(async () => {
+      signUpResult = await result.current.signUp('new@example.com', 'password');
+    });
 
-    expect(error).toBeNull();
+    expect(signUpResult?.error).toBeNull();
     expect(mockSupabase.auth.signUp).toHaveBeenCalledWith({
       email: 'new@example.com',
       password: 'password',
@@ -152,11 +159,12 @@ describe('AuthProvider + useAuth', () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    const { error } = await act(() =>
-      result.current.signUp('taken@example.com', 'password'),
-    );
+    let signUpResult: { error: Error | null } | undefined;
+    await act(async () => {
+      signUpResult = await result.current.signUp('taken@example.com', 'password');
+    });
 
-    expect(error!.message).toBe('Email taken');
+    expect(signUpResult?.error?.message).toBe('Email taken');
   });
 
   it('signOut calls supabase', async () => {

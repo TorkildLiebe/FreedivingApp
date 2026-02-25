@@ -17,6 +17,43 @@ Use this skill when:
 - Managing auth context and user state
 - Writing mobile tests
 
+## Design OS Integration Workflow
+
+Use this workflow for mobile/UI implementation. `docs/design-os-plan` is the only canonical UI source.
+
+1. Intake files in this order:
+   - `docs/design-os-plan/product-overview.md`
+   - matching incremental milestone instruction in `docs/design-os-plan/instructions/incremental/`
+   - matching section assets in `docs/design-os-plan/sections/<section>/`:
+     - `README.md`
+     - `tests.md`
+     - `components/`
+     - `types.ts`
+     - screenshot references
+   - shell assets from `docs/design-os-plan/shell/` when shell chrome is touched
+   - design tokens from `docs/design-os-plan/design-system/` when styling is touched
+2. Reuse/adapt finished Design OS section components before introducing custom UI structure.
+3. Preserve design tokens, labels, placeholders, and state flow semantics from Design OS files.
+4. If divergence is required, document the deviation and the reason in delivery output.
+
+## Orchestration UI Verification Contract
+
+For vertical-slice orchestration runs with mobile/UI impact:
+
+1. Run mobile auth preflight before runtime UI verification:
+   - `pnpm orchestrator:mobile-auth-check`
+2. For deterministic M2 map/spots capture when applicable, use:
+   - `pnpm orchestrator:capture-ios-m2-core -- --run-id <run-id> --issue-number <n> [--device "<name>"]`
+3. Ensure worker reports include required UI evidence labels:
+   - `Design OS assets used:`
+   - `Component mapping:`
+   - `Design parity evidence:`
+   - `Approved deviations:`
+4. Enforce strict PASS semantics:
+   - `MOBILE_UI_TOUCHED: true` requires `IOS_VERIFIED: true`
+   - `MOBILE_UI_TOUCHED: false` requires `IOS_VERIFIED: false`
+   - `VERIFICATION: FAIL` cannot be paired with `RESULT: PASS`
+
 ## Feature-Based Architecture
 
 Each feature is self-contained:

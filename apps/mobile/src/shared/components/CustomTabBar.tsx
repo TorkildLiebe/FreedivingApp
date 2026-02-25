@@ -17,8 +17,28 @@ const TAB_LABELS: Record<string, string> = {
   profile: "Profile",
 };
 
-export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
+export function CustomTabBar({
+  state,
+  navigation,
+  descriptors,
+}: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const activeRoute = state.routes[state.index];
+  const activeDescriptor = activeRoute
+    ? descriptors[activeRoute.key]
+    : undefined;
+  const flattenedTabBarStyle = StyleSheet.flatten(
+    activeDescriptor?.options?.tabBarStyle,
+  );
+  const shouldHideTabBar =
+    typeof flattenedTabBarStyle === 'object' &&
+    flattenedTabBarStyle !== null &&
+    'display' in flattenedTabBarStyle &&
+    flattenedTabBarStyle.display === 'none';
+
+  if (shouldHideTabBar) {
+    return null;
+  }
   const bottomPadding = Math.max(insets.bottom, 12);
 
   return (

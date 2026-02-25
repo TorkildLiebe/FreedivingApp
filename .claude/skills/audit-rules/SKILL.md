@@ -190,6 +190,17 @@ When reviewing code:
 - [ ] Client-side validation mirrors backend
 - [ ] Error messages reference domain constraints
 
+**For vertical-slice report contract compliance:**
+- [ ] Worker report includes all required top-level sections.
+- [ ] Trailer contains required keys and valid values.
+- [ ] `VERIFICATION: FAIL` is not paired with `RESULT: PASS`.
+- [ ] UI reports (`MOBILE_UI_TOUCHED: true`) set `IOS_VERIFIED: true` and include:
+  - `Design OS assets used:`
+  - `Component mapping:`
+  - `Design parity evidence:`
+  - `Approved deviations:`
+- [ ] Non-UI reports (`MOBILE_UI_TOUCHED: false`) set `IOS_VERIFIED: false`.
+
 ## Common Violations
 
 ❌ **Missing proximity check**

@@ -141,6 +141,18 @@ export class SpotsRepository {
     });
   }
 
+  async updatePhotoUrls(id: string, photoUrls: string[]) {
+    await this.prisma.diveSpot.update({
+      where: { id },
+      data: { photoUrls },
+    });
+
+    return this.prisma.diveSpot.findFirst({
+      where: { id, isDeleted: false },
+      include: SPOT_DETAIL_INCLUDE,
+    });
+  }
+
   async softDeleteSpot(id: string): Promise<void> {
     await this.prisma.diveSpot.updateMany({
       where: { id, isDeleted: false },

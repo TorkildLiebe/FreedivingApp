@@ -19,6 +19,9 @@ import { ListSpotsResponseDto } from './dto/list-spots-response.dto';
 import { SpotDetailResponseDto } from './dto/spot-detail-response.dto';
 import { CreateSpotDto } from './dto/create-spot.dto';
 import { UpdateSpotDto } from './dto/update-spot.dto';
+import { AddSpotPhotoDto } from './dto/add-spot-photo.dto';
+import { CreateSpotPhotoUploadUrlDto } from './dto/create-spot-photo-upload-url.dto';
+import { SpotPhotoUploadUrlResponseDto } from './dto/spot-photo-upload-url-response.dto';
 import type { AuthenticatedUser } from '../../common/auth';
 
 @Controller('spots')
@@ -61,6 +64,22 @@ export class SpotsController {
     @CurrentUser() actor: AuthenticatedUser,
   ): Promise<SpotDetailResponseDto> {
     return this.spotsService.update(id, dto, actor);
+  }
+
+  @Post(':id/photos/upload-url')
+  async createPhotoUploadUrl(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: CreateSpotPhotoUploadUrlDto,
+  ): Promise<SpotPhotoUploadUrlResponseDto> {
+    return this.spotsService.createPhotoUploadUrl(id, dto.mimeType);
+  }
+
+  @Post(':id/photos')
+  async addPhoto(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: AddSpotPhotoDto,
+  ): Promise<SpotDetailResponseDto> {
+    return this.spotsService.addPhoto(id, dto.url);
   }
 
   @Delete(':id')

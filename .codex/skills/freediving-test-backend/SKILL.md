@@ -8,11 +8,11 @@ description: Use to add or update backend tests in FreedivingApp for services, r
 Use when creating or updating tests for `apps/backend/**`.
 
 ## Load These Sources
-- `/Users/torkildliebe/FreedivingApp/.claude/skills/test-backend/SKILL.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/skills/backend-dev/testing-backend.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/testing.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/backend.md`
-- `/Users/torkildliebe/FreedivingApp/.claude/rules/domain.md`
+- `.claude/skills/test-backend/SKILL.md`
+- `.claude/skills/backend-dev/testing-backend.md`
+- `.claude/rules/testing.md`
+- `.claude/rules/backend.md`
+- `.claude/rules/domain.md`
 
 ## Operating Workflow
 1. Identify changed behavior and affected invariants.

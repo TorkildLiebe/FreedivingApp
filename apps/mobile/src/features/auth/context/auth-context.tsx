@@ -15,10 +15,25 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const autoLoginEmail = process.env.EXPO_PUBLIC_AUTO_LOGIN_EMAIL;
+  const autoLoginPassword = process.env.EXPO_PUBLIC_AUTO_LOGIN_PASSWORD;
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (
+        !session &&
+        autoLoginEmail &&
+        autoLoginPassword &&
+        process.env.NODE_ENV === 'development'
+      ) {
+        const { data } = await supabase.auth.signInWithPassword({
+          email: autoLoginEmail,
+          password: autoLoginPassword,
+        });
+        setSession(data.session);
+      } else {
+        setSession(session);
+      }
       setIsLoading(false);
     });
 
@@ -29,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [autoLoginEmail, autoLoginPassword]);
 
   const signUp = async (email: string, password: string) => {
     const { error } = await supabase.auth.signUp({ email, password });

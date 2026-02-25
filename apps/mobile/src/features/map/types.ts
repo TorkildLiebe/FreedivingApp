@@ -25,6 +25,16 @@ export interface ParkingLocation {
   label: string | null;
 }
 
+export interface DiveLogPreview {
+  id: string;
+  authorAlias: string | null;
+  authorAvatarUrl: string | null;
+  visibilityMeters: number;
+  currentStrength: number;
+  notesPreview: string | null;
+  divedAt: string;
+}
+
 export interface SpotDetail {
   id: string;
   title: string;
@@ -35,8 +45,21 @@ export interface SpotDetail {
   creatorDisplayName: string | null;
   accessInfo: string | null;
   parkingLocations: ParkingLocation[];
+  photoUrls: string[];
+  isFavorite: boolean;
+  averageVisibilityMeters: number | null;
+  averageRating: number | null;
+  reportCount: number;
+  latestReportAt: string | null;
+  diveLogs: DiveLogPreview[];
   shareUrl: string | null;
   shareableAccessInfo: boolean | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface SpotPhotoUploadUrlResponse {
+  uploadUrl: string;
+  publicUrl: string;
+  expiresAt: string;
 }

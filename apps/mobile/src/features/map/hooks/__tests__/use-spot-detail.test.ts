@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { SpotDetail } from '@/src/features/map/types';
 
 const mockApiFetch = jest.fn();
@@ -21,6 +21,13 @@ const mockSpot: SpotDetail = {
   parkingLocations: [
     { id: 'p-1', lat: 60.01, lon: 5.01, label: 'Main parking' },
   ],
+  photoUrls: [],
+  isFavorite: false,
+  averageVisibilityMeters: null,
+  averageRating: null,
+  reportCount: 0,
+  latestReportAt: null,
+  diveLogs: [],
   shareUrl: null,
   shareableAccessInfo: null,
   createdAt: '2025-01-01T00:00:00.000Z',
@@ -28,8 +35,15 @@ const mockSpot: SpotDetail = {
 };
 
 describe('useSpotDetail', () => {
+  let consoleWarnSpy: jest.SpyInstance;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    consoleWarnSpy.mockRestore();
   });
 
   it('returns null when spotId is null', () => {
@@ -67,6 +81,10 @@ describe('useSpotDetail', () => {
 
     expect(result.current.spot).toBeNull();
     expect(result.current.error).toBe('Failed to load spot details');
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      'Failed to fetch spot detail:',
+      expect.any(Error),
+    );
   });
 
   it('clears spot when spotId becomes null', async () => {
@@ -108,5 +126,23 @@ describe('useSpotDetail', () => {
 
     expect(mockApiFetch).toHaveBeenCalledTimes(2);
     expect(mockApiFetch).toHaveBeenCalledWith('/spots/uuid-2');
+  });
+
+  it('refetches when refresh is called', async () => {
+    mockApiFetch.mockResolvedValue(mockSpot);
+
+    const { result } = renderHook(() => useSpotDetail('uuid-1'));
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    await act(async () => {
+      result.current.refresh();
+    });
+
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledTimes(2);
+    });
   });
 });

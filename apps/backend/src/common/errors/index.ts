@@ -5,3 +5,6 @@ export { TooCloseToExistingSpotError } from './too-close-to-existing-spot.error'
 export { InvalidParkingLocationError } from './invalid-parking-location.error';
 export { DuplicateParkingLocationError } from './duplicate-parking-location.error';
 export { ForbiddenError } from './forbidden.error';
+export { InvalidPhotoUrlError } from './invalid-photo-url.error';
+export { TooManyPhotosError } from './too-many-photos.error';
+export { DuplicatePhotoUrlError } from './duplicate-photo-url.error';

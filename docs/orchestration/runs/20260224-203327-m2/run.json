@@ -1,0 +1,238 @@
+{
+  "run_id": "20260224-203327-m2",
+  "milestone": "M2",
+  "status": "completed",
+  "started_at": "2026-02-24T19:33:44.771Z",
+  "updated_at": "2026-02-24T23:41:49.139Z",
+  "issue_order": [
+    73,
+    74,
+    75,
+    76,
+    77,
+    78
+  ],
+  "current_issue": null,
+  "attempts_by_issue": {
+    "73": 1,
+    "74": 2,
+    "75": 1,
+    "76": 1,
+    "77": 1,
+    "78": 1
+  },
+  "completed_issues": [
+    73,
+    74,
+    75,
+    76,
+    77,
+    78
+  ],
+  "blocked_issue": null,
+  "stop_reason": null,
+  "issues": {
+    "73": {
+      "status": "merged_local",
+      "attempts": 1,
+      "note": null,
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-24T19:33:44.771Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-24T19:34:24.079Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-24T19:54:36.563Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-24T19:54:36.563Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-24T19:58:58.675Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-24T23:41:49.139Z"
+        }
+      ]
+    },
+    "74": {
+      "status": "merged_local",
+      "attempts": 2,
+      "note": null,
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-24T19:33:44.771Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-24T20:00:19.368Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-24T20:09:02.080Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-24T20:09:02.080Z"
+        },
+        {
+          "status": "blocked",
+          "at": "2026-02-24T20:10:20.299Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-24T20:50:02.452Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-24T20:50:03.452Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-24T20:50:04.452Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-24T20:50:05.452Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-24T23:41:49.139Z"
+        }
+      ]
+    },
+    "75": {
+      "status": "merged_local",
+      "attempts": 1,
+      "note": null,
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-24T19:33:44.771Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-24T21:46:10.544Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-24T21:46:11.544Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-24T21:46:12.544Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-24T21:46:13.544Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-24T23:41:49.139Z"
+        }
+      ]
+    },
+    "76": {
+      "status": "merged_local",
+      "attempts": 1,
+      "note": null,
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-24T19:33:44.771Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-24T22:49:23.359Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-24T22:49:24.359Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-24T22:49:25.359Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-24T22:49:26.359Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-24T23:41:49.139Z"
+        }
+      ]
+    },
+    "77": {
+      "status": "merged_local",
+      "attempts": 1,
+      "note": null,
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-24T19:33:44.771Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-24T23:04:19.809Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-24T23:23:12.506Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-24T23:23:13.506Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-24T23:23:14.506Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-24T23:41:49.139Z"
+        }
+      ]
+    },
+    "78": {
+      "status": "merged_local",
+      "attempts": 1,
+      "note": null,
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-24T19:33:44.771Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-24T23:30:48.966Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-24T23:36:51.295Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-24T23:36:52.295Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-24T23:36:53.295Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-24T23:41:49.139Z"
+        }
+      ]
+    }
+  }
+}

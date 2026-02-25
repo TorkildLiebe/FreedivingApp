@@ -1,0 +1,153 @@
+import { useCallback, useState } from 'react';
+import { apiFetch } from '@/src/infrastructure/api/client';
+import type { SpotDetail } from '@/src/features/map/types';
+
+const MAX_PHOTOS_PER_SPOT = 5;
+
+export interface PendingSpotPhoto {
+  uri: string;
+  mimeType?: string | null;
+}
+
+export interface PendingParkingLocation {
+  lat: number;
+  lon: number;
+  label?: string | null;
+}
+
+export interface CreateSpotInput {
+  title: string;
+  description?: string;
+  accessInfo?: string;
+  centerLat: number;
+  centerLon: number;
+  photos?: PendingSpotPhoto[];
+  parkingLocations?: PendingParkingLocation[];
+}
+
+interface SpotPhotoUploadUrlResponse {
+  uploadUrl: string;
+  publicUrl: string;
+}
+
+function isApiErrorWithMessage(
+  value: unknown,
+): value is { status: number; message: string } {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as { status?: unknown; message?: unknown };
+  return (
+    typeof candidate.status === 'number' &&
+    typeof candidate.message === 'string'
+  );
+}
+
+export function useCreateSpot() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const createSpot = useCallback(async (input: CreateSpotInput) => {
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const title = input.title.trim();
+      if (!title) {
+        throw new Error('Spot name is required.');
+      }
+
+      const createdSpot = await apiFetch<SpotDetail>('/spots', {
+        method: 'POST',
+        body: JSON.stringify({
+          title,
+          centerLat: input.centerLat,
+          centerLon: input.centerLon,
+          ...(input.description?.trim()
+            ? { description: input.description.trim() }
+            : {}),
+          ...(input.accessInfo?.trim()
+            ? { accessInfo: input.accessInfo.trim() }
+            : {}),
+          ...(input.parkingLocations && input.parkingLocations.length > 0
+            ? {
+                parkingLocations: input.parkingLocations.map((parking) => ({
+                  lat: parking.lat,
+                  lon: parking.lon,
+                  ...(parking.label?.trim() ? { label: parking.label.trim() } : {}),
+                })),
+              }
+            : {}),
+        }),
+      });
+
+      const photoAssets = (input.photos ?? []).slice(0, MAX_PHOTOS_PER_SPOT);
+      let latestSpot = createdSpot;
+
+      for (const photo of photoAssets) {
+        const mimeType = photo.mimeType ?? 'image/jpeg';
+        const localUri = photo.uri?.trim();
+        if (!localUri) {
+          throw new Error(
+            'Failed to read one of the selected photos. Please select photos again.',
+          );
+        }
+
+        const uploadTarget = await apiFetch<SpotPhotoUploadUrlResponse>(
+          `/spots/${createdSpot.id}/photos/upload-url`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ mimeType }),
+          },
+        );
+
+        const localResponse = await fetch(localUri);
+        if (!localResponse.ok) {
+          throw new Error('Failed to read one of the selected photos.');
+        }
+        const localBlob = await localResponse.blob();
+
+        const uploadResponse = await fetch(uploadTarget.uploadUrl, {
+          method: 'PUT',
+          headers: {
+            'content-type': mimeType,
+          },
+          body: localBlob,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload spot photo.');
+        }
+
+        latestSpot = await apiFetch<SpotDetail>(`/spots/${createdSpot.id}/photos`, {
+          method: 'POST',
+          body: JSON.stringify({ url: uploadTarget.publicUrl }),
+        });
+      }
+
+      return latestSpot;
+    } catch (submitError) {
+      const message = isApiErrorWithMessage(submitError)
+        ? submitError.message
+        : submitError instanceof Error
+          ? submitError.message
+          : 'Failed to create spot. Please try again.';
+      setError(message);
+      throw submitError;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, []);
+
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  return {
+    createSpot,
+    isSubmitting,
+    error,
+    clearError,
+  };
+}

@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { SpotsRepository } from './spots.repository';
 import {
+  DuplicatePhotoUrlError,
   DuplicateParkingLocationError,
   ForbiddenError,
   InvalidBBoxError,
   InvalidParkingLocationError,
+  InvalidPhotoUrlError,
   SpotNotFoundOrDeletedError,
+  TooManyPhotosError,
   TooCloseToExistingSpotError,
 } from '../../common/errors';
 import { ListSpotsResponseDto } from './dto/list-spots-response.dto';
@@ -13,16 +16,22 @@ import { SpotDetailResponseDto } from './dto/spot-detail-response.dto';
 import type { AuthenticatedUser } from '../../common/auth';
 import type { CreateSpotDto } from './dto/create-spot.dto';
 import type { UpdateSpotDto } from './dto/update-spot.dto';
+import { SpotPhotoStorageService } from './spot-photo-storage.service';
+import { SpotPhotoUploadUrlResponseDto } from './dto/spot-photo-upload-url-response.dto';
 
 const DEFAULT_LIMIT = 300;
 const MAX_LIMIT = 1000;
 const MIN_SPOT_DISTANCE_METERS = 1000;
 const MAX_PARKING_DISTANCE_METERS = 5000;
 const MIN_PARKING_SEPARATION_METERS = 2;
+const MAX_PHOTOS_PER_SPOT = 5;
 
 @Injectable()
 export class SpotsService {
-  constructor(private readonly spotsRepository: SpotsRepository) {}
+  constructor(
+    private readonly spotsRepository: SpotsRepository,
+    private readonly spotPhotoStorage: SpotPhotoStorageService,
+  ) {}
 
   async listByBBox(
     latMin: number,
@@ -177,6 +186,58 @@ export class SpotsService {
     await this.spotsRepository.softDeleteSpot(spotId);
   }
 
+  async createPhotoUploadUrl(
+    spotId: string,
+    mimeType?: string,
+  ): Promise<SpotPhotoUploadUrlResponseDto> {
+    const existing = await this.spotsRepository.findByIdAnyState(spotId);
+
+    if (!existing || existing.isDeleted) {
+      throw new SpotNotFoundOrDeletedError(spotId);
+    }
+
+    if ((existing.photoUrls?.length ?? 0) >= MAX_PHOTOS_PER_SPOT) {
+      throw new TooManyPhotosError();
+    }
+
+    return this.spotPhotoStorage.createUploadUrl(spotId, mimeType);
+  }
+
+  async addPhoto(spotId: string, url: string): Promise<SpotDetailResponseDto> {
+    const existing = await this.spotsRepository.findByIdAnyState(spotId);
+
+    if (!existing || existing.isDeleted) {
+      throw new SpotNotFoundOrDeletedError(spotId);
+    }
+
+    const normalizedUrl = this.normalizeAndValidatePhotoUrl(url);
+    const currentUrls = existing.photoUrls ?? [];
+
+    if (currentUrls.length >= MAX_PHOTOS_PER_SPOT) {
+      throw new TooManyPhotosError();
+    }
+
+    if (
+      currentUrls.some(
+        (existingUrl) =>
+          existingUrl.toLowerCase() === normalizedUrl.toLowerCase(),
+      )
+    ) {
+      throw new DuplicatePhotoUrlError();
+    }
+
+    const updated = await this.spotsRepository.updatePhotoUrls(spotId, [
+      ...currentUrls,
+      normalizedUrl,
+    ]);
+
+    if (!updated) {
+      throw new SpotNotFoundOrDeletedError(spotId);
+    }
+
+    return this.toSpotDetailResponse(updated);
+  }
+
   private toSpotDetailResponse(spot: {
     id: string;
     title: string;
@@ -192,6 +253,11 @@ export class SpotsService {
       lon: number;
       label: string | null;
     }>;
+    photoUrls: string[];
+    averageVisibilityMeters: number | null;
+    averageRating: number | null;
+    reportCount: number;
+    latestReportAt: Date | null;
     shareUrl: string | null;
     shareableAccessInfo: boolean | null;
     createdAt: Date;
@@ -212,6 +278,13 @@ export class SpotsService {
         lon: p.lon,
         label: p.label,
       })),
+      photoUrls: spot.photoUrls,
+      isFavorite: false,
+      averageVisibilityMeters: spot.averageVisibilityMeters,
+      averageRating: spot.averageRating,
+      reportCount: spot.reportCount,
+      latestReportAt: spot.latestReportAt,
+      diveLogs: [],
       shareUrl: spot.shareUrl,
       shareableAccessInfo: spot.shareableAccessInfo,
       createdAt: spot.createdAt,
@@ -281,6 +354,28 @@ export class SpotsService {
           throw new DuplicateParkingLocationError();
         }
       }
+    }
+  }
+
+  private normalizeAndValidatePhotoUrl(url: string): string {
+    const normalized = url.trim();
+    if (!normalized) {
+      throw new InvalidPhotoUrlError();
+    }
+
+    try {
+      const parsed = new URL(normalized);
+      const isDevLocalHttp =
+        process.env.NODE_ENV !== 'production' &&
+        parsed.protocol === 'http:' &&
+        ['127.0.0.1', 'localhost'].includes(parsed.hostname);
+
+      if (parsed.protocol !== 'https:' && !isDevLocalHttp) {
+        throw new InvalidPhotoUrlError();
+      }
+      return parsed.toString();
+    } catch {
+      throw new InvalidPhotoUrlError();
     }
   }
 

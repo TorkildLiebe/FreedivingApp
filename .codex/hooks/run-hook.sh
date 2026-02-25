@@ -11,32 +11,36 @@ shift || true
 if [[ "${1:-}" == "--" ]]; then
   shift || true
 fi
-ARG="${*:-}"
 
 if [[ -z "$EVENT" ]]; then
-  echo "Usage: $0 <pre-edit|post-edit|pre-commit|post-test> [arg]" >&2
+  echo "Usage: $0 <pre-edit|post-edit|pre-commit|post-test> [arg...]" >&2
   exit 1
 fi
 
 case "$EVENT" in
   pre-edit)
-    if [[ -z "$ARG" ]]; then
-      echo "pre-edit requires <file_path>" >&2
+    if [[ "$#" -eq 0 ]]; then
+      echo "pre-edit requires at least one <file_path>" >&2
       exit 1
     fi
-    "${SCRIPT_DIR}/generated-file-guard.sh" "$ARG"
+    for file_path in "$@"; do
+      "${SCRIPT_DIR}/generated-file-guard.sh" "$file_path"
+    done
     ;;
   post-edit)
-    if [[ -z "$ARG" ]]; then
-      echo "post-edit requires <file_path>" >&2
+    if [[ "$#" -eq 0 ]]; then
+      echo "post-edit requires at least one <file_path>" >&2
       exit 1
     fi
-    "${SCRIPT_DIR}/smart-test-runner.sh" "$ARG"
+    for file_path in "$@"; do
+      "${SCRIPT_DIR}/smart-test-runner.sh" "$file_path"
+    done
     ;;
   pre-commit)
     "${SCRIPT_DIR}/commit-quality-gate.sh"
     ;;
   post-test)
+    ARG="${*:-}"
     if [[ -z "$ARG" ]]; then
       echo "post-test requires <command_string>" >&2
       exit 1

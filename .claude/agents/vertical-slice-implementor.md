@@ -29,6 +29,16 @@ Always execute in this order:
 
 - Require a numeric issue number as the first argument.
 - Optional implementation notes may follow the issue number.
+- If a run context path is provided in notes, save the issue plan before implementation to:
+  - `docs/orchestration/runs/<run-id>/issues/<issue-number>-plan.md`
+- In every run, write/update issue-scoped process improvements at:
+  - `docs/orchestration/vertical-slice-improvements/<issue-number>.md`
+- Improvements artifact format:
+  - append a new section per run (never overwrite prior sections)
+  - section header includes timestamp and run-id (or `run-id: standalone` if unavailable)
+  - include:
+    - `What slowed execution`
+    - `Suggested process improvements`
 - If missing or non-numeric, stop and return:
   - `Usage: /verticalslice.implement <issue-number> [implementation-notes]`
 
@@ -42,6 +52,19 @@ Always execute in this order:
   - `docs/DOMAIN.md`
   - `docs/USECASE.md`
 - Determine impact scope: backend, mobile, shared, docs.
+- For mobile/UI-impacting issues, treat `docs/design-os-plan` as the only canonical UI source.
+- For mobile/UI-impacting issues, map work to exactly one Design OS section:
+  - `shell`
+  - `map-and-spots`
+  - `dive-reports`
+  - `auth-and-profiles`
+- For mobile/UI-impacting issues, load this required Design OS bundle before planning:
+  - `docs/design-os-plan/product-overview.md`
+  - matching incremental instruction under `docs/design-os-plan/instructions/incremental/`
+  - matching design assets:
+    - for `shell`: shell `README.md`, `components/`, screenshot reference files
+    - for `map-and-spots` / `dive-reports` / `auth-and-profiles`: section `README.md`, `tests.md`, `components/`, `types.ts`, screenshot reference files
+- If required Design OS assets are missing for a mobile/UI-impacting issue, stop with blocker details.
 
 ## Plan
 
@@ -56,19 +79,30 @@ Always execute in this order:
   - `audit-rules` before final report.
   - `sync-docs` when behavior/contracts/docs drift.
 - Use MCP tools only when needed:
-  - `ios-simulator` for iOS and Android screenshot verification on mobile UI changes.
+  - `ios-simulator` for iOS screenshot verification on mobile UI changes.
   - `prisma` and `postgres` for schema/query/data validation.
   - `semgrep` and `security-audit` for high-risk security-sensitive changes.
   - `sequential-thinking` for issue decomposition and risk reasoning.
+- For mobile/UI-impacting issues, produce a component mapping before edits:
+  - `design component -> target React Native file(s)`
+  - include shell/section component names from `docs/design-os-plan`
 
 ## Implement
 
 - Follow vertical-slice conventions:
   - Backend: `controller -> dto -> service -> repository`.
   - Mobile: keep routes thin; place behavior in feature hooks/services.
+- For mobile/UI-impacting issues, prefer adapting finished Design OS components and flows over creating new UI structure.
+- Preserve Design OS copy, labels, placeholders, tokens, and state sequencing unless a justified deviation is required.
 - For each file edit, run:
-  - `pnpm codex:hook:pre-edit -- <file_path>` before editing.
-  - `pnpm codex:hook:post-edit -- <file_path>` after editing.
+  - `./.codex/hooks/run-hook.sh pre-edit -- <file_path>` before editing.
+  - `./.codex/hooks/run-hook.sh post-edit -- <file_path>` after editing.
+  - batch mode allowed (fail-fast):
+    - `./.codex/hooks/run-hook.sh pre-edit -- <file1> <file2> <file3>`
+    - `./.codex/hooks/run-hook.sh post-edit -- <file1> <file2> <file3>`
+  - compatibility fallback remains valid:
+    - `pnpm codex:hook:pre-edit -- <file_path>`
+    - `pnpm codex:hook:post-edit -- <file_path>`
 - Enforce guardrails:
   - Do not edit generated paths (`node_modules/`, `/dist/`, `/.expo/`, `/.prisma/client/`, `/ios/Pods/`).
   - Preserve architecture and dependency direction.
@@ -90,7 +124,13 @@ Mobile touched:
 - Targeted: `pnpm --filter mobile test -- <pattern>`
 - Medium/high: `pnpm test:mobile`
 - Static checks: `pnpm lint:mobile`, `pnpm --filter mobile run type-check`
-- UI changes: capture iOS and Android screenshot evidence (or report explicit limitation).
+- Before UI runtime verification, run auth preflight: `pnpm orchestrator:mobile-auth-check`
+- UI changes: capture iOS screenshot evidence before declaring success.
+- For M2 map/spots runtime evidence capture, use deterministic command when applicable:
+  - `pnpm orchestrator:capture-ios-m2-core -- --run-id <run-id> --issue-number <n> [--device "<name>"]`
+- Android verification is currently non-blocking and must be called out in `Risk notes` when not run.
+- UI changes: compare screenshots against the matching Design OS screenshot references and record parity outcome.
+- UI changes: deviations are allowed only when explicitly justified and listed in report sections.
 
 Shared/auth/prisma/security touched:
 - Treat as high risk.
@@ -116,3 +156,31 @@ Final output must include exactly these sections:
 - `Verification run`
 - `Not run / limitations`
 - `Risk notes`
+
+For mobile/UI-impacting issues, include these labeled lines inside the sections above:
+- `Design OS assets used:`
+- `Component mapping:`
+- `Design parity evidence:`
+- `Approved deviations:`
+
+Before returning final output, append the current run's section to:
+- `docs/orchestration/vertical-slice-improvements/<issue-number>.md`
+- Keep historical sections intact; append-only behavior on reruns.
+
+After these sections, append this machine-readable trailer block:
+
+- `RESULT: PASS|FAIL`
+- `VERIFICATION: PASS|FAIL`
+- `MOBILE_UI_TOUCHED: true|false`
+- `IOS_VERIFIED: true|false`
+- `ISSUE_NUMBER: <issue-number>`
+
+Strict PASS gate semantics:
+- `VERIFICATION: FAIL` cannot be paired with `RESULT: PASS`.
+- If `MOBILE_UI_TOUCHED: true`, then `IOS_VERIFIED` must be `true`.
+- If `MOBILE_UI_TOUCHED: false`, then `IOS_VERIFIED` must be `false`.
+- If `MOBILE_UI_TOUCHED: true`, all required UI evidence labels must be present in report sections:
+  - `Design OS assets used:`
+  - `Component mapping:`
+  - `Design parity evidence:`
+  - `Approved deviations:`
