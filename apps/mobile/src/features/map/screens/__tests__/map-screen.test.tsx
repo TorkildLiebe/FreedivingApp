@@ -9,6 +9,7 @@ const mockUseLocation = jest.fn();
 const mockUseSpots = jest.fn();
 const mockUseSpotDetail = jest.fn();
 const mockUseSpotPhotoUpload = jest.fn();
+const mockUseDiveLogSubmit = jest.fn();
 const mockUseCreateSpot = jest.fn();
 const mockUseFavoriteSpots = jest.fn();
 const mockUseRouter = jest.fn();
@@ -31,6 +32,10 @@ jest.mock('@/src/features/map/hooks/use-spot-detail', () => ({
 
 jest.mock('@/src/features/map/hooks/use-spot-photo-upload', () => ({
   useSpotPhotoUpload: (...args: unknown[]) => mockUseSpotPhotoUpload(...args),
+}));
+
+jest.mock('@/src/features/map/hooks/use-dive-log-submit', () => ({
+  useDiveLogSubmit: (...args: unknown[]) => mockUseDiveLogSubmit(...args),
 }));
 
 jest.mock('@/src/features/map/hooks/use-create-spot', () => ({
@@ -165,6 +170,13 @@ beforeEach(() => {
   mockUseCreateSpot.mockReturnValue({
     createSpot: jest.fn(),
     isSubmitting: false,
+    error: null,
+    clearError: jest.fn(),
+  });
+  mockUseDiveLogSubmit.mockReturnValue({
+    submitDiveLog: jest.fn(),
+    isSubmitting: false,
+    isUploadingPhotos: false,
     error: null,
     clearError: jest.fn(),
   });

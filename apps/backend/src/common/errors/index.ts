@@ -8,3 +8,4 @@ export { ForbiddenError } from './forbidden.error';
 export { InvalidPhotoUrlError } from './invalid-photo-url.error';
 export { TooManyPhotosError } from './too-many-photos.error';
 export { DuplicatePhotoUrlError } from './duplicate-photo-url.error';
+export { InvalidDiveLogError } from './invalid-dive-log.error';

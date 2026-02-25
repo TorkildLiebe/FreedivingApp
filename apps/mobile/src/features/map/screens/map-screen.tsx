@@ -12,6 +12,7 @@ import { useLocation } from '@/src/features/map/hooks/use-location';
 import { useSpots } from '@/src/features/map/hooks/use-spots';
 import { useSpotDetail } from '@/src/features/map/hooks/use-spot-detail';
 import { useSpotPhotoUpload } from '@/src/features/map/hooks/use-spot-photo-upload';
+import { useDiveLogSubmit } from '@/src/features/map/hooks/use-dive-log-submit';
 import {
   useCreateSpot,
   type PendingParkingLocation,
@@ -24,6 +25,8 @@ import {
   SpotDetailSheet,
   type SpotDetailSheetHandle,
 } from '@/src/features/map/components/spot-detail-sheet';
+import { AddDiveFormSheet } from '@/src/features/map/components/add-dive-form-sheet';
+import { RatingSheet } from '@/src/features/map/components/rating-sheet';
 import { CreateSpotOverlay } from '@/src/features/map/components/create-spot-overlay';
 import type { BBox, ParkingLocation, SpotDetail } from '@/src/features/map/types';
 import { FrostedGlass } from '@/src/shared/components/FrostedGlass';
@@ -90,6 +93,13 @@ export default function MapScreen() {
   const [createLocalError, setCreateLocalError] = useState<string | null>(null);
   const [isPickingCreatePhotos, setIsPickingCreatePhotos] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+  const [addDiveTargetSpot, setAddDiveTargetSpot] = useState<SpotDetail | null>(
+    null,
+  );
+  const [ratingTargetSpot, setRatingTargetSpot] = useState<{
+    spotId: string;
+    spotName: string;
+  } | null>(null);
   const { spots, refresh: refreshSpots } = useSpots(bbox);
   const { spot, isLoading: isSpotLoading, refresh } = useSpotDetail(selectedSpotId);
   const {
@@ -106,6 +116,17 @@ export default function MapScreen() {
     error: createError,
     clearError: clearCreateError,
   } = useCreateSpot();
+  const {
+    submitDiveLog,
+    isSubmitting: isSubmittingDiveLog,
+    error: diveLogError,
+    clearError: clearDiveLogError,
+  } = useDiveLogSubmit({
+    onSubmitted: async () => {
+      await refresh();
+      refreshSpots();
+    },
+  });
 
   const center = location ?? DEFAULT_CENTER;
   const initialLiveMapCenter = useMemo(() => {
@@ -196,8 +217,10 @@ export default function MapScreen() {
 
   const handleSheetDismiss = useCallback(() => {
     clearPhotoUploadError();
+    clearDiveLogError();
+    setAddDiveTargetSpot(null);
     setSelectedSpotId(null);
-  }, [clearPhotoUploadError]);
+  }, [clearDiveLogError, clearPhotoUploadError]);
 
   const handleAddPhoto = useCallback(
     (targetSpot: SpotDetail) => {
@@ -374,9 +397,73 @@ export default function MapScreen() {
     resetCreateForm,
   ]);
 
-  const handleAddDive = useCallback((targetSpot: SpotDetail) => {
-    Alert.alert('Add Dive', `Dive logging for ${targetSpot.title} will open in M3.`);
-  }, []);
+  const handleAddDive = useCallback(
+    (targetSpot: SpotDetail) => {
+      clearDiveLogError();
+      setAddDiveTargetSpot(targetSpot);
+    },
+    [clearDiveLogError],
+  );
+
+  const handleSubmitDive = useCallback(
+    async ({
+      visibilityMeters,
+      currentStrength,
+      divedAt,
+      notes,
+      photos,
+    }: {
+      visibilityMeters: number;
+      currentStrength: 1 | 2 | 3 | 4 | 5;
+      divedAt: string;
+      notes: string | null;
+      photos: { uri: string; mimeType: string }[];
+    }) => {
+      if (!addDiveTargetSpot) {
+        return;
+      }
+
+      try {
+        const response = await submitDiveLog({
+          payload: {
+            spotId: addDiveTargetSpot.id,
+            visibilityMeters,
+            currentStrength,
+            divedAt,
+            notes,
+          },
+          photos,
+        });
+
+        setAddDiveTargetSpot(null);
+
+        if (response.shouldPromptRating) {
+          setRatingTargetSpot({
+            spotId: addDiveTargetSpot.id,
+            spotName: addDiveTargetSpot.title,
+          });
+        }
+      } catch {
+        // Error surface is handled in the add-dive sheet via hook state.
+      }
+    },
+    [addDiveTargetSpot, submitDiveLog],
+  );
+
+  const handleRateAfterDive = useCallback(
+    async (rating: 1 | 2 | 3 | 4 | 5) => {
+      if (!ratingTargetSpot) {
+        return;
+      }
+
+      Alert.alert(
+        'Rating selected',
+        `You rated ${ratingTargetSpot.spotName} ${rating} stars.`,
+      );
+      setRatingTargetSpot(null);
+    },
+    [ratingTargetSpot],
+  );
 
   const handleUpdateRating = useCallback(
     (_targetSpot: SpotDetail, rating: 1 | 2 | 3 | 4 | 5) => {
@@ -527,6 +614,26 @@ export default function MapScreen() {
         onTitleChange={setCreateTitle}
         onDescriptionChange={setCreateDescription}
         onAccessInfoChange={setCreateAccessInfo}
+      />
+      <AddDiveFormSheet
+        visible={addDiveTargetSpot !== null}
+        spotName={addDiveTargetSpot?.title ?? ''}
+        isSubmitting={isSubmittingDiveLog}
+        error={diveLogError}
+        onDismiss={() => {
+          clearDiveLogError();
+          setAddDiveTargetSpot(null);
+        }}
+        onSubmit={handleSubmitDive}
+      />
+      <RatingSheet
+        visible={ratingTargetSpot !== null}
+        spotName={ratingTargetSpot?.spotName ?? ''}
+        isSubmitting={false}
+        onRate={handleRateAfterDive}
+        onDismiss={() => {
+          setRatingTargetSpot(null);
+        }}
       />
     </View>
   );
