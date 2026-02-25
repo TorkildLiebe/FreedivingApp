@@ -19,6 +19,8 @@ import type { UpdateSpotDto } from './dto/update-spot.dto';
 import { SpotPhotoStorageService } from './spot-photo-storage.service';
 import { SpotPhotoUploadUrlResponseDto } from './dto/spot-photo-upload-url-response.dto';
 import { ListSpotDiveLogsResponseDto } from './dto/list-spot-dive-logs-response.dto';
+import { UpsertSpotRatingDto } from './dto/upsert-spot-rating.dto';
+import { UpsertSpotRatingResponseDto } from './dto/upsert-spot-rating-response.dto';
 
 const DEFAULT_LIMIT = 300;
 const MAX_LIMIT = 1000;
@@ -277,6 +279,34 @@ export class SpotsService {
     }
 
     return this.toSpotDetailResponse(updated);
+  }
+
+  async upsertRating(
+    spotId: string,
+    dto: UpsertSpotRatingDto,
+    actor: AuthenticatedUser,
+  ): Promise<UpsertSpotRatingResponseDto> {
+    const existing = await this.spotsRepository.findById(spotId);
+    if (!existing) {
+      throw new SpotNotFoundOrDeletedError(spotId);
+    }
+
+    const result = await this.spotsRepository.upsertSpotRatingAndRefreshAverage(
+      spotId,
+      actor.userId,
+      dto.rating,
+    );
+
+    return {
+      id: result.rating.id,
+      spotId: result.rating.spotId,
+      userId: result.rating.userId,
+      rating: result.rating.rating,
+      averageRating: result.averageRating,
+      ratingCount: result.ratingCount,
+      createdAt: result.rating.createdAt,
+      updatedAt: result.rating.updatedAt,
+    };
   }
 
   private toSpotDetailResponse(

@@ -185,4 +185,48 @@ export class SpotsRepository {
 
     return { items, total };
   }
+
+  async upsertSpotRatingAndRefreshAverage(
+    spotId: string,
+    userId: string,
+    rating: number,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const savedRating = await tx.spotRating.upsert({
+        where: {
+          userId_spotId: {
+            userId,
+            spotId,
+          },
+        },
+        create: {
+          spotId,
+          userId,
+          rating,
+        },
+        update: {
+          rating,
+        },
+      });
+
+      const aggregates = await tx.spotRating.aggregate({
+        where: { spotId },
+        _avg: { rating: true },
+        _count: { _all: true },
+      });
+
+      await tx.diveSpot.update({
+        where: { id: spotId },
+        data: {
+          averageRating: aggregates._avg.rating,
+        },
+      });
+
+      return {
+        rating: savedRating,
+        averageRating: aggregates._avg.rating,
+        ratingCount: aggregates._count._all,
+      };
+    });
+  }
 }
