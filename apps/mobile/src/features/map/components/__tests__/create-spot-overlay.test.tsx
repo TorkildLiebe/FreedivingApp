@@ -12,6 +12,8 @@ describe('CreateSpotOverlay', () => {
     description: '',
     accessInfo: '',
     photos: [],
+    parkingLocations: [],
+    parkingLabel: '',
     isSubmitting: false,
     isPickingPhotos: false,
     error: null,
@@ -24,6 +26,11 @@ describe('CreateSpotOverlay', () => {
     onTitleChange: jest.fn(),
     onDescriptionChange: jest.fn(),
     onAccessInfoChange: jest.fn(),
+    onStartParkingPlacement: jest.fn(),
+    onCancelParkingPlacement: jest.fn(),
+    onParkingLabelChange: jest.fn(),
+    onConfirmParkingPlacement: jest.fn(),
+    onRemoveParkingLocation: jest.fn(),
   };
 
   beforeEach(() => {
@@ -31,9 +38,10 @@ describe('CreateSpotOverlay', () => {
   });
 
   it('renders placement step and confirms pin', () => {
-    const { getByTestId } = render(<CreateSpotOverlay {...baseProps} />);
+    const { getByTestId, getByText } = render(<CreateSpotOverlay {...baseProps} />);
 
     expect(getByTestId('create-spot-placement-step')).toBeTruthy();
+    expect(getByText('Pan & zoom to position your spot')).toBeTruthy();
     fireEvent.press(getByTestId('create-spot-confirm-pin-button'));
     expect(baseProps.onConfirmPin).toHaveBeenCalledTimes(1);
   });
@@ -55,5 +63,16 @@ describe('CreateSpotOverlay', () => {
     expect(submitButton).toBeEnabled();
     fireEvent.press(submitButton);
     expect(baseProps.onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders parking step and confirms parking placement', () => {
+    const { getByTestId, getByText } = render(
+      <CreateSpotOverlay {...baseProps} step="parking" />, 
+    );
+
+    expect(getByTestId('create-spot-parking-step')).toBeTruthy();
+    expect(getByText('Pan & zoom to position parking')).toBeTruthy();
+    fireEvent.press(getByTestId('create-spot-confirm-parking-button'));
+    expect(baseProps.onConfirmParkingPlacement).toHaveBeenCalledTimes(1);
   });
 });

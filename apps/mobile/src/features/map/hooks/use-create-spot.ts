@@ -9,6 +9,12 @@ export interface PendingSpotPhoto {
   mimeType?: string | null;
 }
 
+export interface PendingParkingLocation {
+  lat: number;
+  lon: number;
+  label?: string | null;
+}
+
 export interface CreateSpotInput {
   title: string;
   description?: string;
@@ -16,6 +22,7 @@ export interface CreateSpotInput {
   centerLat: number;
   centerLon: number;
   photos?: PendingSpotPhoto[];
+  parkingLocations?: PendingParkingLocation[];
 }
 
 interface SpotPhotoUploadUrlResponse {
@@ -48,6 +55,15 @@ export function useCreateSpot() {
             : {}),
           ...(input.accessInfo?.trim()
             ? { accessInfo: input.accessInfo.trim() }
+            : {}),
+          ...(input.parkingLocations && input.parkingLocations.length > 0
+            ? {
+                parkingLocations: input.parkingLocations.map((parking) => ({
+                  lat: parking.lat,
+                  lon: parking.lon,
+                  ...(parking.label?.trim() ? { label: parking.label.trim() } : {}),
+                })),
+              }
             : {}),
         }),
       });

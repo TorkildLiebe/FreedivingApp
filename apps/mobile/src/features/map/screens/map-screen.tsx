@@ -14,6 +14,7 @@ import { useSpotDetail } from '@/src/features/map/hooks/use-spot-detail';
 import { useSpotPhotoUpload } from '@/src/features/map/hooks/use-spot-photo-upload';
 import {
   useCreateSpot,
+  type PendingParkingLocation,
   type PendingSpotPhoto,
 } from '@/src/features/map/hooks/use-create-spot';
 import { useFavoriteSpots } from '@/src/features/map/hooks/use-favorite-spots';
@@ -56,13 +57,17 @@ export default function MapScreen() {
       ? devCreateStep
       : 'idle';
 
-  const [createStep, setCreateStep] = useState<'idle' | 'placing' | 'form'>(
-    initialCreateStep,
-  );
+  const [createStep, setCreateStep] = useState<
+    'idle' | 'placing' | 'form' | 'parking'
+  >(initialCreateStep);
   const [createTitle, setCreateTitle] = useState('');
   const [createDescription, setCreateDescription] = useState('');
   const [createAccessInfo, setCreateAccessInfo] = useState('');
   const [createPhotos, setCreatePhotos] = useState<PendingSpotPhoto[]>([]);
+  const [createParkingLocations, setCreateParkingLocations] = useState<
+    PendingParkingLocation[]
+  >([]);
+  const [createParkingLabel, setCreateParkingLabel] = useState('');
   const [createLocalError, setCreateLocalError] = useState<string | null>(null);
   const [isPickingCreatePhotos, setIsPickingCreatePhotos] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
@@ -84,25 +89,23 @@ export default function MapScreen() {
   } = useCreateSpot();
 
   const center = location ?? DEFAULT_CENTER;
-  const mapCenter = useMemo(
-    () => {
-      if (
-        process.env.NODE_ENV === 'development' &&
-        Number.isFinite(devCreateLat) &&
-        Number.isFinite(devCreateLon)
-      ) {
-        return { lat: devCreateLat, lng: devCreateLon };
-      }
+  const mapCenter = useMemo(() => {
+    if (
+      process.env.NODE_ENV === 'development' &&
+      Number.isFinite(devCreateLat) &&
+      Number.isFinite(devCreateLon)
+    ) {
+      return { lat: devCreateLat, lng: devCreateLon };
+    }
 
-      return bbox
-        ? {
-            lat: (bbox.latMin + bbox.latMax) / 2,
-            lng: (bbox.lonMin + bbox.lonMax) / 2,
-          }
-        : center;
-    },
-    [bbox, center, devCreateLat, devCreateLon],
-  );
+    return bbox
+      ? {
+          lat: (bbox.latMin + bbox.latMax) / 2,
+          lng: (bbox.lonMin + bbox.lonMax) / 2,
+        }
+      : center;
+  }, [bbox, center, devCreateLat, devCreateLon]);
+
   const activeCreateError = createLocalError ?? createError;
   const spotWithFavorite = useMemo(() => {
     if (!spot) {
@@ -139,13 +142,16 @@ export default function MapScreen() {
     setActiveLayer((prev) => (prev === 'topo' ? 'nautical' : 'topo'));
   }
 
-  const handleSpotPress = useCallback((spotId: string) => {
-    if (createStep !== 'idle') {
-      return;
-    }
-    clearPhotoUploadError();
-    setSelectedSpotId(spotId);
-  }, [clearPhotoUploadError, createStep]);
+  const handleSpotPress = useCallback(
+    (spotId: string) => {
+      if (createStep !== 'idle') {
+        return;
+      }
+      clearPhotoUploadError();
+      setSelectedSpotId(spotId);
+    },
+    [clearPhotoUploadError, createStep],
+  );
 
   const handleParkingPress = useCallback((parking: ParkingLocation) => {
     mapRef.current?.flyTo({ lat: parking.lat, lng: parking.lon }, 16);
@@ -203,6 +209,8 @@ export default function MapScreen() {
     setCreateDescription('');
     setCreateAccessInfo('');
     setCreatePhotos([]);
+    setCreateParkingLocations([]);
+    setCreateParkingLabel('');
     setCreateLocalError(null);
     clearCreateError();
   }, [clearCreateError]);
@@ -224,8 +232,7 @@ export default function MapScreen() {
     setCreateLocalError(null);
 
     try {
-      const permission =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (permission.status !== 'granted') {
         setCreateLocalError('Photo library permission is required.');
         return;
@@ -276,6 +283,7 @@ export default function MapScreen() {
         centerLat: mapCenter.lat,
         centerLon: mapCenter.lng,
         photos: createPhotos,
+        parkingLocations: createParkingLocations,
       });
 
       resetCreateForm();
@@ -295,6 +303,7 @@ export default function MapScreen() {
     clearCreateError,
     createAccessInfo,
     createDescription,
+    createParkingLocations,
     createPhotos,
     createSpot,
     createTitle,
@@ -304,6 +313,17 @@ export default function MapScreen() {
     resetCreateForm,
   ]);
 
+  const handleAddDive = useCallback((targetSpot: SpotDetail) => {
+    Alert.alert('Add Dive', `Dive logging for ${targetSpot.title} will open in M3.`);
+  }, []);
+
+  const handleUpdateRating = useCallback(
+    (_targetSpot: SpotDetail, rating: 1 | 2 | 3 | 4 | 5) => {
+      Alert.alert('Rating saved', `You rated this spot ${rating} stars.`);
+    },
+    [],
+  );
+
   return (
     <View style={styles.container}>
       <View style={styles.searchBarContainer} pointerEvents="box-none">
@@ -312,7 +332,7 @@ export default function MapScreen() {
             testID="map-search-input"
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search spots…"
+            placeholder="Search spots..."
             placeholderTextColor={colors.neutral[400]}
             style={styles.searchInput}
             returnKeyType="search"
@@ -342,12 +362,14 @@ export default function MapScreen() {
         iconName="globe"
         style={styles.layerButton}
       />
-      <MapFloatingButton
-        testID="map-start-create-spot-button"
-        onPress={handleStartCreate}
-        iconName="plus"
-        style={styles.createButton}
-      />
+      {selectedSpotId === null && createStep === 'idle' ? (
+        <MapFloatingButton
+          testID="map-start-create-spot-button"
+          onPress={handleStartCreate}
+          iconName="plus"
+          style={styles.createButton}
+        />
+      ) : null}
       <MapFloatingButton
         testID="map-center-on-me-button"
         onPress={handleCenterOnMe}
@@ -365,21 +387,59 @@ export default function MapScreen() {
         onAddPhoto={handleAddPhoto}
         isUploadingPhoto={isUploadingPhoto}
         photoUploadError={photoUploadError}
+        onAddDive={handleAddDive}
+        onUpdateRating={handleUpdateRating}
       />
       <CreateSpotOverlay
         visible={createStep !== 'idle'}
-        step={createStep === 'placing' ? 'placing' : 'form'}
+        step={
+          createStep === 'placing'
+            ? 'placing'
+            : createStep === 'parking'
+              ? 'parking'
+              : 'form'
+        }
         pinCoordinate={mapCenter}
         title={createTitle}
         description={createDescription}
         accessInfo={createAccessInfo}
         photos={createPhotos}
+        parkingLocations={createParkingLocations}
+        parkingLabel={createParkingLabel}
         isSubmitting={isCreatingSpot}
         isPickingPhotos={isPickingCreatePhotos}
         error={activeCreateError}
         onCancel={resetCreateForm}
         onConfirmPin={() => setCreateStep('form')}
         onBackToPin={() => setCreateStep('placing')}
+        onStartParkingPlacement={() => {
+          setCreateParkingLabel('');
+          setCreateStep('parking');
+        }}
+        onCancelParkingPlacement={() => setCreateStep('form')}
+        onParkingLabelChange={setCreateParkingLabel}
+        onConfirmParkingPlacement={() => {
+          setCreateParkingLocations((previous) => {
+            if (previous.length >= 5) {
+              return previous;
+            }
+            return [
+              ...previous,
+              {
+                lat: mapCenter.lat,
+                lon: mapCenter.lng,
+                label: createParkingLabel,
+              },
+            ];
+          });
+          setCreateParkingLabel('');
+          setCreateStep('form');
+        }}
+        onRemoveParkingLocation={(index) => {
+          setCreateParkingLocations((previous) =>
+            previous.filter((_, itemIndex) => itemIndex !== index),
+          );
+        }}
         onSubmit={() => {
           void handleSubmitCreate();
         }}

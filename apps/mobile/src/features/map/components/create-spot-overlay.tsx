@@ -9,10 +9,13 @@ import {
   View,
 } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import type { PendingSpotPhoto } from '@/src/features/map/hooks/use-create-spot';
+import type {
+  PendingParkingLocation,
+  PendingSpotPhoto,
+} from '@/src/features/map/hooks/use-create-spot';
 import { colors, typography } from '@/src/shared/theme';
 
-type CreateSpotStep = 'placing' | 'form';
+type CreateSpotStep = 'placing' | 'form' | 'parking';
 
 interface CreateSpotOverlayProps {
   visible: boolean;
@@ -22,6 +25,8 @@ interface CreateSpotOverlayProps {
   description: string;
   accessInfo: string;
   photos: PendingSpotPhoto[];
+  parkingLocations: PendingParkingLocation[];
+  parkingLabel: string;
   isSubmitting: boolean;
   isPickingPhotos: boolean;
   error: string | null;
@@ -34,6 +39,11 @@ interface CreateSpotOverlayProps {
   onTitleChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onAccessInfoChange: (value: string) => void;
+  onStartParkingPlacement: () => void;
+  onCancelParkingPlacement: () => void;
+  onParkingLabelChange: (value: string) => void;
+  onConfirmParkingPlacement: () => void;
+  onRemoveParkingLocation: (index: number) => void;
 }
 
 export function CreateSpotOverlay({
@@ -44,6 +54,8 @@ export function CreateSpotOverlay({
   description,
   accessInfo,
   photos,
+  parkingLocations,
+  parkingLabel,
   isSubmitting,
   isPickingPhotos,
   error,
@@ -56,57 +68,75 @@ export function CreateSpotOverlay({
   onTitleChange,
   onDescriptionChange,
   onAccessInfoChange,
+  onStartParkingPlacement,
+  onCancelParkingPlacement,
+  onParkingLabelChange,
+  onConfirmParkingPlacement,
+  onRemoveParkingLocation,
 }: CreateSpotOverlayProps) {
   if (!visible) {
     return null;
   }
 
+  const showParkingStep = step === 'parking';
+  const showPlacementStep = step === 'placing';
+  const showFormStep = step === 'form';
+
   return (
     <View testID="create-spot-overlay" pointerEvents="box-none" style={styles.container}>
-      {step === 'placing' ? (
-        <>
-          <View style={styles.pinContainer} pointerEvents="none">
-            <View style={styles.pinPulse} />
-            <FontAwesome name="map-marker" size={44} color={colors.primary[600]} />
-          </View>
+      {(showPlacementStep || showParkingStep) && (
+        <View style={styles.pinContainer} pointerEvents="none">
+          <View
+            style={[
+              styles.pinPulse,
+              showParkingStep ? styles.parkingPulse : styles.spotPulse,
+            ]}
+          />
+          <FontAwesome
+            name="map-marker"
+            size={44}
+            color={showParkingStep ? colors.secondary[600] : colors.primary[600]}
+          />
+        </View>
+      )}
 
-          <View testID="create-spot-placement-step" style={styles.panel}>
-            <Text style={styles.panelTitle}>Set Spot Position</Text>
-            <Text style={styles.panelText}>
-              Pan and zoom the map so the pin is placed at the exact dive spot.
+      {showPlacementStep ? (
+        <View testID="create-spot-placement-step" style={styles.panel}>
+          <Text style={styles.panelTitle}>Create Dive Spot</Text>
+          <Text style={styles.panelText}>Pan & zoom to position your spot</Text>
+          {pinCoordinate ? (
+            <Text style={styles.coordinateText}>
+              {pinCoordinate.lat.toFixed(5)}, {pinCoordinate.lng.toFixed(5)}
             </Text>
-            {pinCoordinate ? (
-              <Text style={styles.coordinateText}>
-                {pinCoordinate.lat.toFixed(5)}, {pinCoordinate.lng.toFixed(5)}
-              </Text>
-            ) : null}
-            <TouchableOpacity
-              testID="create-spot-confirm-pin-button"
-              style={styles.primaryButton}
-              onPress={onConfirmPin}
-            >
-              <Text style={styles.primaryButtonText}>Continue</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              testID="create-spot-cancel-button"
-              style={styles.secondaryButton}
-              onPress={onCancel}
-            >
-              <Text style={styles.secondaryButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      ) : (
+          ) : null}
+          <TouchableOpacity
+            testID="create-spot-confirm-pin-button"
+            style={styles.primaryButton}
+            onPress={onConfirmPin}
+          >
+            <Text style={styles.primaryButtonText}>Create Dive Spot</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID="create-spot-cancel-button"
+            style={styles.secondaryButton}
+            onPress={onCancel}
+          >
+            <Text style={styles.secondaryButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
+      {showFormStep ? (
         <View testID="create-spot-form-step" style={[styles.panel, styles.formPanel]}>
           <Text style={styles.panelTitle}>Create Dive Spot</Text>
           <ScrollView keyboardShouldPersistTaps="handled">
             <View style={styles.formField}>
-              <Text style={styles.fieldLabel}>Name</Text>
+              <Text style={styles.fieldLabel}>Spot Name</Text>
               <TextInput
                 testID="create-spot-title-input"
                 value={title}
                 onChangeText={onTitleChange}
-                placeholder="Spot name"
+                placeholder="e.g. Nakholmen South"
                 placeholderTextColor={colors.neutral[500]}
                 style={styles.input}
                 maxLength={80}
@@ -119,7 +149,7 @@ export function CreateSpotOverlay({
                 testID="create-spot-description-input"
                 value={description}
                 onChangeText={onDescriptionChange}
-                placeholder="Describe depth, hazards, and conditions"
+                placeholder="Describe the site, depths, marine life..."
                 placeholderTextColor={colors.neutral[500]}
                 style={[styles.input, styles.textArea]}
                 multiline
@@ -133,7 +163,7 @@ export function CreateSpotOverlay({
                 testID="create-spot-access-input"
                 value={accessInfo}
                 onChangeText={onAccessInfoChange}
-                placeholder="Entry point, path, parking"
+                placeholder="How to get there, entry point..."
                 placeholderTextColor={colors.neutral[500]}
                 style={[styles.input, styles.textArea]}
                 multiline
@@ -181,6 +211,34 @@ export function CreateSpotOverlay({
               </ScrollView>
             </View>
 
+            <View style={styles.formField}>
+              <Text style={styles.fieldLabel}>Parking Locations</Text>
+              {parkingLocations.map((parking, index) => (
+                <View key={`parking-${index}`} style={styles.parkingRow}>
+                  <Text style={styles.parkingLabelText} numberOfLines={1}>
+                    {parking.label?.trim().length
+                      ? parking.label
+                      : `Parking (${parking.lat.toFixed(4)}, ${parking.lon.toFixed(4)})`}
+                  </Text>
+                  <TouchableOpacity
+                    testID={`create-spot-remove-parking-${index}`}
+                    onPress={() => onRemoveParkingLocation(index)}
+                    disabled={isSubmitting}
+                  >
+                    <FontAwesome name="close" size={14} color={colors.neutral[600]} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              <TouchableOpacity
+                testID="create-spot-add-parking-button"
+                style={styles.parkingAddButton}
+                onPress={onStartParkingPlacement}
+                disabled={isSubmitting}
+              >
+                <Text style={styles.parkingAddButtonText}>+ Add Parking Location</Text>
+              </TouchableOpacity>
+            </View>
+
             {error ? (
               <Text testID="create-spot-error-text" style={styles.errorText}>
                 {error}
@@ -200,7 +258,7 @@ export function CreateSpotOverlay({
             {isSubmitting ? (
               <ActivityIndicator size="small" color={colors.neutral[50]} />
             ) : (
-              <Text style={styles.primaryButtonText}>Create Spot</Text>
+              <Text style={styles.primaryButtonText}>Create Dive Spot</Text>
             )}
           </TouchableOpacity>
           <TouchableOpacity
@@ -212,7 +270,42 @@ export function CreateSpotOverlay({
             <Text style={styles.secondaryButtonText}>Back to pin placement</Text>
           </TouchableOpacity>
         </View>
-      )}
+      ) : null}
+
+      {showParkingStep ? (
+        <View testID="create-spot-parking-step" style={styles.panel}>
+          <Text style={styles.panelTitle}>Parking Location</Text>
+          <Text style={styles.panelText}>Pan & zoom to position parking</Text>
+          {pinCoordinate ? (
+            <Text style={styles.coordinateText}>
+              {pinCoordinate.lat.toFixed(5)}, {pinCoordinate.lng.toFixed(5)}
+            </Text>
+          ) : null}
+          <TextInput
+            testID="create-spot-parking-label-input"
+            value={parkingLabel}
+            onChangeText={onParkingLabelChange}
+            placeholder="e.g. Free parking, 5 min walk"
+            placeholderTextColor={colors.neutral[500]}
+            style={[styles.input, styles.parkingInput]}
+            maxLength={120}
+          />
+          <TouchableOpacity
+            testID="create-spot-confirm-parking-button"
+            style={styles.secondaryPrimaryButton}
+            onPress={onConfirmParkingPlacement}
+          >
+            <Text style={styles.primaryButtonText}>Add Parking Location</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID="create-spot-cancel-parking-button"
+            style={styles.secondaryButton}
+            onPress={onCancelParkingPlacement}
+          >
+            <Text style={styles.secondaryButtonText}>Back</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -236,8 +329,13 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.primary[400],
     opacity: 0.45,
+  },
+  spotPulse: {
+    backgroundColor: colors.primary[400],
+  },
+  parkingPulse: {
+    backgroundColor: colors.secondary[400],
   },
   panel: {
     backgroundColor: colors.neutral[50],
@@ -250,7 +348,7 @@ const styles = StyleSheet.create({
     borderColor: colors.neutral[200],
   },
   formPanel: {
-    maxHeight: '70%',
+    maxHeight: '74%',
   },
   panelTitle: {
     fontSize: 24,
@@ -297,6 +395,9 @@ const styles = StyleSheet.create({
     minHeight: 72,
     textAlignVertical: 'top',
   },
+  parkingInput: {
+    marginBottom: 12,
+  },
   photoHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -318,26 +419,23 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   addPhotoButtonDisabled: {
-    backgroundColor: colors.neutral[400],
+    opacity: 0.5,
   },
   addPhotoButtonText: {
     color: colors.neutral[50],
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: typography.body.fontFamily,
+    fontWeight: '600',
   },
   photoPreviewContainer: {
     width: 84,
     height: 84,
-    borderRadius: 10,
-    overflow: 'hidden',
     marginRight: 10,
-    borderWidth: 1,
-    borderColor: colors.neutral[300],
   },
   photoPreview: {
     width: '100%',
     height: '100%',
-    backgroundColor: colors.neutral[200],
+    borderRadius: 10,
   },
   removePhotoButton: {
     position: 'absolute',
@@ -346,40 +444,84 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  parkingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: colors.neutral[300],
+    backgroundColor: colors.neutral[100],
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 8,
+  },
+  parkingLabelText: {
+    flex: 1,
+    marginRight: 10,
+    color: colors.neutral[900],
+    fontSize: 14,
+  },
+  parkingAddButton: {
+    borderWidth: 1,
+    borderColor: colors.secondary[500],
+    borderStyle: 'dashed',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  parkingAddButtonText: {
+    color: colors.secondary[700],
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: typography.body.fontFamily,
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 13,
+    marginTop: 4,
+    marginBottom: 8,
   },
   primaryButton: {
-    marginTop: 10,
+    marginTop: 12,
+    borderRadius: 12,
     backgroundColor: colors.primary[500],
-    borderRadius: 10,
-    height: 46,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 48,
+  },
+  secondaryPrimaryButton: {
+    borderRadius: 12,
+    backgroundColor: colors.secondary[600],
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
   },
   primaryButtonDisabled: {
-    backgroundColor: colors.neutral[400],
+    opacity: 0.5,
   },
   primaryButtonText: {
     color: colors.neutral[50],
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: typography.body.fontFamily,
+    fontWeight: '600',
   },
   secondaryButton: {
     marginTop: 10,
-    height: 42,
+    borderRadius: 10,
+    minHeight: 42,
     alignItems: 'center',
     justifyContent: 'center',
   },
   secondaryButtonText: {
     color: colors.neutral[700],
     fontSize: 14,
-    fontWeight: '600',
-  },
-  errorText: {
-    color: '#B91C1C',
-    fontSize: 14,
-    marginBottom: 4,
+    fontFamily: typography.body.fontFamily,
+    fontWeight: '500',
   },
 });
