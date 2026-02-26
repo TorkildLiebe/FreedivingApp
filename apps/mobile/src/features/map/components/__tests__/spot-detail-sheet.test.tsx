@@ -49,6 +49,7 @@ const mockSpot: SpotDetail = {
   averageVisibilityMeters: 8.2,
   averageRating: 4.5,
   reportCount: 12,
+  ratingCount: 5,
   latestReportAt: freshReportDate,
   diveLogs: [],
   shareUrl: null,
@@ -129,6 +130,16 @@ describe('SpotDetailSheet', () => {
     );
 
     expect(getByText('No data yet')).toBeTruthy();
+  });
+
+
+  it('shows rating count from ratingCount next to stars', () => {
+    const { getByText, queryByText } = render(
+      <SpotDetailSheet {...defaultProps} spot={mockSpot} />,
+    );
+
+    expect(getByText('5')).toBeTruthy();
+    expect(queryByText('12')).toBeNull();
   });
 
   it('calls onAddDive when add dive button is pressed', () => {

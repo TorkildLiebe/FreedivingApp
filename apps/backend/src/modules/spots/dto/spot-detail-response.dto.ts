@@ -16,6 +16,7 @@ export class SpotDetailResponseDto {
   averageVisibilityMeters!: number | null;
   averageRating!: number | null;
   reportCount!: number;
+  ratingCount!: number;
   latestReportAt!: Date | null;
   diveLogs!: SpotDiveLogPreviewResponseDto[];
   shareUrl!: string | null;

@@ -41,6 +41,7 @@ describe('SpotsService', () => {
     averageVisibilityMeters: 8.2,
     averageRating: 4.5,
     reportCount: 12,
+    _count: { spotRatings: 5 },
     latestReportAt: new Date('2026-01-01'),
     shareUrl: null,
     shareableAccessInfo: null,
@@ -200,6 +201,7 @@ describe('SpotsService', () => {
         averageVisibilityMeters: 8.2,
         averageRating: 4.5,
         reportCount: 12,
+        ratingCount: 5,
         latestReportAt: new Date('2026-01-01'),
         diveLogs: [],
         shareUrl: null,
@@ -215,6 +217,7 @@ describe('SpotsService', () => {
         averageVisibilityMeters: null,
         averageRating: null,
         reportCount: 0,
+        _count: { spotRatings: 0 },
         latestReportAt: null,
       });
       repository.listDiveLogsBySpot.mockResolvedValue({
@@ -227,6 +230,7 @@ describe('SpotsService', () => {
       expect(result.averageVisibilityMeters).toBeNull();
       expect(result.averageRating).toBeNull();
       expect(result.reportCount).toBe(0);
+      expect(result.ratingCount).toBe(0);
       expect(result.latestReportAt).toBeNull();
     });
 

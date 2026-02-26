@@ -56,6 +56,7 @@ export interface SpotDetail {
   averageVisibilityMeters: number | null;
   averageRating: number | null;
   reportCount: number;
+  ratingCount: number;
   latestReportAt: string | null;
   diveLogs: DiveLogPreview[];
   shareUrl: string | null;
