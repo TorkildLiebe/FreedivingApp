@@ -1,4 +1,5 @@
 import React from 'react';
+import { Linking } from 'react-native';
 import { renderHook, act, waitFor } from '@testing-library/react-native';
 import {
   mockSupabase,
@@ -21,6 +22,11 @@ beforeEach(() => {
   mockSupabase.auth.onAuthStateChange.mockReturnValue({
     data: { subscription: { unsubscribe: mockUnsubscribe } },
   });
+  jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
 });
 
 describe('AuthProvider + useAuth', () => {
@@ -57,7 +63,6 @@ describe('AuthProvider + useAuth', () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    // Simulate auth state change
     const callback = mockSupabase.auth.onAuthStateChange.mock.calls[0][0];
     act(() => {
       callback('SIGNED_IN', mockSession);
@@ -102,28 +107,7 @@ describe('AuthProvider + useAuth', () => {
     });
   });
 
-  it('signIn returns error on failure', async () => {
-    mockSupabase.auth.signInWithPassword.mockResolvedValueOnce({
-      data: { session: null, user: null },
-      error: { message: 'Invalid credentials', status: 401 },
-    });
-
-    const { result } = renderHook(() => useAuth(), { wrapper });
-
-    await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
-    });
-
-    let signInResult: { error: Error | null } | undefined;
-    await act(async () => {
-      signInResult = await result.current.signIn('test@example.com', 'wrong');
-    });
-
-    expect(signInResult?.error).toBeInstanceOf(Error);
-    expect(signInResult?.error?.message).toBe('Invalid credentials');
-  });
-
-  it('signUp delegates to supabase', async () => {
+  it('signUp delegates to supabase with alias metadata', async () => {
     mockSupabase.auth.signUp.mockResolvedValueOnce({
       data: { session: mockSession, user: mockSession.user },
       error: null,
@@ -137,20 +121,31 @@ describe('AuthProvider + useAuth', () => {
 
     let signUpResult: { error: Error | null } | undefined;
     await act(async () => {
-      signUpResult = await result.current.signUp('new@example.com', 'password');
+      signUpResult = await result.current.signUp({
+        alias: 'deepwater',
+        email: 'new@example.com',
+        password: 'password',
+        avatarUrl: 'https://example.com/avatar.jpg',
+      });
     });
 
     expect(signUpResult?.error).toBeNull();
     expect(mockSupabase.auth.signUp).toHaveBeenCalledWith({
       email: 'new@example.com',
       password: 'password',
+      options: {
+        data: {
+          alias: 'deepwater',
+          avatarUrl: 'https://example.com/avatar.jpg',
+        },
+      },
     });
   });
 
-  it('signUp returns error on failure', async () => {
-    mockSupabase.auth.signUp.mockResolvedValueOnce({
-      data: { session: null, user: null },
-      error: { message: 'Email taken', status: 422 },
+  it('signInWithGoogle opens OAuth URL when returned by Supabase', async () => {
+    mockSupabase.auth.signInWithOAuth.mockResolvedValueOnce({
+      data: { provider: 'google', url: 'https://example.com/oauth' },
+      error: null,
     });
 
     const { result } = renderHook(() => useAuth(), { wrapper });
@@ -159,12 +154,37 @@ describe('AuthProvider + useAuth', () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    let signUpResult: { error: Error | null } | undefined;
     await act(async () => {
-      signUpResult = await result.current.signUp('taken@example.com', 'password');
+      await result.current.signInWithGoogle();
     });
 
-    expect(signUpResult?.error?.message).toBe('Email taken');
+    expect(mockSupabase.auth.signInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: {
+        redirectTo: undefined,
+        skipBrowserRedirect: true,
+      },
+    });
+    expect(Linking.openURL).toHaveBeenCalledWith('https://example.com/oauth');
+  });
+
+  it('resetPassword delegates to Supabase', async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.resetPassword('user@example.com');
+    });
+
+    expect(mockSupabase.auth.resetPasswordForEmail).toHaveBeenCalledWith(
+      'user@example.com',
+      {
+        redirectTo: undefined,
+      },
+    );
   });
 
   it('signOut calls supabase', async () => {

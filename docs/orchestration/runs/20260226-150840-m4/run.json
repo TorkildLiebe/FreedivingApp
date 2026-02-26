@@ -1,0 +1,99 @@
+{
+  "run_id": "20260226-150840-m4",
+  "milestone": "M4",
+  "status": "running",
+  "started_at": "2026-02-26T14:08:56.850Z",
+  "updated_at": "2026-02-26T14:13:50.734Z",
+  "issue_order": [
+    79,
+    80,
+    81,
+    82,
+    83
+  ],
+  "current_issue": 79,
+  "attempts_by_issue": {
+    "79": 0,
+    "80": 0,
+    "81": 0,
+    "82": 0,
+    "83": 0
+  },
+  "completed_issues": [],
+  "blocked_issue": null,
+  "stop_reason": null,
+  "issues": {
+    "79": {
+      "status": "verifying",
+      "attempts": 0,
+      "note": null,
+      "commit_sha": null,
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-26T14:08:56.850Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-26T14:09:29.681Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-26T14:10:03.888Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-26T14:13:50.734Z"
+        }
+      ]
+    },
+    "80": {
+      "status": "pending",
+      "attempts": 0,
+      "note": null,
+      "commit_sha": null,
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-26T14:08:56.850Z"
+        }
+      ]
+    },
+    "81": {
+      "status": "pending",
+      "attempts": 0,
+      "note": null,
+      "commit_sha": null,
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-26T14:08:56.850Z"
+        }
+      ]
+    },
+    "82": {
+      "status": "pending",
+      "attempts": 0,
+      "note": null,
+      "commit_sha": null,
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-26T14:08:56.850Z"
+        }
+      ]
+    },
+    "83": {
+      "status": "pending",
+      "attempts": 0,
+      "note": null,
+      "commit_sha": null,
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-26T14:08:56.850Z"
+        }
+      ]
+    }
+  }
+}

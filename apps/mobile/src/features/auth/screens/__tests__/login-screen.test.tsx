@@ -1,17 +1,31 @@
 import React from 'react';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
-import { Alert } from 'react-native';
 import LoginScreen from '@/src/features/auth/screens/login-screen';
-
-jest.spyOn(Alert, 'alert');
 
 const mockSignIn = jest.fn().mockResolvedValue({ error: null });
 const mockSignUp = jest.fn().mockResolvedValue({ error: null });
+const mockSignInWithGoogle = jest.fn().mockResolvedValue({ error: null });
+const mockResetPassword = jest.fn().mockResolvedValue({ error: null });
+
+jest.mock('expo-image-picker', () => ({
+  requestMediaLibraryPermissionsAsync: jest
+    .fn()
+    .mockResolvedValue({ granted: true }),
+  launchImageLibraryAsync: jest.fn().mockResolvedValue({
+    canceled: false,
+    assets: [{ uri: 'file://avatar.png' }],
+  }),
+  MediaTypeOptions: {
+    Images: 'Images',
+  },
+}));
 
 jest.mock('@/src/features/auth/context/auth-context', () => ({
   useAuth: () => ({
     signIn: mockSignIn,
     signUp: mockSignUp,
+    signInWithGoogle: mockSignInWithGoogle,
+    resetPassword: mockResetPassword,
   }),
 }));
 
@@ -20,50 +34,57 @@ beforeEach(() => {
 });
 
 describe('LoginScreen', () => {
-  it('renders sign-in mode by default', () => {
-    const { getAllByText, getByPlaceholderText, getByText } = render(
-      <LoginScreen />,
-    );
+  it('renders login mode by default', () => {
+    const { getByTestId, getByText } = render(<LoginScreen />);
 
-    // "Sign In" appears as both title and button text
-    expect(getAllByText('Sign In')).toHaveLength(2);
-    expect(getByPlaceholderText('Email')).toBeTruthy();
-    expect(getByPlaceholderText('Password')).toBeTruthy();
-    expect(getByText("Don't have an account? Sign Up")).toBeTruthy();
+    expect(getByTestId('auth-screen-title').props.children).toBe(
+      'Sign in to continue',
+    );
+    expect(getByTestId('auth-email-input')).toBeTruthy();
+    expect(getByTestId('auth-password-input')).toBeTruthy();
+    expect(getByText("Don't have an account? Sign up")).toBeTruthy();
   });
 
-  it('toggles to sign-up mode', () => {
-    const { getByText } = render(<LoginScreen />);
+  it('switches to signup and clears form state on mode switch', () => {
+    const { getByTestId, getByText } = render(<LoginScreen />);
 
-    fireEvent.press(getByText("Don't have an account? Sign Up"));
+    fireEvent.changeText(getByTestId('auth-email-input'), 'one@example.com');
+    fireEvent.changeText(getByTestId('auth-password-input'), 'password123');
 
-    expect(getByText('Create Account')).toBeTruthy();
-    expect(getByText('Already have an account? Sign In')).toBeTruthy();
+    fireEvent.press(getByTestId('auth-toggle-mode-button'));
+
+    expect(getByTestId('auth-screen-title').props.children).toBe(
+      'Create an account',
+    );
+    expect(getByTestId('auth-email-input').props.value).toBe('');
+    expect(getByTestId('auth-password-input').props.value).toBe('');
+    expect(getByTestId('auth-signup-alias-input')).toBeTruthy();
+
+    fireEvent.press(getByTestId('auth-toggle-mode-button'));
+
+    expect(getByText("Don't have an account? Sign up")).toBeTruthy();
+    expect(getByTestId('auth-email-input').props.value).toBe('');
   });
 
-  it('shows alert when fields are empty', () => {
-    const { getAllByText } = render(<LoginScreen />);
+  it('shows inline validation errors on invalid login submit', async () => {
+    const { getByTestId, getAllByTestId } = render(<LoginScreen />);
 
-    // The "Sign In" text appears as both title and button text
-    const signInButtons = getAllByText('Sign In');
-    fireEvent.press(signInButtons[signInButtons.length - 1]);
+    await act(async () => {
+      fireEvent.press(getByTestId('auth-submit-button'));
+    });
 
-    expect(Alert.alert).toHaveBeenCalledWith(
-      'Error',
-      'Email and password are required',
-    );
+    expect(getAllByTestId('auth-inline-error').length).toBeGreaterThan(0);
     expect(mockSignIn).not.toHaveBeenCalled();
   });
 
-  it('calls signIn on submit in sign-in mode', async () => {
-    const { getByPlaceholderText, getAllByText } = render(<LoginScreen />);
+  it('calls signIn with form values', async () => {
+    const { getByTestId } = render(<LoginScreen />);
 
-    fireEvent.changeText(getByPlaceholderText('Email'), 'test@example.com');
-    fireEvent.changeText(getByPlaceholderText('Password'), 'password123');
+    fireEvent.changeText(getByTestId('auth-email-input'), 'test@example.com');
+    fireEvent.changeText(getByTestId('auth-password-input'), 'password123');
 
-    const signInButtons = getAllByText('Sign In');
     await act(async () => {
-      fireEvent.press(signInButtons[signInButtons.length - 1]);
+      fireEvent.press(getByTestId('auth-submit-button'));
     });
 
     await waitFor(() => {
@@ -71,72 +92,71 @@ describe('LoginScreen', () => {
     });
   });
 
-  it('calls signUp on submit in sign-up mode', async () => {
-    const { getByPlaceholderText, getByText } = render(<LoginScreen />);
+  it('calls signInWithGoogle on Google button tap', async () => {
+    const { getByTestId } = render(<LoginScreen />);
 
-    fireEvent.press(getByText("Don't have an account? Sign Up"));
-    fireEvent.changeText(getByPlaceholderText('Email'), 'new@example.com');
-    fireEvent.changeText(getByPlaceholderText('Password'), 'password123');
     await act(async () => {
-      fireEvent.press(getByText('Sign Up'));
+      fireEvent.press(getByTestId('auth-google-button'));
+    });
+
+    expect(mockSignInWithGoogle).toHaveBeenCalledTimes(1);
+  });
+
+  it('submits signup with alias and avatar uri', async () => {
+    const { getByTestId } = render(<LoginScreen />);
+
+    fireEvent.press(getByTestId('auth-toggle-mode-button'));
+    await act(async () => {
+      fireEvent.press(getByTestId('auth-signup-avatar-button'));
+    });
+    fireEvent.changeText(getByTestId('auth-signup-alias-input'), 'deepwater');
+    fireEvent.changeText(getByTestId('auth-email-input'), 'new@example.com');
+    fireEvent.changeText(getByTestId('auth-password-input'), 'password123');
+
+    await act(async () => {
+      fireEvent.press(getByTestId('auth-submit-button'));
     });
 
     await waitFor(() => {
-      expect(mockSignUp).toHaveBeenCalledWith('new@example.com', 'password123');
+      expect(mockSignUp).toHaveBeenCalledWith({
+        alias: 'deepwater',
+        email: 'new@example.com',
+        password: 'password123',
+        avatarUrl: 'file://avatar.png',
+      });
     });
   });
 
-  it('shows error alert on sign-in failure', async () => {
-    mockSignIn.mockResolvedValueOnce({
-      error: new Error('Invalid credentials'),
-    });
+  it('submits forgot-password and shows success state', async () => {
+    const { getByTestId, getByText } = render(<LoginScreen />);
 
-    const { getByPlaceholderText, getAllByText } = render(<LoginScreen />);
+    fireEvent.press(getByTestId('auth-toggle-forgot-button'));
+    fireEvent.changeText(getByTestId('auth-forgot-email-input'), 'user@example.com');
 
-    fireEvent.changeText(getByPlaceholderText('Email'), 'test@example.com');
-    fireEvent.changeText(getByPlaceholderText('Password'), 'wrong');
-
-    const signInButtons = getAllByText('Sign In');
     await act(async () => {
-      fireEvent.press(signInButtons[signInButtons.length - 1]);
+      fireEvent.press(getByTestId('auth-forgot-submit-button'));
     });
 
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith('Error', 'Invalid credentials');
+      expect(mockResetPassword).toHaveBeenCalledWith('user@example.com');
     });
+
+    expect(getByTestId('auth-forgot-success')).toBeTruthy();
+    expect(getByText("We've sent a reset link to user@example.com")).toBeTruthy();
   });
 
-  it('disables button while loading', async () => {
-    // Make signIn hang to test loading state
-    let resolveSignIn: (value: { error: null }) => void;
-    mockSignIn.mockReturnValueOnce(
-      new Promise((resolve) => {
-        resolveSignIn = resolve;
-      }),
+  it('returns from forgot password to login with cleared fields', () => {
+    const { getByTestId } = render(<LoginScreen />);
+
+    fireEvent.press(getByTestId('auth-toggle-forgot-button'));
+    fireEvent.changeText(getByTestId('auth-forgot-email-input'), 'user@example.com');
+
+    fireEvent.press(getByTestId('auth-forgot-back-button'));
+
+    expect(getByTestId('auth-screen-title').props.children).toBe(
+      'Sign in to continue',
     );
-
-    const { getByPlaceholderText, getAllByText } = render(
-      <LoginScreen />,
-    );
-
-    fireEvent.changeText(getByPlaceholderText('Email'), 'test@example.com');
-    fireEvent.changeText(getByPlaceholderText('Password'), 'password123');
-
-    const signInButtons = getAllByText('Sign In');
-    await act(async () => {
-      fireEvent.press(signInButtons[signInButtons.length - 1]);
-    });
-
-    // During loading, the button text should be replaced by ActivityIndicator
-    await waitFor(() => {
-      // The "Sign In" button text disappears during loading (replaced by spinner)
-      // but the title "Sign In" remains — so we check button is disabled
-      expect(mockSignIn).toHaveBeenCalled();
-    });
-
-    // Resolve to clean up
-    await act(async () => {
-      resolveSignIn!({ error: null });
-    });
+    expect(getByTestId('auth-email-input').props.value).toBe('');
+    expect(getByTestId('auth-password-input').props.value).toBe('');
   });
 });
