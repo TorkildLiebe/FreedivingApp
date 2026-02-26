@@ -142,6 +142,20 @@ Run these from repository root:
 The milestone retrospective artifact remains:
 - `docs/orchestration/improvements/<run-id>.md`
 
+## End-of-Milestone E2E Regression Gate
+
+After merging all issue branches into the milestone branch, the monitor-agent runs the full Maestro E2E suite (`pnpm test:e2e:mobile`) as a regression check before closing the milestone.
+
+Behavior:
+- If iOS simulator is booted: runs `pnpm test:e2e:mobile` and captures pass/fail.
+- If no simulator is booted: skips with explicit warning.
+- E2E failures are **non-blocking** — they are regression signals, not close gates. Per-issue verification already validated each feature individually.
+
+The retrospective report (`docs/orchestration/improvements/<run-id>.md`) must include:
+- `E2E_REGRESSION_RUN: PASS|FAIL|SKIPPED`
+- If `FAIL`: list failing flow names and brief failure reason.
+- If `SKIPPED`: state reason (e.g., "no simulator booted").
+
 ## Resume Behavior
 
 Monitor-agent auto-resumes the latest unfinished run for the same milestone by reading run artifacts in `docs/orchestration/runs/`.

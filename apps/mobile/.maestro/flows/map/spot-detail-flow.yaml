@@ -1,0 +1,54 @@
+appId: com.anonymous.mobile
+name: Spot Detail Flow
+tags:
+  - map
+  - requires-backend
+---
+# Tests the spot detail sheet: search for a spot, open detail sheet, verify elements, close.
+# Requires: backend running with seeded spot data.
+
+- stopApp
+
+- launchApp:
+    clearState: false
+
+# Dismiss any OS permission dialogs
+- runFlow:
+    when:
+      visible: "Allow While Using App"
+    commands:
+      - tapOn: "Allow While Using App"
+
+- extendedWaitUntil:
+    visible:
+      id: "map-search-input"
+    timeout: 15000
+
+# Search for a seeded spot to trigger spot selection
+- tapOn:
+    id: "map-search-input"
+
+- inputText: "Saltstraumen"
+
+# Wait for the spot detail sheet to open (API fetch + sheet animation)
+- extendedWaitUntil:
+    visible:
+      id: "spot-detail-title"
+    timeout: 10000
+
+# Verify key detail sheet elements
+- assertVisible:
+    id: "spot-detail-close-button"
+
+- assertVisible:
+    id: "spot-detail-add-dive-button"
+
+# Close the detail sheet
+- tapOn:
+    id: "spot-detail-close-button"
+
+# Verify we are back to normal map state
+- extendedWaitUntil:
+    visible:
+      id: "map-start-create-spot-button"
+    timeout: 5000

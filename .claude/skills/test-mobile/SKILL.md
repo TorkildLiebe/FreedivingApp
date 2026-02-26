@@ -208,6 +208,108 @@ Focus on:
 4. **Mock native modules** (Location, Camera, etc.)
 5. **Cleanup in afterEach** - clear all mocks
 
+## E2E Testing (Maestro)
+
+Maestro YAML flows run on a real iOS Simulator to test user interactions end-to-end. They complement Jest unit tests — use both layers together.
+
+### When to Generate E2E Flows
+
+- **New screen or major feature** → add a happy-path E2E flow
+- **New multi-step interaction** (e.g., create spot, submit dive log) → add a full-sequence flow
+- **Bug fix involving navigation or component integration** → add a regression flow
+- **Tab or navigation structure changes** → update smoke flows in `smoke/`
+
+Do NOT write E2E flows for:
+- Pure logic changes in hooks/utilities (covered by Jest)
+- Styling-only changes with no interaction changes
+- Backend-only changes
+
+### Flow Location
+
+```
+apps/mobile/.maestro/flows/
+├── smoke/          # Critical path (always pass, no backend dependency)
+├── map/            # Map feature flows
+├── auth/           # Authentication flows
+└── helpers/        # Reusable sub-flows (login, dismiss permissions)
+```
+
+### Flow Writing Conventions
+
+**Critical patterns** (syntax errors otherwise):
+
+- Start every flow with `stopApp` + `launchApp` for clean state between batch runs
+- Use `id` selector for testIDs (maps to React Native `testID`)
+- Use `extendedWaitUntil` for async waits — NOT `assertVisible` with timeout (`assertVisible` has no timeout parameter)
+- Use `eraseText` to clear input — NOT `clearText` (invalid command)
+- Use `assertVisible` only for elements expected to already be present (no timeout)
+- Keep flows under 50 steps; use `runFlow` for sub-flows
+- Tag backend-dependent flows with `requires-backend`
+
+### Example Flow Template
+
+```yaml
+appId: com.anonymous.mobile
+name: Feature Happy Path
+tags:
+  - feature-name
+---
+- stopApp
+
+- launchApp:
+    clearState: false
+
+# Dismiss any OS permission dialogs
+- runFlow:
+    when:
+      visible: "Allow While Using App"
+    commands:
+      - tapOn: "Allow While Using App"
+
+# Wait for app to load
+- extendedWaitUntil:
+    visible:
+      id: "map-search-input"
+    timeout: 15000
+
+# Test interaction
+- tapOn:
+    id: "target-element-id"
+
+# Verify result
+- assertVisible:
+    id: "expected-element-id"
+```
+
+### Running E2E Tests
+
+```bash
+# Smoke tests only (~21s)
+pnpm test:e2e:mobile:smoke
+
+# Full suite (~62s)
+pnpm test:e2e:mobile
+
+# Feature-specific
+pnpm test:e2e:mobile:map
+pnpm test:e2e:mobile:auth
+```
+
+### Relationship to Unit Tests
+
+| Concern | Jest + RNTL | Maestro E2E |
+|---------|------------|-------------|
+| Component logic | Primary | - |
+| Hook behavior | Primary | - |
+| State management | Primary | - |
+| Navigation flows | - | Primary |
+| Real device rendering | - | Primary |
+| Cross-component integration | Secondary | Primary |
+| Error handling edge cases | Primary | - |
+| Permission dialogs | - | Primary |
+
+Both layers are mandatory for new features. E2E catches integration and navigation bugs that unit tests miss. Unit tests catch logic edge cases that E2E is too slow to cover.
+
 ## Reference Files
 
 For detailed patterns and examples:

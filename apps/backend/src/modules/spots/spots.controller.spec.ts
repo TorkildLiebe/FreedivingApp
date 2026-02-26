@@ -36,6 +36,7 @@ describe('SpotsController', () => {
     averageVisibilityMeters: null,
     averageRating: null,
     reportCount: 0,
+    ratingCount: 0,
     latestReportAt: null,
     diveLogs: [],
     shareUrl: null,
@@ -61,10 +62,12 @@ describe('SpotsController', () => {
           useValue: {
             listByBBox: jest.fn(),
             getById: jest.fn(),
+            listDiveLogs: jest.fn(),
             create: jest.fn(),
             update: jest.fn(),
             createPhotoUploadUrl: jest.fn(),
             addPhoto: jest.fn(),
+            upsertRating: jest.fn(),
             softDelete: jest.fn(),
           },
         },
@@ -123,6 +126,26 @@ describe('SpotsController', () => {
 
       expect(spotsService.getById).toHaveBeenCalledWith('uuid-1');
       expect(result).toEqual(mockDetailResponse);
+    });
+  });
+
+  describe('listDiveLogs', () => {
+    it('should call service with id and pagination query', async () => {
+      const response = {
+        items: [],
+        page: 1,
+        limit: 20,
+        total: 0,
+      };
+      spotsService.listDiveLogs.mockResolvedValue(response);
+
+      const result = await controller.listDiveLogs('uuid-1', {
+        page: 1,
+        limit: 20,
+      });
+
+      expect(spotsService.listDiveLogs).toHaveBeenCalledWith('uuid-1', 1, 20);
+      expect(result).toEqual(response);
     });
   });
 
@@ -189,6 +212,35 @@ describe('SpotsController', () => {
         'https://example.com/photo.jpg',
       );
       expect(result).toEqual(mockDetailResponse);
+    });
+  });
+
+  describe('upsertRating', () => {
+    it('should call service with spot id, rating dto and current user', async () => {
+      const ratingResponse = {
+        id: 'rating-1',
+        spotId: 'uuid-1',
+        userId: 'uuid-user-1',
+        rating: 4,
+        averageRating: 4.2,
+        ratingCount: 5,
+        createdAt: new Date('2026-02-25T10:00:00.000Z'),
+        updatedAt: new Date('2026-02-25T11:00:00.000Z'),
+      };
+      spotsService.upsertRating.mockResolvedValue(ratingResponse);
+
+      const result = await controller.upsertRating(
+        'uuid-1',
+        { rating: 4 },
+        mockUser,
+      );
+
+      expect(spotsService.upsertRating).toHaveBeenCalledWith(
+        'uuid-1',
+        { rating: 4 },
+        mockUser,
+      );
+      expect(result).toEqual(ratingResponse);
     });
   });
 

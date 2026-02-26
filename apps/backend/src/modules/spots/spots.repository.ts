@@ -12,6 +12,20 @@ const SPOT_SUMMARY_SELECT = {
 const SPOT_DETAIL_INCLUDE = {
   parkingLocations: true,
   createdBy: { select: { alias: true } },
+  _count: {
+    select: {
+      spotRatings: true,
+    },
+  },
+} as const;
+
+const SPOT_DIVE_LOG_INCLUDE = {
+  author: {
+    select: {
+      alias: true,
+      avatarUrl: true,
+    },
+  },
 } as const;
 
 @Injectable()
@@ -157,6 +171,67 @@ export class SpotsRepository {
     await this.prisma.diveSpot.updateMany({
       where: { id, isDeleted: false },
       data: { isDeleted: true, deletedAt: new Date() },
+    });
+  }
+
+  async listDiveLogsBySpot(spotId: string, skip: number, take: number) {
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.diveLog.findMany({
+        where: { spotId, isDeleted: false },
+        include: SPOT_DIVE_LOG_INCLUDE,
+        orderBy: [{ divedAt: 'desc' }, { createdAt: 'desc' }],
+        skip,
+        take,
+      }),
+      this.prisma.diveLog.count({
+        where: { spotId, isDeleted: false },
+      }),
+    ]);
+
+    return { items, total };
+  }
+
+  async upsertSpotRatingAndRefreshAverage(
+    spotId: string,
+    userId: string,
+    rating: number,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const savedRating = await tx.spotRating.upsert({
+        where: {
+          userId_spotId: {
+            userId,
+            spotId,
+          },
+        },
+        create: {
+          spotId,
+          userId,
+          rating,
+        },
+        update: {
+          rating,
+        },
+      });
+
+      const aggregates = await tx.spotRating.aggregate({
+        where: { spotId },
+        _avg: { rating: true },
+        _count: { _all: true },
+      });
+
+      await tx.diveSpot.update({
+        where: { id: spotId },
+        data: {
+          averageRating: aggregates._avg.rating,
+        },
+      });
+
+      return {
+        rating: savedRating,
+        averageRating: aggregates._avg.rating,
+        ratingCount: aggregates._count._all,
+      };
     });
   }
 }

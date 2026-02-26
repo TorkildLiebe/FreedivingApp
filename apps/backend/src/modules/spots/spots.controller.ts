@@ -22,6 +22,10 @@ import { UpdateSpotDto } from './dto/update-spot.dto';
 import { AddSpotPhotoDto } from './dto/add-spot-photo.dto';
 import { CreateSpotPhotoUploadUrlDto } from './dto/create-spot-photo-upload-url.dto';
 import { SpotPhotoUploadUrlResponseDto } from './dto/spot-photo-upload-url-response.dto';
+import { ListSpotDiveLogsQueryDto } from './dto/list-spot-dive-logs-query.dto';
+import { ListSpotDiveLogsResponseDto } from './dto/list-spot-dive-logs-response.dto';
+import { UpsertSpotRatingDto } from './dto/upsert-spot-rating.dto';
+import { UpsertSpotRatingResponseDto } from './dto/upsert-spot-rating-response.dto';
 import type { AuthenticatedUser } from '../../common/auth';
 
 @Controller('spots')
@@ -47,6 +51,14 @@ export class SpotsController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<SpotDetailResponseDto> {
     return this.spotsService.getById(id);
+  }
+
+  @Get(':id/dive-logs')
+  async listDiveLogs(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query() query: ListSpotDiveLogsQueryDto,
+  ): Promise<ListSpotDiveLogsResponseDto> {
+    return this.spotsService.listDiveLogs(id, query.page, query.limit);
   }
 
   @Post()
@@ -80,6 +92,15 @@ export class SpotsController {
     @Body() dto: AddSpotPhotoDto,
   ): Promise<SpotDetailResponseDto> {
     return this.spotsService.addPhoto(id, dto.url);
+  }
+
+  @Post(':id/ratings')
+  async upsertRating(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpsertSpotRatingDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ): Promise<UpsertSpotRatingResponseDto> {
+    return this.spotsService.upsertRating(id, dto, actor);
   }
 
   @Delete(':id')

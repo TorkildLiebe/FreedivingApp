@@ -1,21 +1,23 @@
 echo "🚀 Running pre-push checks..."
 echo ""
 
+set -e
+
 # Run comprehensive CI checks before pushing
 echo "🧪 Running CI checks (this may take a few minutes)..."
 pnpm lint
 pnpm --filter backend test
 pnpm --filter mobile test
 
-if [ $? -eq 0 ]; then
+# Run E2E smoke tests if iOS simulator is booted (non-blocking if no simulator)
+if xcrun simctl list devices booted 2>/dev/null | grep -q "Booted"; then
   echo ""
-  echo "✅ All pre-push checks passed! Pushing to remote..."
-  exit 0
+  echo "📱 Running E2E smoke tests..."
+  pnpm test:e2e:mobile:smoke
 else
   echo ""
-  echo "❌ Pre-push checks failed!"
-  echo ""
-  echo "Please fix the issues above before pushing."
-  echo "Tip: Run 'pnpm test:ci' to test locally before committing."
-  exit 1
+  echo "⚠️  No iOS simulator booted — skipping E2E smoke tests"
 fi
+
+echo ""
+echo "✅ All pre-push checks passed! Pushing to remote..."

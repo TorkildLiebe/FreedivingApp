@@ -41,6 +41,7 @@ describe('SpotsService', () => {
     averageVisibilityMeters: 8.2,
     averageRating: 4.5,
     reportCount: 12,
+    _count: { spotRatings: 5 },
     latestReportAt: new Date('2026-01-01'),
     shareUrl: null,
     shareableAccessInfo: null,
@@ -81,6 +82,8 @@ describe('SpotsService', () => {
             updateSpot: jest.fn(),
             updatePhotoUrls: jest.fn(),
             softDeleteSpot: jest.fn(),
+            listDiveLogsBySpot: jest.fn(),
+            upsertSpotRatingAndRefreshAverage: jest.fn(),
           },
         },
       ],
@@ -169,6 +172,10 @@ describe('SpotsService', () => {
   describe('getById', () => {
     it('should return mapped spot detail with parking locations', async () => {
       repository.findById.mockResolvedValue(mockSpotDetail);
+      repository.listDiveLogsBySpot.mockResolvedValue({
+        items: [],
+        total: 0,
+      });
 
       const result = await service.getById('uuid-spot-1');
 
@@ -194,6 +201,7 @@ describe('SpotsService', () => {
         averageVisibilityMeters: 8.2,
         averageRating: 4.5,
         reportCount: 12,
+        ratingCount: 5,
         latestReportAt: new Date('2026-01-01'),
         diveLogs: [],
         shareUrl: null,
@@ -209,7 +217,12 @@ describe('SpotsService', () => {
         averageVisibilityMeters: null,
         averageRating: null,
         reportCount: 0,
+        _count: { spotRatings: 0 },
         latestReportAt: null,
+      });
+      repository.listDiveLogsBySpot.mockResolvedValue({
+        items: [],
+        total: 0,
       });
 
       const result = await service.getById('uuid-spot-1');
@@ -217,6 +230,7 @@ describe('SpotsService', () => {
       expect(result.averageVisibilityMeters).toBeNull();
       expect(result.averageRating).toBeNull();
       expect(result.reportCount).toBe(0);
+      expect(result.ratingCount).toBe(0);
       expect(result.latestReportAt).toBeNull();
     });
 
@@ -226,6 +240,66 @@ describe('SpotsService', () => {
       await expect(service.getById('nonexistent')).rejects.toThrow(
         SpotNotFoundOrDeletedError,
       );
+    });
+  });
+
+  describe('listDiveLogs', () => {
+    it('returns paginated dive logs newest first', async () => {
+      const firstDiveDate = new Date('2026-02-25T12:00:00.000Z');
+      repository.findById.mockResolvedValue(mockSpotDetail);
+      repository.listDiveLogsBySpot.mockResolvedValue({
+        items: [
+          {
+            id: 'log-1',
+            spotId: 'uuid-spot-1',
+            authorId: 'uuid-user-1',
+            visibilityMeters: 9,
+            currentStrength: 3,
+            notes: 'Very clear',
+            photoUrls: [],
+            divedAt: firstDiveDate,
+            isDeleted: false,
+            deletedAt: null,
+            createdAt: firstDiveDate,
+            updatedAt: firstDiveDate,
+            author: {
+              alias: 'Diver',
+              avatarUrl: null,
+            },
+          },
+        ],
+        total: 1,
+      });
+
+      const result = await service.listDiveLogs('uuid-spot-1', 1, 20);
+
+      expect(repository.listDiveLogsBySpot).toHaveBeenCalledWith(
+        'uuid-spot-1',
+        0,
+        20,
+      );
+      expect(result).toEqual({
+        items: [
+          {
+            id: 'log-1',
+            spotId: 'uuid-spot-1',
+            authorId: 'uuid-user-1',
+            authorAlias: 'Diver',
+            authorAvatarUrl: null,
+            visibilityMeters: 9,
+            currentStrength: 3,
+            notes: 'Very clear',
+            photoUrls: [],
+            notesPreview: 'Very clear',
+            divedAt: firstDiveDate,
+            createdAt: firstDiveDate,
+            updatedAt: firstDiveDate,
+          },
+        ],
+        page: 1,
+        limit: 20,
+        total: 1,
+      });
     });
   });
 
@@ -554,6 +628,54 @@ describe('SpotsService', () => {
       await expect(
         service.addPhoto('uuid-spot-1', 'https://example.com/6.jpg'),
       ).rejects.toThrow(TooManyPhotosError);
+    });
+  });
+
+  describe('upsertRating', () => {
+    it('upserts user rating and returns refreshed average', async () => {
+      repository.findById.mockResolvedValue(mockSpotDetail);
+      repository.upsertSpotRatingAndRefreshAverage.mockResolvedValue({
+        rating: {
+          id: 'rating-1',
+          spotId: 'uuid-spot-1',
+          userId: actor.userId,
+          rating: 4,
+          createdAt: new Date('2026-02-25T10:00:00.000Z'),
+          updatedAt: new Date('2026-02-25T11:00:00.000Z'),
+        },
+        averageRating: 4.25,
+        ratingCount: 8,
+      });
+
+      const result = await service.upsertRating(
+        'uuid-spot-1',
+        { rating: 4 },
+        actor,
+      );
+
+      expect(repository.upsertSpotRatingAndRefreshAverage).toHaveBeenCalledWith(
+        'uuid-spot-1',
+        actor.userId,
+        4,
+      );
+      expect(result).toEqual({
+        id: 'rating-1',
+        spotId: 'uuid-spot-1',
+        userId: actor.userId,
+        rating: 4,
+        averageRating: 4.25,
+        ratingCount: 8,
+        createdAt: new Date('2026-02-25T10:00:00.000Z'),
+        updatedAt: new Date('2026-02-25T11:00:00.000Z'),
+      });
+    });
+
+    it('throws SpotNotFoundOrDeletedError when rating target spot does not exist', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(
+        service.upsertRating('missing-spot', { rating: 5 }, actor),
+      ).rejects.toThrow(SpotNotFoundOrDeletedError);
     });
   });
 

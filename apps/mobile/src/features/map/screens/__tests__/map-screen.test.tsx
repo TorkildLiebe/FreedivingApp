@@ -9,10 +9,12 @@ const mockUseLocation = jest.fn();
 const mockUseSpots = jest.fn();
 const mockUseSpotDetail = jest.fn();
 const mockUseSpotPhotoUpload = jest.fn();
+const mockUseDiveLogSubmit = jest.fn();
 const mockUseCreateSpot = jest.fn();
 const mockUseFavoriteSpots = jest.fn();
 const mockUseRouter = jest.fn();
 const mockUseNavigation = jest.fn();
+const mockApiFetch = jest.fn();
 const mockPush = jest.fn();
 const mockSetOptions = jest.fn();
 const mockToggleFavoriteSpot = jest.fn();
@@ -33,6 +35,10 @@ jest.mock('@/src/features/map/hooks/use-spot-photo-upload', () => ({
   useSpotPhotoUpload: (...args: unknown[]) => mockUseSpotPhotoUpload(...args),
 }));
 
+jest.mock('@/src/features/map/hooks/use-dive-log-submit', () => ({
+  useDiveLogSubmit: (...args: unknown[]) => mockUseDiveLogSubmit(...args),
+}));
+
 jest.mock('@/src/features/map/hooks/use-create-spot', () => ({
   useCreateSpot: (...args: unknown[]) => mockUseCreateSpot(...args),
 }));
@@ -44,6 +50,16 @@ jest.mock('@/src/features/map/hooks/use-favorite-spots', () => ({
 jest.mock('expo-router', () => ({
   useRouter: (...args: unknown[]) => mockUseRouter(...args),
   useNavigation: (...args: unknown[]) => mockUseNavigation(...args),
+}));
+
+jest.mock('@/src/infrastructure/api/client', () => ({
+  apiFetch: (...args: unknown[]) => mockApiFetch(...args),
+  ApiError: class ApiError extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = 'ApiError';
+    }
+  },
 }));
 
 const mockRequestMediaLibraryPermissionsAsync = jest.fn();
@@ -106,6 +122,20 @@ jest.mock('@/src/features/map/components/create-spot-overlay', () => {
   };
 });
 
+jest.mock('@/src/features/map/components/rating-sheet', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { View } = require('react-native');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const mockReact = require('react');
+  return {
+    __esModule: true,
+    RatingSheet: (props: any) =>
+      props.visible
+        ? mockReact.createElement(View, { testID: 'rating-sheet', ...props })
+        : null,
+  };
+});
+
 // eslint-disable-next-line import/first
 import MapScreen from '@/src/features/map/screens/map-screen';
 
@@ -124,6 +154,7 @@ const mockSpot: SpotDetail = {
   averageVisibilityMeters: null,
   averageRating: null,
   reportCount: 0,
+  ratingCount: 0,
   latestReportAt: null,
   diveLogs: [],
   shareUrl: null,
@@ -134,6 +165,7 @@ const mockSpot: SpotDetail = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockApiFetch.mockResolvedValue({} as never);
 
   mockUseLocation.mockReturnValue({
     location: null,
@@ -168,11 +200,20 @@ beforeEach(() => {
     error: null,
     clearError: jest.fn(),
   });
+  mockUseDiveLogSubmit.mockReturnValue({
+    submitDiveLog: jest.fn(),
+    updateDiveLog: jest.fn(),
+    isSubmitting: false,
+    isUploadingPhotos: false,
+    error: null,
+    clearError: jest.fn(),
+  });
 
   mockToggleFavoriteSpot.mockResolvedValue({ error: null });
   mockUseFavoriteSpots.mockReturnValue({
     isAuthenticated: true,
     favoriteSpotIds: [],
+    currentUserId: 'user-1',
     toggleFavoriteSpot: mockToggleFavoriteSpot,
   });
 
@@ -225,6 +266,33 @@ describe('MapScreen', () => {
     expect(getByTestId('map-view').props.selectedSpotId).toBe('spot-123');
   });
 
+  it('clears selection and restores create button when spot detail fails to load', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(jest.fn());
+    mockUseSpotDetail.mockImplementation((spotId: string | null) => ({
+      spot: null,
+      isLoading: false,
+      error: spotId ? 'Failed to load spot details' : null,
+      refresh: jest.fn(),
+    }));
+
+    const { getByTestId, queryByTestId } = render(<MapScreen />);
+    const mapView = getByTestId('map-view');
+
+    act(() => {
+      mapView.props.onSpotPress('spot-123');
+    });
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith(
+        'Spot unavailable',
+        'Failed to load this dive spot. Please try another spot or retry.',
+      );
+    });
+
+    expect(queryByTestId('map-start-create-spot-button')).toBeTruthy();
+    alertSpy.mockRestore();
+  });
+
   it('renders SpotDetailSheet', () => {
     const { getByTestId } = render(<MapScreen />);
     expect(getByTestId('spot-detail-sheet')).toBeTruthy();
@@ -258,6 +326,7 @@ describe('MapScreen', () => {
     mockUseFavoriteSpots.mockReturnValue({
       isAuthenticated: true,
       favoriteSpotIds: ['spot-123'],
+      currentUserId: 'user-1',
       toggleFavoriteSpot: mockToggleFavoriteSpot,
     });
 
@@ -277,6 +346,7 @@ describe('MapScreen', () => {
     mockUseFavoriteSpots.mockReturnValue({
       isAuthenticated: true,
       favoriteSpotIds: ['spot-123'],
+      currentUserId: 'user-1',
       toggleFavoriteSpot: mockToggleFavoriteSpot,
     });
 
@@ -301,6 +371,7 @@ describe('MapScreen', () => {
     mockUseFavoriteSpots.mockReturnValue({
       isAuthenticated: false,
       favoriteSpotIds: [],
+      currentUserId: null,
       toggleFavoriteSpot: mockToggleFavoriteSpot,
     });
 
@@ -513,5 +584,101 @@ describe('MapScreen', () => {
         }),
       );
     });
+  });
+
+  it('posts spot rating when selecting a post-dive star', async () => {
+    const submitDiveLog = jest.fn().mockResolvedValue({
+      shouldPromptRating: true,
+    });
+    mockUseDiveLogSubmit.mockReturnValue({
+      submitDiveLog,
+      updateDiveLog: jest.fn(),
+      isSubmitting: false,
+      isUploadingPhotos: false,
+      error: null,
+      clearError: jest.fn(),
+    });
+    mockUseSpotDetail.mockReturnValue({
+      spot: mockSpot,
+      isLoading: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+
+    const { getByTestId } = render(<MapScreen />);
+    const sheet = getByTestId('spot-detail-sheet');
+
+    act(() => {
+      sheet.props.onAddDive(mockSpot);
+    });
+    fireEvent.press(getByTestId('add-dive-next-button'));
+    await act(async () => {
+      fireEvent.press(getByTestId('add-dive-submit-button'));
+    });
+
+    await waitFor(() => {
+      expect(getByTestId('rating-sheet')).toBeTruthy();
+    });
+
+    await act(async () => {
+      await getByTestId('rating-sheet').props.onRate(4);
+    });
+
+    expect(mockApiFetch).toHaveBeenCalledWith('/spots/spot-123/ratings', {
+      method: 'POST',
+      body: JSON.stringify({ rating: 4 }),
+    });
+  });
+
+  it('does not re-prompt rating in the same session after dismissing Not now', async () => {
+    const submitDiveLog = jest.fn().mockResolvedValue({
+      shouldPromptRating: true,
+    });
+    mockUseDiveLogSubmit.mockReturnValue({
+      submitDiveLog,
+      updateDiveLog: jest.fn(),
+      isSubmitting: false,
+      isUploadingPhotos: false,
+      error: null,
+      clearError: jest.fn(),
+    });
+    mockUseSpotDetail.mockReturnValue({
+      spot: mockSpot,
+      isLoading: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+
+    const { getByTestId, queryByTestId } = render(<MapScreen />);
+    const sheet = getByTestId('spot-detail-sheet');
+
+    act(() => {
+      sheet.props.onAddDive(mockSpot);
+    });
+    fireEvent.press(getByTestId('add-dive-next-button'));
+    await act(async () => {
+      fireEvent.press(getByTestId('add-dive-submit-button'));
+    });
+    await waitFor(() => {
+      expect(getByTestId('rating-sheet')).toBeTruthy();
+    });
+
+    act(() => {
+      getByTestId('rating-sheet').props.onDismiss();
+    });
+    expect(queryByTestId('rating-sheet')).toBeNull();
+
+    act(() => {
+      sheet.props.onAddDive(mockSpot);
+    });
+    fireEvent.press(getByTestId('add-dive-next-button'));
+    await act(async () => {
+      fireEvent.press(getByTestId('add-dive-submit-button'));
+    });
+
+    await waitFor(() => {
+      expect(submitDiveLog).toHaveBeenCalledTimes(2);
+    });
+    expect(queryByTestId('rating-sheet')).toBeNull();
   });
 });

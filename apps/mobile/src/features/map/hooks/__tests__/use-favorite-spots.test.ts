@@ -22,7 +22,7 @@ beforeEach(() => {
   mockSupabase.auth.onAuthStateChange.mockReturnValue({
     data: { subscription: { unsubscribe: mockUnsubscribe } },
   });
-  mockApiFetch.mockResolvedValue({ favoriteSpotIds: [] } as never);
+  mockApiFetch.mockResolvedValue({ id: 'user-1', favoriteSpotIds: [] } as never);
 });
 
 describe('useFavoriteSpots', () => {
@@ -31,7 +31,7 @@ describe('useFavoriteSpots', () => {
       data: { session: mockSession },
       error: null,
     });
-    mockApiFetch.mockResolvedValueOnce({ favoriteSpotIds: ['spot-1'] } as never);
+    mockApiFetch.mockResolvedValueOnce({ id: 'user-1', favoriteSpotIds: ['spot-1'] } as never);
 
     const { result } = renderHook(() => useFavoriteSpots());
 
@@ -47,7 +47,7 @@ describe('useFavoriteSpots', () => {
       data: { session: mockSession },
       error: null,
     });
-    mockApiFetch.mockResolvedValueOnce({ favoriteSpotIds: ['spot-1'] } as never);
+    mockApiFetch.mockResolvedValueOnce({ id: 'user-1', favoriteSpotIds: ['spot-1'] } as never);
 
     const { result } = renderHook(() => useFavoriteSpots());
 
@@ -72,8 +72,8 @@ describe('useFavoriteSpots', () => {
       error: null,
     });
     mockApiFetch
-      .mockResolvedValueOnce({ favoriteSpotIds: [] } as never)
-      .mockResolvedValueOnce({ favoriteSpotIds: ['spot-1'] } as never);
+      .mockResolvedValueOnce({ id: 'user-1', favoriteSpotIds: [] } as never)
+      .mockResolvedValueOnce({ id: 'user-1', favoriteSpotIds: ['spot-1'] } as never);
 
     const { result } = renderHook(() => useFavoriteSpots());
 
@@ -99,7 +99,7 @@ describe('useFavoriteSpots', () => {
       error: null,
     });
     mockApiFetch
-      .mockResolvedValueOnce({ favoriteSpotIds: ['spot-1'] } as never)
+      .mockResolvedValueOnce({ id: 'user-1', favoriteSpotIds: ['spot-1'] } as never)
       .mockRejectedValueOnce(new Error('API error: 500'));
 
     const { result } = renderHook(() => useFavoriteSpots());

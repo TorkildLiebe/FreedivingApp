@@ -1,0 +1,53 @@
+appId: com.anonymous.mobile
+name: Create Spot Entry
+tags:
+  - map
+---
+# Tests the create spot flow entry: tap create button, verify overlay appears, cancel.
+# Does not submit to backend — only tests the UI overlay lifecycle.
+
+- stopApp
+
+- launchApp:
+    clearState: false
+
+# Dismiss any OS permission dialogs
+- runFlow:
+    when:
+      visible: "Allow While Using App"
+    commands:
+      - tapOn: "Allow While Using App"
+
+- extendedWaitUntil:
+    visible:
+      id: "map-search-input"
+    timeout: 15000
+
+# Tap the create spot floating button
+- tapOn:
+    id: "map-start-create-spot-button"
+
+# Verify the create spot overlay appears with placement step
+- extendedWaitUntil:
+    visible:
+      id: "create-spot-overlay"
+    timeout: 5000
+
+- assertVisible:
+    id: "create-spot-placement-step"
+
+# Verify confirm and cancel buttons are present
+- assertVisible:
+    id: "create-spot-confirm-pin-button"
+
+- assertVisible:
+    id: "create-spot-cancel-button"
+
+# Cancel the flow (tap text — testID tap can miss near safe area edge)
+- tapOn: "Cancel"
+
+# Verify we are back to normal map state (create button visible again)
+- extendedWaitUntil:
+    visible:
+      id: "map-start-create-spot-button"
+    timeout: 10000

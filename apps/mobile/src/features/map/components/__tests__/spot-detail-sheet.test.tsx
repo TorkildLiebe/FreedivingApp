@@ -49,12 +49,34 @@ const mockSpot: SpotDetail = {
   averageVisibilityMeters: 8.2,
   averageRating: 4.5,
   reportCount: 12,
+  ratingCount: 5,
   latestReportAt: freshReportDate,
   diveLogs: [],
   shareUrl: null,
   shareableAccessInfo: null,
   createdAt: '2025-01-01T00:00:00.000Z',
   updatedAt: '2025-01-02T00:00:00.000Z',
+};
+
+const editableLogSpot: SpotDetail = {
+  ...mockSpot,
+  diveLogs: [
+    {
+      id: 'log-1',
+      spotId: 'uuid-1',
+      authorId: 'uuid-user-1',
+      authorAlias: 'Test Diver',
+      authorAvatarUrl: null,
+      visibilityMeters: 8,
+      currentStrength: 3,
+      notes: 'Very clear',
+      photoUrls: [],
+      notesPreview: 'Very clear',
+      divedAt: freshReportDate,
+      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      updatedAt: freshReportDate,
+    },
+  ],
 };
 
 describe('SpotDetailSheet', () => {
@@ -110,6 +132,16 @@ describe('SpotDetailSheet', () => {
     expect(getByText('No data yet')).toBeTruthy();
   });
 
+
+  it('shows rating count from ratingCount next to stars', () => {
+    const { getByText, queryByText } = render(
+      <SpotDetailSheet {...defaultProps} spot={mockSpot} />,
+    );
+
+    expect(getByText('5')).toBeTruthy();
+    expect(queryByText('12')).toBeNull();
+  });
+
   it('calls onAddDive when add dive button is pressed', () => {
     const onAddDive = jest.fn();
     const { getByTestId } = render(
@@ -143,5 +175,35 @@ describe('SpotDetailSheet', () => {
     expect(getByText('No photos yet.')).toBeTruthy();
     expect(getByTestId('spot-detail-add-photo-button')).toBeTruthy();
     expect(getByTestId('spot-detail-dive-log-placeholder')).toBeTruthy();
+  });
+
+  it('shows edit button for own log within 48h and calls onEditDive', () => {
+    const onEditDive = jest.fn();
+    const { getByTestId } = render(
+      <SpotDetailSheet
+        {...defaultProps}
+        spot={editableLogSpot}
+        currentUserId="uuid-user-1"
+        onEditDive={onEditDive}
+      />,
+    );
+
+    fireEvent.press(getByTestId('spot-detail-edit-dive-log-1'));
+    expect(onEditDive).toHaveBeenCalledWith(
+      editableLogSpot,
+      editableLogSpot.diveLogs[0],
+    );
+  });
+
+  it('hides edit button for non-owner log', () => {
+    const { queryByTestId } = render(
+      <SpotDetailSheet
+        {...defaultProps}
+        spot={editableLogSpot}
+        currentUserId="other-user"
+      />,
+    );
+
+    expect(queryByTestId('spot-detail-edit-dive-log-1')).toBeNull();
   });
 });
