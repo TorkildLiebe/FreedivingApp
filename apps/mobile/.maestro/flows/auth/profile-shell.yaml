@@ -9,6 +9,8 @@ tags:
 - launchApp:
     clearState: false
 
+- openLink: "mobile://profile"
+
 - runFlow:
     when:
       visible: "Allow While Using App"
@@ -20,14 +22,6 @@ tags:
       visible: "Open in “mobile”?"
     commands:
       - tapOn: "Open"
-
-- extendedWaitUntil:
-    visible:
-      id: "map-search-input"
-    timeout: 15000
-
-- tapOn:
-    id: "tab-profile-button"
 
 - extendedWaitUntil:
     visible:

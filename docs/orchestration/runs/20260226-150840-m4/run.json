@@ -3,7 +3,7 @@
   "milestone": "M4",
   "status": "running",
   "started_at": "2026-02-26T14:08:56.850Z",
-  "updated_at": "2026-02-26T14:52:01.930Z",
+  "updated_at": "2026-02-26T15:05:38.200Z",
   "issue_order": [
     79,
     80,
@@ -83,7 +83,7 @@
       ]
     },
     "81": {
-      "status": "pending",
+      "status": "verifying",
       "attempts": 0,
       "note": null,
       "commit_sha": null,
@@ -91,6 +91,18 @@
         {
           "status": "pending",
           "at": "2026-02-26T14:08:56.850Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-26T15:03:49.015Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-26T15:04:38.537Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-26T15:05:38.200Z"
         }
       ]
     },

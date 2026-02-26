@@ -75,4 +75,47 @@ export class UsersService {
       memberSince: user.createdAt,
     };
   }
+
+  async getMyActivity(userId: string): Promise<{
+    diveReports: Array<{
+      id: string;
+      spotId: string;
+      spotName: string;
+      date: Date;
+      visibilityMeters: number;
+      currentStrength: number;
+      notesPreview: string | null;
+    }>;
+    createdSpots: Array<{
+      id: string;
+      name: string;
+      createdAt: Date;
+      reportCount: number;
+    }>;
+    favorites: Array<{
+      id: string;
+      spotId: string;
+      spotName: string;
+      latestVisibilityMeters: number | null;
+      latestReportDate: Date | null;
+    }>;
+  }> {
+    const user = await this.usersRepository.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const [diveReports, createdSpots, favorites] = await Promise.all([
+      this.usersRepository.listMyDiveReports(userId),
+      this.usersRepository.listCreatedSpotsByUser(userId),
+      this.usersRepository.listFavoriteSpots(user.favoriteSpotIds),
+    ]);
+
+    return {
+      diveReports,
+      createdSpots,
+      favorites,
+    };
+  }
 }

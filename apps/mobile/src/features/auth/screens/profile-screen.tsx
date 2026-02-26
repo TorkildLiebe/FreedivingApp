@@ -42,6 +42,27 @@ function formatSince(iso: string): string {
   });
 }
 
+function formatDate(iso: string): string {
+  const value = new Date(iso);
+  if (Number.isNaN(value.getTime())) {
+    return 'Unknown date';
+  }
+
+  return value.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+const CURRENT_LABELS: Record<number, string> = {
+  1: 'Calm',
+  2: 'Light',
+  3: 'Moderate',
+  4: 'Strong',
+  5: 'Very strong',
+};
+
 function ProfileRow({
   label,
   value,
@@ -71,9 +92,17 @@ function ProfileRow({
   );
 }
 
-function EmptyDetail({ icon, label }: { icon: string; label: string }) {
+function EmptyDetail({
+  icon,
+  label,
+  testID,
+}: {
+  icon: string;
+  label: string;
+  testID?: string;
+}) {
   return (
-    <View style={styles.emptyWrap}>
+    <View testID={testID} style={styles.emptyWrap}>
       <Text style={styles.emptyIcon}>{icon}</Text>
       <Text style={styles.emptyLabel}>{label}</Text>
     </View>
@@ -82,7 +111,16 @@ function EmptyDetail({ icon, label }: { icon: string; label: string }) {
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { profile, stats, isLoading, error, refresh } = useProfileData();
+  const {
+    profile,
+    stats,
+    diveReports,
+    createdSpots,
+    favorites,
+    isLoading,
+    error,
+    refresh,
+  } = useProfileData();
   const [view, setView] = useState<ProfileView>('menu');
 
   const profileAlias = useMemo(() => {
@@ -186,18 +224,19 @@ export default function ProfileScreen() {
               <ProfileRow
                 testID="profile-row-reports"
                 label="Dive Reports"
-                value={String(stats.totalReports)}
+                value={String(diveReports.length)}
                 onPress={() => setView('reports')}
               />
               <ProfileRow
                 testID="profile-row-spots"
                 label="My Spots"
+                value={String(createdSpots.length)}
                 onPress={() => setView('spots')}
               />
               <ProfileRow
                 testID="profile-row-favorites"
                 label="Saved Spots"
-                value={String(stats.favoritesCount)}
+                value={String(favorites.length)}
                 onPress={() => setView('favorites')}
               />
             </View>
@@ -249,7 +288,46 @@ export default function ProfileScreen() {
                 <Text testID="profile-view-title" style={styles.detailTitle}>
                   Dive Reports
                 </Text>
-                <EmptyDetail icon="🤿" label="No dive reports yet" />
+                {diveReports.length === 0 ? (
+                  <EmptyDetail
+                    testID="profile-reports-empty"
+                    icon="🤿"
+                    label="No dive reports yet"
+                  />
+                ) : (
+                  <View style={styles.cardsList}>
+                    {diveReports.map((report, index) => (
+                      <View
+                        key={report.id}
+                        testID={`profile-report-card-${index}`}
+                        style={styles.reportCard}
+                      >
+                        <View style={styles.reportCardHeader}>
+                          <Text numberOfLines={1} style={styles.reportSpotName}>
+                            {report.spotName}
+                          </Text>
+                          <Text style={styles.reportDateText}>
+                            {formatDate(report.date)}
+                          </Text>
+                        </View>
+                        <View style={styles.reportMetaRow}>
+                          <Text style={styles.reportMetaText}>
+                            {report.visibilityMeters}m visibility
+                          </Text>
+                          <Text style={styles.reportMetaText}>•</Text>
+                          <Text style={styles.reportMetaText}>
+                            {CURRENT_LABELS[report.currentStrength] ?? 'Unknown'} current
+                          </Text>
+                        </View>
+                        {report.notesPreview ? (
+                          <Text numberOfLines={2} style={styles.reportNotes}>
+                            {report.notesPreview}
+                          </Text>
+                        ) : null}
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
             ) : null}
 
@@ -258,7 +336,33 @@ export default function ProfileScreen() {
                 <Text testID="profile-view-title" style={styles.detailTitle}>
                   My Spots
                 </Text>
-                <EmptyDetail icon="📍" label="No spots created yet" />
+                {createdSpots.length === 0 ? (
+                  <EmptyDetail
+                    testID="profile-spots-empty"
+                    icon="📍"
+                    label="No spots created yet"
+                  />
+                ) : (
+                  <View style={styles.cardsList}>
+                    {createdSpots.map((spot, index) => (
+                      <View
+                        key={spot.id}
+                        testID={`profile-created-spot-card-${index}`}
+                        style={styles.spotCard}
+                      >
+                        <Text numberOfLines={1} style={styles.spotNameText}>
+                          {spot.name}
+                        </Text>
+                        <Text style={styles.spotMetaText}>
+                          Created {formatDate(spot.createdAt)}
+                        </Text>
+                        <Text style={styles.spotMetaText}>
+                          {spot.reportCount} {spot.reportCount === 1 ? 'report' : 'reports'}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
             ) : null}
 
@@ -267,7 +371,37 @@ export default function ProfileScreen() {
                 <Text testID="profile-view-title" style={styles.detailTitle}>
                   Saved Spots
                 </Text>
-                <EmptyDetail icon="♥" label="No saved spots yet" />
+                {favorites.length === 0 ? (
+                  <EmptyDetail
+                    testID="profile-favorites-empty"
+                    icon="♥"
+                    label="No saved spots yet"
+                  />
+                ) : (
+                  <View style={styles.cardsList}>
+                    {favorites.map((favorite, index) => (
+                      <View
+                        key={favorite.id}
+                        testID={`profile-favorite-spot-card-${index}`}
+                        style={styles.favoriteCard}
+                      >
+                        <Text numberOfLines={1} style={styles.favoriteSpotName}>
+                          {favorite.spotName}
+                        </Text>
+                        <Text style={styles.favoriteMetaText}>
+                          {favorite.latestVisibilityMeters === null
+                            ? 'No reports'
+                            : `${favorite.latestVisibilityMeters}m latest visibility`}
+                        </Text>
+                        {favorite.latestReportDate ? (
+                          <Text style={styles.favoriteMetaText}>
+                            Last report {formatDate(favorite.latestReportDate)}
+                          </Text>
+                        ) : null}
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
             ) : null}
           </View>
@@ -458,6 +592,88 @@ const styles = StyleSheet.create({
     ...typography.h3,
     color: colors.neutral[900],
     marginBottom: 6,
+  },
+  cardsList: {
+    gap: 10,
+    marginTop: 6,
+  },
+  reportCard: {
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
+    borderRadius: 14,
+    backgroundColor: colors.neutral[50],
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  reportCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  reportSpotName: {
+    ...typography.body,
+    color: colors.neutral[900],
+    fontSize: 15,
+    fontWeight: '600',
+    flex: 1,
+  },
+  reportDateText: {
+    ...typography.bodySmall,
+    color: colors.neutral[500],
+    flexShrink: 0,
+  },
+  reportMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  reportMetaText: {
+    ...typography.bodySmall,
+    color: colors.neutral[600],
+  },
+  reportNotes: {
+    ...typography.bodySmall,
+    color: colors.neutral[500],
+  },
+  spotCard: {
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
+    borderRadius: 14,
+    backgroundColor: colors.neutral[50],
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  spotNameText: {
+    ...typography.body,
+    color: colors.neutral[900],
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  spotMetaText: {
+    ...typography.bodySmall,
+    color: colors.neutral[500],
+  },
+  favoriteCard: {
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
+    borderRadius: 14,
+    backgroundColor: colors.neutral[50],
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  favoriteSpotName: {
+    ...typography.body,
+    color: colors.neutral[900],
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  favoriteMetaText: {
+    ...typography.bodySmall,
+    color: colors.neutral[500],
   },
   emptyWrap: {
     alignItems: 'center',

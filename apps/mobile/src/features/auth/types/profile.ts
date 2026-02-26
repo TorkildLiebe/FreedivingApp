@@ -17,4 +17,35 @@ export interface ProfileStats {
   memberSince: string;
 }
 
+export interface ProfileDiveReport {
+  id: string;
+  spotId: string;
+  spotName: string;
+  date: string;
+  visibilityMeters: number;
+  currentStrength: number;
+  notesPreview: string | null;
+}
+
+export interface ProfileCreatedSpot {
+  id: string;
+  name: string;
+  createdAt: string;
+  reportCount: number;
+}
+
+export interface ProfileFavoriteSpot {
+  id: string;
+  spotId: string;
+  spotName: string;
+  latestVisibilityMeters: number | null;
+  latestReportDate: string | null;
+}
+
+export interface ProfileActivity {
+  diveReports: ProfileDiveReport[];
+  createdSpots: ProfileCreatedSpot[];
+  favorites: ProfileFavoriteSpot[];
+}
+
 export type ProfileView = 'menu' | 'reports' | 'spots' | 'favorites';

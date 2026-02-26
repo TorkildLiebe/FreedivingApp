@@ -34,6 +34,34 @@ beforeEach(() => {
       favoritesCount: 1,
       memberSince: '2023-08-01T10:00:00.000Z',
     },
+    diveReports: [
+      {
+        id: 'log-1',
+        spotId: 'spot-1',
+        spotName: 'Oslofjord Wall',
+        date: '2026-02-01T10:00:00.000Z',
+        visibilityMeters: 9,
+        currentStrength: 2,
+        notesPreview: 'Clear and calm day.',
+      },
+    ],
+    createdSpots: [
+      {
+        id: 'spot-1',
+        name: 'Oslofjord Wall',
+        createdAt: '2025-12-01T10:00:00.000Z',
+        reportCount: 3,
+      },
+    ],
+    favorites: [
+      {
+        id: 'spot-2',
+        spotId: 'spot-2',
+        spotName: 'Nesodden Drop',
+        latestVisibilityMeters: 11,
+        latestReportDate: '2026-01-20T10:00:00.000Z',
+      },
+    ],
     isLoading: false,
     error: null,
     refresh: jest.fn(),
@@ -61,13 +89,17 @@ describe('ProfileScreen', () => {
     expect(getByText('Log out')).toBeTruthy();
   });
 
-  it('navigates to activity detail view and back', () => {
+  it('renders report cards and navigates back to menu', () => {
     const { getByTestId, getByText, queryByTestId } = renderProfileScreen();
 
     fireEvent.press(getByTestId('profile-row-reports'));
 
     expect(getByTestId('profile-view-title').props.children).toBe('Dive Reports');
-    expect(getByText('No dive reports yet')).toBeTruthy();
+    expect(getByTestId('profile-report-card-0')).toBeTruthy();
+    expect(getByText('Oslofjord Wall')).toBeTruthy();
+    expect(getByText('9m visibility')).toBeTruthy();
+    expect(getByText('Light current')).toBeTruthy();
+    expect(getByText('Clear and calm day.')).toBeTruthy();
 
     fireEvent.press(getByTestId('profile-back-button'));
 
@@ -75,10 +107,68 @@ describe('ProfileScreen', () => {
     expect(getByTestId('profile-row-reports')).toBeTruthy();
   });
 
+  it('renders spot and favorite cards in activity detail views', () => {
+    const { getByTestId, getByText } = renderProfileScreen();
+
+    fireEvent.press(getByTestId('profile-row-spots'));
+    expect(getByTestId('profile-created-spot-card-0')).toBeTruthy();
+    expect(getByText('3 reports')).toBeTruthy();
+
+    fireEvent.press(getByTestId('profile-back-button'));
+
+    fireEvent.press(getByTestId('profile-row-favorites'));
+    expect(getByTestId('profile-favorite-spot-card-0')).toBeTruthy();
+    expect(getByText('11m latest visibility')).toBeTruthy();
+  });
+
+  it('renders empty states for all activity detail views', () => {
+    mockUseProfileData.mockReturnValue({
+      profile: {
+        id: 'user-1',
+        email: 'diver@example.com',
+        alias: 'Deep Diver',
+        bio: null,
+        avatarUrl: null,
+        role: 'user',
+        preferredLanguage: 'en',
+        favoriteSpotIds: [],
+        createdAt: '2023-08-01T10:00:00.000Z',
+      },
+      stats: {
+        totalReports: 0,
+        uniqueSpotsDived: 0,
+        favoritesCount: 0,
+        memberSince: '2023-08-01T10:00:00.000Z',
+      },
+      diveReports: [],
+      createdSpots: [],
+      favorites: [],
+      isLoading: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+
+    const { getByTestId } = renderProfileScreen();
+
+    fireEvent.press(getByTestId('profile-row-reports'));
+    expect(getByTestId('profile-reports-empty')).toBeTruthy();
+    fireEvent.press(getByTestId('profile-back-button'));
+
+    fireEvent.press(getByTestId('profile-row-spots'));
+    expect(getByTestId('profile-spots-empty')).toBeTruthy();
+    fireEvent.press(getByTestId('profile-back-button'));
+
+    fireEvent.press(getByTestId('profile-row-favorites'));
+    expect(getByTestId('profile-favorites-empty')).toBeTruthy();
+  });
+
   it('renders loading and error states', () => {
     mockUseProfileData.mockReturnValueOnce({
       profile: null,
       stats: null,
+      diveReports: [],
+      createdSpots: [],
+      favorites: [],
       isLoading: true,
       error: null,
       refresh: jest.fn(),
@@ -90,6 +180,9 @@ describe('ProfileScreen', () => {
     mockUseProfileData.mockReturnValueOnce({
       profile: null,
       stats: null,
+      diveReports: [],
+      createdSpots: [],
+      favorites: [],
       isLoading: false,
       error: 'Boom',
       refresh: jest.fn(),

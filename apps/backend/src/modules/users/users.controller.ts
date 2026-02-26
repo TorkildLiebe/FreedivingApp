@@ -14,6 +14,7 @@ import { UsersService } from './users.service';
 import { GetMeResponseDto } from './dto/get-me-response.dto';
 import { FavoriteSpotsResponseDto } from './dto/favorite-spots-response.dto';
 import { GetMyStatsResponseDto } from './dto/get-my-stats-response.dto';
+import { GetMyActivityResponseDto } from './dto/get-my-activity-response.dto';
 
 @Controller('users')
 export class UsersController {
@@ -47,6 +48,14 @@ export class UsersController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<GetMyStatsResponseDto> {
     return this.usersService.getMyStats(user.userId);
+  }
+
+  @Get('me/activity')
+  @UseGuards(AuthGuard)
+  async getMyActivity(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<GetMyActivityResponseDto> {
+    return this.usersService.getMyActivity(user.userId);
   }
 
   @Post('me/favorites/:spotId')

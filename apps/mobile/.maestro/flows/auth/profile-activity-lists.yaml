@@ -1,0 +1,68 @@
+appId: com.anonymous.mobile
+name: Profile Activity Lists
+tags:
+  - auth
+  - profile
+---
+- runFlow: profile-shell.yaml
+
+- tapOn:
+    id: "profile-row-spots"
+
+- extendedWaitUntil:
+    visible:
+      id: "profile-view-title"
+    timeout: 10000
+
+- takeScreenshot: "81-activity-spots"
+
+- runFlow:
+    when:
+      visible:
+        id: "profile-spots-empty"
+    commands:
+      - assertVisible:
+          id: "profile-spots-empty"
+
+- runFlow:
+    when:
+      notVisible:
+        id: "profile-spots-empty"
+    commands:
+      - assertVisible:
+          id: "profile-created-spot-card-0"
+
+- tapOn:
+    id: "profile-back-button"
+
+- tapOn:
+    id: "profile-row-favorites"
+
+- extendedWaitUntil:
+    visible:
+      id: "profile-view-title"
+    timeout: 10000
+
+- takeScreenshot: "81-activity-favorites"
+
+- runFlow:
+    when:
+      visible:
+        id: "profile-favorites-empty"
+    commands:
+      - assertVisible:
+          id: "profile-favorites-empty"
+
+- runFlow:
+    when:
+      notVisible:
+        id: "profile-favorites-empty"
+    commands:
+      - assertVisible:
+          id: "profile-favorite-spot-card-0"
+
+- tapOn:
+    id: "profile-back-button"
+
+- assertVisible:
+    id: "profile-row-reports"

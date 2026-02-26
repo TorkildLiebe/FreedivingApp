@@ -36,9 +36,11 @@ describe('UsersRepository', () => {
       diveLog: {
         count: jest.fn(),
         groupBy: jest.fn(),
+        findMany: jest.fn(),
       },
       diveSpot: {
         findFirst: jest.fn(),
+        findMany: jest.fn(),
       },
     };
 
@@ -222,6 +224,167 @@ describe('UsersRepository', () => {
         },
       });
       expect(result).toBe(2);
+    });
+  });
+
+  describe('listMyDiveReports', () => {
+    it('returns mapped dive report summaries ordered by dive date', async () => {
+      prisma.diveLog.findMany.mockResolvedValue([
+        {
+          id: 'log-1',
+          spotId: 'spot-1',
+          visibilityMeters: 12,
+          currentStrength: 2,
+          notes: '  Crystal clear and calm.  ',
+          divedAt: new Date('2026-02-01T10:00:00.000Z'),
+          spot: { title: 'Oslofjord Wall' },
+        },
+      ]);
+
+      const result = await repository.listMyDiveReports('uuid-1');
+
+      expect(prisma.diveLog.findMany).toHaveBeenCalledWith({
+        where: {
+          authorId: 'uuid-1',
+          isDeleted: false,
+          spot: {
+            isDeleted: false,
+          },
+        },
+        orderBy: [{ divedAt: 'desc' }, { createdAt: 'desc' }],
+        select: {
+          id: true,
+          spotId: true,
+          visibilityMeters: true,
+          currentStrength: true,
+          notes: true,
+          divedAt: true,
+          spot: {
+            select: {
+              title: true,
+            },
+          },
+        },
+        take: 50,
+      });
+      expect(result).toEqual([
+        {
+          id: 'log-1',
+          spotId: 'spot-1',
+          spotName: 'Oslofjord Wall',
+          date: new Date('2026-02-01T10:00:00.000Z'),
+          visibilityMeters: 12,
+          currentStrength: 2,
+          notesPreview: 'Crystal clear and calm.',
+        },
+      ]);
+    });
+  });
+
+  describe('listCreatedSpotsByUser', () => {
+    it('returns created spot summaries', async () => {
+      prisma.diveSpot.findMany.mockResolvedValue([
+        {
+          id: 'spot-1',
+          title: 'Oslofjord Wall',
+          createdAt: new Date('2026-01-01T08:00:00.000Z'),
+          reportCount: 7,
+        },
+      ]);
+
+      const result = await repository.listCreatedSpotsByUser('uuid-1');
+
+      expect(prisma.diveSpot.findMany).toHaveBeenCalledWith({
+        where: {
+          createdById: 'uuid-1',
+          isDeleted: false,
+        },
+        orderBy: [{ createdAt: 'desc' }],
+        select: {
+          id: true,
+          title: true,
+          createdAt: true,
+          reportCount: true,
+        },
+        take: 50,
+      });
+      expect(result).toEqual([
+        {
+          id: 'spot-1',
+          name: 'Oslofjord Wall',
+          createdAt: new Date('2026-01-01T08:00:00.000Z'),
+          reportCount: 7,
+        },
+      ]);
+    });
+  });
+
+  describe('listFavoriteSpots', () => {
+    it('returns favorite spots in the same order as favoriteSpotIds', async () => {
+      prisma.diveSpot.findMany.mockResolvedValue([
+        {
+          id: 'spot-2',
+          title: 'Nesodden Drop',
+          diveLogs: [
+            {
+              visibilityMeters: 9,
+              divedAt: new Date('2026-02-02T09:00:00.000Z'),
+            },
+          ],
+        },
+        {
+          id: 'spot-1',
+          title: 'Oslofjord Wall',
+          diveLogs: [],
+        },
+      ]);
+
+      const result = await repository.listFavoriteSpots(['spot-1', 'spot-2']);
+
+      expect(prisma.diveSpot.findMany).toHaveBeenCalledWith({
+        where: {
+          id: {
+            in: ['spot-1', 'spot-2'],
+          },
+          isDeleted: false,
+        },
+        select: {
+          id: true,
+          title: true,
+          diveLogs: {
+            where: { isDeleted: false },
+            orderBy: [{ divedAt: 'desc' }],
+            take: 1,
+            select: {
+              visibilityMeters: true,
+              divedAt: true,
+            },
+          },
+        },
+      });
+      expect(result).toEqual([
+        {
+          id: 'spot-1',
+          spotId: 'spot-1',
+          spotName: 'Oslofjord Wall',
+          latestVisibilityMeters: null,
+          latestReportDate: null,
+        },
+        {
+          id: 'spot-2',
+          spotId: 'spot-2',
+          spotName: 'Nesodden Drop',
+          latestVisibilityMeters: 9,
+          latestReportDate: new Date('2026-02-02T09:00:00.000Z'),
+        },
+      ]);
+    });
+
+    it('returns empty array when no favorites exist', async () => {
+      const result = await repository.listFavoriteSpots([]);
+
+      expect(prisma.diveSpot.findMany).not.toHaveBeenCalled();
+      expect(result).toEqual([]);
     });
   });
 });

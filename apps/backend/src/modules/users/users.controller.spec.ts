@@ -34,6 +34,7 @@ describe('UsersController', () => {
           useValue: {
             findById: jest.fn(),
             getMyStats: jest.fn(),
+            getMyActivity: jest.fn(),
             getOrCreate: jest.fn(),
             addFavoriteSpot: jest.fn(),
             removeFavoriteSpot: jest.fn(),
@@ -150,6 +151,79 @@ describe('UsersController', () => {
         '00000000-0000-0000-0000-000000000001',
       );
       expect(result).toEqual({ favoriteSpotIds: [] });
+    });
+  });
+
+  describe('getMyActivity', () => {
+    it('should return activity lists for current user', async () => {
+      usersService.getMyActivity.mockResolvedValue({
+        diveReports: [
+          {
+            id: 'log-1',
+            spotId: 'spot-1',
+            spotName: 'Oslofjord Wall',
+            date: mockUser.createdAt,
+            visibilityMeters: 11,
+            currentStrength: 2,
+            notesPreview: 'Great line and calm conditions.',
+          },
+        ],
+        createdSpots: [
+          {
+            id: 'spot-1',
+            name: 'Oslofjord Wall',
+            createdAt: mockUser.createdAt,
+            reportCount: 3,
+          },
+        ],
+        favorites: [
+          {
+            id: 'spot-2',
+            spotId: 'spot-2',
+            spotName: 'Nesodden Drop',
+            latestVisibilityMeters: 9,
+            latestReportDate: mockUser.createdAt,
+          },
+        ],
+      });
+
+      const result = await controller.getMyActivity({
+        userId: 'uuid-1',
+        externalId: 'ext-1',
+        role: 'user',
+      });
+
+      expect(usersService.getMyActivity).toHaveBeenCalledWith('uuid-1');
+      expect(result).toEqual({
+        diveReports: [
+          {
+            id: 'log-1',
+            spotId: 'spot-1',
+            spotName: 'Oslofjord Wall',
+            date: mockUser.createdAt,
+            visibilityMeters: 11,
+            currentStrength: 2,
+            notesPreview: 'Great line and calm conditions.',
+          },
+        ],
+        createdSpots: [
+          {
+            id: 'spot-1',
+            name: 'Oslofjord Wall',
+            createdAt: mockUser.createdAt,
+            reportCount: 3,
+          },
+        ],
+        favorites: [
+          {
+            id: 'spot-2',
+            spotId: 'spot-2',
+            spotName: 'Nesodden Drop',
+            latestVisibilityMeters: 9,
+            latestReportDate: mockUser.createdAt,
+          },
+        ],
+      });
     });
   });
 });

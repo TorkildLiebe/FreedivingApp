@@ -39,6 +39,9 @@ describe('UsersService', () => {
             removeFavoriteSpot: jest.fn(),
             countDiveLogsByAuthor: jest.fn(),
             countUniqueSpotsDivedByAuthor: jest.fn(),
+            listMyDiveReports: jest.fn(),
+            listCreatedSpotsByUser: jest.fn(),
+            listFavoriteSpots: jest.fn(),
           },
         },
       ],
@@ -198,6 +201,91 @@ describe('UsersService', () => {
       );
       expect(repository.countDiveLogsByAuthor).not.toHaveBeenCalled();
       expect(repository.countUniqueSpotsDivedByAuthor).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getMyActivity', () => {
+    it('returns activity lists for current user', async () => {
+      repository.findById.mockResolvedValue({
+        ...mockUser,
+        favoriteSpotIds: ['spot-2'],
+      });
+      repository.listMyDiveReports.mockResolvedValue([
+        {
+          id: 'log-1',
+          spotId: 'spot-1',
+          spotName: 'Oslofjord Wall',
+          date: mockUser.createdAt,
+          visibilityMeters: 10,
+          currentStrength: 2,
+          notesPreview: 'Clear and calm',
+        },
+      ]);
+      repository.listCreatedSpotsByUser.mockResolvedValue([
+        {
+          id: 'spot-1',
+          name: 'Oslofjord Wall',
+          createdAt: mockUser.createdAt,
+          reportCount: 3,
+        },
+      ]);
+      repository.listFavoriteSpots.mockResolvedValue([
+        {
+          id: 'spot-2',
+          spotId: 'spot-2',
+          spotName: 'Nesodden Drop',
+          latestVisibilityMeters: 8,
+          latestReportDate: mockUser.createdAt,
+        },
+      ]);
+
+      const result = await service.getMyActivity('uuid-1');
+
+      expect(repository.findById).toHaveBeenCalledWith('uuid-1');
+      expect(repository.listMyDiveReports).toHaveBeenCalledWith('uuid-1');
+      expect(repository.listCreatedSpotsByUser).toHaveBeenCalledWith('uuid-1');
+      expect(repository.listFavoriteSpots).toHaveBeenCalledWith(['spot-2']);
+      expect(result).toEqual({
+        diveReports: [
+          {
+            id: 'log-1',
+            spotId: 'spot-1',
+            spotName: 'Oslofjord Wall',
+            date: mockUser.createdAt,
+            visibilityMeters: 10,
+            currentStrength: 2,
+            notesPreview: 'Clear and calm',
+          },
+        ],
+        createdSpots: [
+          {
+            id: 'spot-1',
+            name: 'Oslofjord Wall',
+            createdAt: mockUser.createdAt,
+            reportCount: 3,
+          },
+        ],
+        favorites: [
+          {
+            id: 'spot-2',
+            spotId: 'spot-2',
+            spotName: 'Nesodden Drop',
+            latestVisibilityMeters: 8,
+            latestReportDate: mockUser.createdAt,
+          },
+        ],
+      });
+    });
+
+    it('throws when user is missing', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(service.getMyActivity('missing-user')).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(repository.listMyDiveReports).not.toHaveBeenCalled();
+      expect(repository.listCreatedSpotsByUser).not.toHaveBeenCalled();
+      expect(repository.listFavoriteSpots).not.toHaveBeenCalled();
     });
   });
 });
