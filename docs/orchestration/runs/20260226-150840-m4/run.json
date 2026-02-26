@@ -1,9 +1,9 @@
 {
   "run_id": "20260226-150840-m4",
   "milestone": "M4",
-  "status": "running",
+  "status": "completed",
   "started_at": "2026-02-26T14:08:56.850Z",
-  "updated_at": "2026-02-26T16:06:22.736Z",
+  "updated_at": "2026-02-26T16:07:36.419Z",
   "issue_order": [
     79,
     80,
@@ -30,7 +30,7 @@
   "stop_reason": null,
   "issues": {
     "79": {
-      "status": "committed",
+      "status": "merged_local",
       "attempts": 0,
       "note": "Issue #79 committed",
       "commit_sha": "5fe46b6bbf4d6eff52d866038101ee66d78ef4a8",
@@ -54,11 +54,15 @@
         {
           "status": "committed",
           "at": "2026-02-26T14:19:38.655Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-26T16:07:36.419Z"
         }
       ]
     },
     "80": {
-      "status": "committed",
+      "status": "merged_local",
       "attempts": 0,
       "note": "Issue #80 committed",
       "commit_sha": "78a612c",
@@ -82,11 +86,15 @@
         {
           "status": "committed",
           "at": "2026-02-26T14:52:01.930Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-26T16:07:36.419Z"
         }
       ]
     },
     "81": {
-      "status": "committed",
+      "status": "merged_local",
       "attempts": 0,
       "note": "Issue #81 committed",
       "commit_sha": "84fc258",
@@ -110,11 +118,15 @@
         {
           "status": "committed",
           "at": "2026-02-26T15:17:57.386Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-26T16:07:36.419Z"
         }
       ]
     },
     "82": {
-      "status": "committed",
+      "status": "merged_local",
       "attempts": 0,
       "note": "Issue #82 committed",
       "commit_sha": "f9e9d59",
@@ -138,11 +150,15 @@
         {
           "status": "committed",
           "at": "2026-02-26T15:48:11.509Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-26T16:07:36.419Z"
         }
       ]
     },
     "83": {
-      "status": "committed",
+      "status": "merged_local",
       "attempts": 0,
       "note": "Issue #83 committed",
       "commit_sha": "b014b50",
@@ -166,6 +182,10 @@
         {
           "status": "committed",
           "at": "2026-02-26T16:06:22.736Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-26T16:07:36.419Z"
         }
       ]
     }
