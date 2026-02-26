@@ -129,6 +129,67 @@ describe('DiveLogsService', () => {
     ).rejects.toThrow(InvalidDiveLogError);
   });
 
+
+  it('accepts local date-only values for today without timezone false future errors', async () => {
+    repository.findActiveSpotById.mockResolvedValue({ id: 'spot-1' });
+    repository.hasExistingRating.mockResolvedValue(true);
+
+    const now = new Date();
+    const localDateOnly = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    repository.createDiveLog.mockImplementation(async (input) => ({
+      id: 'log-1',
+      spotId: input.spotId,
+      authorId: input.authorId,
+      visibilityMeters: input.visibilityMeters,
+      currentStrength: input.currentStrength,
+      notes: input.notes,
+      photoUrls: input.photoUrls,
+      divedAt: input.divedAt,
+      isDeleted: false,
+      deletedAt: null,
+      createdAt: now,
+      updatedAt: now,
+      author: {
+        alias: null,
+        avatarUrl: null,
+      },
+    }));
+
+    await expect(
+      service.create(
+        {
+          spotId: 'spot-1',
+          visibilityMeters: 8,
+          currentStrength: 3,
+          divedAt: localDateOnly,
+        },
+        actor,
+      ),
+    ).resolves.toBeDefined();
+
+    expect(repository.createDiveLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        divedAt: expect.any(Date),
+      }),
+    );
+  });
+
+  it('rejects impossible local date-only values', async () => {
+    repository.findActiveSpotById.mockResolvedValue({ id: 'spot-1' });
+
+    await expect(
+      service.create(
+        {
+          spotId: 'spot-1',
+          visibilityMeters: 8,
+          currentStrength: 3,
+          divedAt: '2026-02-31',
+        },
+        actor,
+      ),
+    ).rejects.toThrow(InvalidDiveLogError);
+  });
   it('normalizes blank notes to null', async () => {
     const now = new Date();
 

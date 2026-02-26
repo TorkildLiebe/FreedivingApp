@@ -17,6 +17,7 @@ import { DiveLogsRepository } from './dive-logs.repository';
 
 const MAX_PHOTOS_PER_DIVE_LOG = 5;
 const EDIT_WINDOW_MS = 48 * 60 * 60 * 1000;
+const LOCAL_DATE_ONLY_REGEX = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 @Injectable()
 export class DiveLogsService {
@@ -128,13 +129,37 @@ export class DiveLogsService {
       return new Date();
     }
 
-    const parsed = new Date(divedAt);
+    const parsed = this.parseDiveDate(divedAt);
     if (Number.isNaN(parsed.getTime())) {
       throw new InvalidDiveLogError('Dive date is invalid');
     }
 
     if (parsed.getTime() > Date.now()) {
       throw new InvalidDiveLogError('Dive date cannot be in the future');
+    }
+
+    return parsed;
+  }
+
+  private parseDiveDate(divedAt: string): Date {
+    const localDateMatch = divedAt.match(LOCAL_DATE_ONLY_REGEX);
+    if (!localDateMatch) {
+      return new Date(divedAt);
+    }
+
+    const [, yearPart, monthPart, dayPart] = localDateMatch;
+    const year = Number(yearPart);
+    const month = Number(monthPart);
+    const day = Number(dayPart);
+
+    const parsed = new Date(year, month - 1, day);
+    const isValidLocalDate =
+      parsed.getFullYear() === year &&
+      parsed.getMonth() === month - 1 &&
+      parsed.getDate() === day;
+
+    if (!isValidLocalDate) {
+      throw new InvalidDiveLogError('Dive date is invalid');
     }
 
     return parsed;
