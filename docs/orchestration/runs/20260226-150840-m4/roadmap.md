@@ -2,8 +2,8 @@
 
 - Milestone: M4
 - Status: running
-- Current issue: 83
-- Updated at: 2026-02-26T16:03:57.029Z
+- Current issue: none
+- Updated at: 2026-02-26T16:06:22.736Z
 
 | Issue | Title | Status | Attempts | Note |
 | --- | --- | --- | --- | --- |
@@ -11,4 +11,4 @@
 | #80 | Build full profile page | committed | 0 | Issue #80 committed |
 | #81 | Add activity lists (dive reports, my spots, saved spots) | committed | 0 | Issue #81 committed |
 | #82 | Enable inline profile editing | committed | 0 | Issue #82 committed |
-| #83 | Add language picker and logout | verifying | 0 |  |
+| #83 | Add language picker and logout | committed | 0 | Issue #83 committed |
