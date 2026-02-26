@@ -97,17 +97,21 @@ export class UsersRepository {
   async updateProfile(
     userId: string,
     data: {
-      alias: string;
-      bio: string | null;
+      alias?: string;
+      bio?: string | null;
       avatarUrl?: string | null;
+      preferredLanguage?: 'en' | 'no';
     },
   ) {
     return this.prisma.user.update({
       where: { id: userId },
       data: {
-        alias: data.alias,
-        bio: data.bio,
+        ...(data.alias !== undefined ? { alias: data.alias } : {}),
+        ...(data.bio !== undefined ? { bio: data.bio } : {}),
         ...(data.avatarUrl !== undefined ? { avatarUrl: data.avatarUrl } : {}),
+        ...(data.preferredLanguage !== undefined
+          ? { preferredLanguage: data.preferredLanguage }
+          : {}),
       },
     });
   }

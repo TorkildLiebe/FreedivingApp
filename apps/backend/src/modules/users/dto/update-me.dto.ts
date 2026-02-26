@@ -1,4 +1,5 @@
 import {
+  IsIn,
   IsOptional,
   IsString,
   MaxLength,
@@ -7,10 +8,11 @@ import {
 } from 'class-validator';
 
 export class UpdateMeDto {
+  @IsOptional()
   @IsString()
   @MinLength(1)
   @MaxLength(120)
-  alias!: string;
+  alias?: string;
 
   @IsOptional()
   @ValidateIf((_, value) => value !== null)
@@ -23,4 +25,9 @@ export class UpdateMeDto {
   @IsString()
   @MaxLength(2048)
   avatarUrl?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['en', 'no'])
+  preferredLanguage?: 'en' | 'no';
 }

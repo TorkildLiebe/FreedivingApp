@@ -130,9 +130,10 @@ export class UsersService {
   async updateMe(
     userId: string,
     payload: {
-      alias: string;
+      alias?: string;
       bio?: string | null;
       avatarUrl?: string | null;
+      preferredLanguage?: 'en' | 'no';
     },
   ) {
     const user = await this.usersRepository.findById(userId);
@@ -140,20 +141,34 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    const normalizedAlias = payload.alias.trim();
-    if (normalizedAlias.length === 0) {
-      throw new BadRequestException('Alias is required');
+    const hasUpdateField =
+      payload.alias !== undefined ||
+      payload.bio !== undefined ||
+      payload.avatarUrl !== undefined ||
+      payload.preferredLanguage !== undefined;
+
+    if (!hasUpdateField) {
+      throw new BadRequestException('No profile fields provided');
+    }
+
+    let normalizedAlias: string | undefined = undefined;
+    if (typeof payload.alias === 'string') {
+      normalizedAlias = payload.alias.trim();
+      if (normalizedAlias.length === 0) {
+        throw new BadRequestException('Alias is required');
+      }
     }
 
     const normalizedBio =
       typeof payload.bio === 'string'
         ? payload.bio.trim() || null
-        : (payload.bio ?? user.bio);
+        : payload.bio;
 
     return this.usersRepository.updateProfile(userId, {
       alias: normalizedAlias,
       bio: normalizedBio,
       avatarUrl: payload.avatarUrl,
+      preferredLanguage: payload.preferredLanguage,
     });
   }
 

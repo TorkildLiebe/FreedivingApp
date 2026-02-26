@@ -320,9 +320,30 @@ describe('UsersService', () => {
         alias: 'New Alias',
         bio: 'New bio',
         avatarUrl: undefined,
+        preferredLanguage: undefined,
       });
       expect(result.alias).toBe('New Alias');
       expect(result.bio).toBe('New bio');
+    });
+
+    it('updates preferred language without requiring alias', async () => {
+      repository.findById.mockResolvedValue(mockUser);
+      repository.updateProfile.mockResolvedValue({
+        ...mockUser,
+        preferredLanguage: 'en',
+      });
+
+      const result = await service.updateMe('uuid-1', {
+        preferredLanguage: 'en',
+      });
+
+      expect(repository.updateProfile).toHaveBeenCalledWith('uuid-1', {
+        alias: undefined,
+        bio: undefined,
+        avatarUrl: undefined,
+        preferredLanguage: 'en',
+      });
+      expect(result.preferredLanguage).toBe('en');
     });
 
     it('throws when alias is blank after trim', async () => {
@@ -331,6 +352,15 @@ describe('UsersService', () => {
       await expect(
         service.updateMe('uuid-1', { alias: '   ' }),
       ).rejects.toThrow(BadRequestException);
+      expect(repository.updateProfile).not.toHaveBeenCalled();
+    });
+
+    it('throws when no update fields are provided', async () => {
+      repository.findById.mockResolvedValue(mockUser);
+
+      await expect(service.updateMe('uuid-1', {})).rejects.toThrow(
+        BadRequestException,
+      );
       expect(repository.updateProfile).not.toHaveBeenCalled();
     });
 

@@ -1,0 +1,43 @@
+appId: com.anonymous.mobile
+name: Profile Language And Logout
+tags:
+  - auth
+  - profile
+---
+- runFlow: profile-shell.yaml
+
+- tapOn:
+    id: "profile-row-language"
+
+- extendedWaitUntil:
+    visible:
+      id: "profile-language-option-en"
+    timeout: 10000
+
+- takeScreenshot: "83-language-picker"
+
+- tapOn:
+    id: "profile-language-option-no"
+
+- extendedWaitUntil:
+    visible:
+      id: "profile-language-check-no"
+    timeout: 10000
+
+- takeScreenshot: "83-language-selected"
+
+- tapOn:
+    id: "profile-back-button"
+
+- assertVisible:
+    id: "profile-row-logout"
+
+- tapOn:
+    id: "profile-row-logout"
+
+- extendedWaitUntil:
+    visible:
+      id: "auth-screen-title"
+    timeout: 15000
+
+- takeScreenshot: "83-logout-login"

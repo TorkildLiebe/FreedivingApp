@@ -6,6 +6,7 @@ import { apiFetch } from '@/src/infrastructure/api/client';
 
 const mockUseProfileData = jest.fn();
 const refreshMock = jest.fn();
+const mockSignOut = jest.fn();
 
 jest.mock('expo-image-picker', () => ({
   requestMediaLibraryPermissionsAsync: jest.fn(() =>
@@ -32,9 +33,17 @@ jest.mock('@/src/features/auth/hooks/use-profile-data', () => ({
   useProfileData: () => mockUseProfileData(),
 }));
 
+jest.mock('@/src/features/auth/context/auth-context', () => ({
+  useAuth: () => ({
+    signOut: mockSignOut,
+  }),
+}));
+
 beforeEach(() => {
   jest.clearAllMocks();
   refreshMock.mockReset();
+  mockSignOut.mockReset();
+  mockSignOut.mockResolvedValue(undefined);
   mockApiFetch.mockResolvedValue({} as never);
   mockUseProfileData.mockReturnValue({
     profile: {
@@ -180,6 +189,38 @@ describe('ProfileScreen', () => {
 
     fireEvent.press(getByTestId('profile-row-favorites'));
     expect(getByTestId('profile-favorites-empty')).toBeTruthy();
+  });
+
+  it('opens language picker and persists selected language', async () => {
+    const { getByTestId, queryByTestId } = renderProfileScreen();
+
+    fireEvent.press(getByTestId('profile-row-language'));
+    expect(getByTestId('profile-view-title').props.children).toBe('Language');
+    expect(getByTestId('profile-language-check-en')).toBeTruthy();
+    expect(queryByTestId('profile-language-check-no')).toBeNull();
+
+    fireEvent.press(getByTestId('profile-language-option-no'));
+
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledWith(
+        '/users/me',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ preferredLanguage: 'no' }),
+        }),
+      );
+    });
+    expect(refreshMock).toHaveBeenCalled();
+  });
+
+  it('signs out when pressing logout row', async () => {
+    const { getByTestId } = renderProfileScreen();
+
+    fireEvent.press(getByTestId('profile-row-logout'));
+
+    await waitFor(() => {
+      expect(mockSignOut).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('renders loading and error states', () => {

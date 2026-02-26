@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -13,6 +13,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useProfileData } from '@/src/features/auth/hooks/use-profile-data';
+import { useAuth } from '@/src/features/auth/context/auth-context';
 import { apiFetch } from '@/src/infrastructure/api/client';
 import type {
   ProfileAvatarUploadUrl,
@@ -71,6 +72,11 @@ const CURRENT_LABELS: Record<number, string> = {
 
 const MAX_ALIAS_LENGTH = 120;
 const MAX_BIO_LENGTH = 300;
+type ProfileLanguage = 'en' | 'no';
+
+function normalizeLanguage(language: string | null | undefined): ProfileLanguage {
+  return language === 'no' ? 'no' : 'en';
+}
 
 function ProfileRow({
   label,
@@ -120,6 +126,7 @@ function EmptyDetail({
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const { signOut } = useAuth();
   const {
     profile,
     stats,
@@ -138,6 +145,11 @@ export default function ProfileScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [language, setLanguage] = useState<ProfileLanguage>('en');
+  const [isSavingLanguage, setIsSavingLanguage] = useState(false);
+  const [languageError, setLanguageError] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
   const profileAlias = useMemo(() => {
     if (!profile) {
@@ -145,6 +157,13 @@ export default function ProfileScreen() {
     }
 
     return profile.alias?.trim() || profile.email?.split('@')[0] || 'Diver';
+  }, [profile]);
+
+  useEffect(() => {
+    if (!profile) {
+      return;
+    }
+    setLanguage(normalizeLanguage(profile.preferredLanguage));
   }, [profile]);
 
   function beginEdit(): void {
@@ -273,6 +292,49 @@ export default function ProfileScreen() {
       setEditError('Failed to save profile. Please try again.');
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function selectLanguage(nextLanguage: ProfileLanguage): Promise<void> {
+    if (!profile || isSavingLanguage) {
+      return;
+    }
+
+    const previousLanguage = language;
+    setLanguageError(null);
+    setLanguage(nextLanguage);
+    setIsSavingLanguage(true);
+    try {
+      await apiFetch('/users/me', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          preferredLanguage: nextLanguage,
+        }),
+      });
+      await refresh();
+    } catch (updateError) {
+      console.warn('Failed to update language:', updateError);
+      setLanguage(previousLanguage);
+      setLanguageError('Failed to update language. Please try again.');
+    } finally {
+      setIsSavingLanguage(false);
+    }
+  }
+
+  async function handleLogout(): Promise<void> {
+    if (isSigningOut) {
+      return;
+    }
+
+    setLogoutError(null);
+    setIsSigningOut(true);
+    try {
+      await signOut();
+    } catch (signOutError) {
+      console.warn('Failed to sign out:', signOutError);
+      setLogoutError('Failed to log out. Please try again.');
+    } finally {
+      setIsSigningOut(false);
     }
   }
 
@@ -488,8 +550,11 @@ export default function ProfileScreen() {
               <ProfileRow
                 testID="profile-row-language"
                 label="Language"
-                value={profile.preferredLanguage === 'no' ? 'Norsk' : 'English'}
-                onPress={() => {}}
+                value={language === 'no' ? 'Norsk' : 'English'}
+                onPress={() => {
+                  setLanguageError(null);
+                  setView('language');
+                }}
               />
               <ProfileRow
                 testID="profile-row-password"
@@ -507,10 +572,17 @@ export default function ProfileScreen() {
               />
               <ProfileRow
                 testID="profile-row-logout"
-                label="Log out"
+                label={isSigningOut ? 'Logging out...' : 'Log out'}
                 destructive
-                onPress={() => {}}
+                onPress={() => {
+                  void handleLogout();
+                }}
               />
+              {logoutError ? (
+                <Text testID="profile-logout-error" style={styles.menuErrorText}>
+                  {logoutError}
+                </Text>
+              ) : null}
             </View>
           </View>
         ) : null}
@@ -644,6 +716,49 @@ export default function ProfileScreen() {
                     ))}
                   </View>
                 )}
+              </View>
+            ) : null}
+
+            {view === 'language' ? (
+              <View>
+                <Text testID="profile-view-title" style={styles.detailTitle}>
+                  Language
+                </Text>
+                <View style={styles.languageCard}>
+                  {([
+                    { value: 'en', label: 'English' },
+                    { value: 'no', label: 'Norsk' },
+                  ] as const).map((option) => (
+                    <Pressable
+                      key={option.value}
+                      testID={`profile-language-option-${option.value}`}
+                      accessibilityRole="button"
+                      disabled={isSavingLanguage}
+                      onPress={() => {
+                        void selectLanguage(option.value);
+                      }}
+                      style={({ pressed }) => [
+                        styles.languageOption,
+                        pressed ? styles.rowPressed : null,
+                      ]}
+                    >
+                      <Text style={styles.languageOptionLabel}>{option.label}</Text>
+                      {language === option.value ? (
+                        <Text
+                          testID={`profile-language-check-${option.value}`}
+                          style={styles.languageOptionCheck}
+                        >
+                          ✓
+                        </Text>
+                      ) : null}
+                    </Pressable>
+                  ))}
+                </View>
+                {languageError ? (
+                  <Text testID="profile-language-error" style={styles.menuErrorText}>
+                    {languageError}
+                  </Text>
+                ) : null}
               </View>
             ) : null}
           </View>
@@ -933,6 +1048,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 20,
   },
+  menuErrorText: {
+    ...typography.bodySmall,
+    color: '#dc2626',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
   detailWrap: {
     marginTop: 12,
     backgroundColor: colors.neutral[50],
@@ -954,6 +1075,34 @@ const styles = StyleSheet.create({
     ...typography.h3,
     color: colors.neutral[900],
     marginBottom: 6,
+  },
+  languageCard: {
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: colors.neutral[50],
+  },
+  languageOption: {
+    minHeight: 48,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.neutral[200],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  languageOptionLabel: {
+    ...typography.body,
+    color: colors.neutral[900],
+    fontSize: 15,
+  },
+  languageOptionCheck: {
+    ...typography.body,
+    color: colors.primary[600],
+    fontWeight: '700',
+    fontSize: 16,
   },
   cardsList: {
     gap: 10,

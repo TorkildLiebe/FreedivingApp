@@ -54,4 +54,4 @@ export interface ProfileAvatarUploadUrl {
   expiresAt: string;
 }
 
-export type ProfileView = 'menu' | 'reports' | 'spots' | 'favorites';
+export type ProfileView = 'menu' | 'reports' | 'spots' | 'favorites' | 'language';

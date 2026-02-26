@@ -192,18 +192,20 @@ describe('UsersRepository', () => {
   });
 
   describe('updateProfile', () => {
-    it('updates alias, bio, and avatar url', async () => {
+    it('updates alias, bio, avatar url, and preferred language', async () => {
       prisma.user.update.mockResolvedValue({
         ...mockUser,
         alias: 'New Alias',
         bio: 'New bio',
         avatarUrl: 'https://cdn.example.com/avatar.jpg',
+        preferredLanguage: 'en',
       });
 
       const result = await repository.updateProfile('uuid-1', {
         alias: 'New Alias',
         bio: 'New bio',
         avatarUrl: 'https://cdn.example.com/avatar.jpg',
+        preferredLanguage: 'en',
       });
 
       expect(prisma.user.update).toHaveBeenCalledWith({
@@ -212,11 +214,31 @@ describe('UsersRepository', () => {
           alias: 'New Alias',
           bio: 'New bio',
           avatarUrl: 'https://cdn.example.com/avatar.jpg',
+          preferredLanguage: 'en',
         },
       });
       expect(result.alias).toBe('New Alias');
       expect(result.bio).toBe('New bio');
       expect(result.avatarUrl).toBe('https://cdn.example.com/avatar.jpg');
+      expect(result.preferredLanguage).toBe('en');
+    });
+
+    it('supports partial updates with only preferred language', async () => {
+      prisma.user.update.mockResolvedValue({
+        ...mockUser,
+        preferredLanguage: 'en',
+      });
+
+      await repository.updateProfile('uuid-1', {
+        preferredLanguage: 'en',
+      });
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'uuid-1' },
+        data: {
+          preferredLanguage: 'en',
+        },
+      });
     });
   });
 

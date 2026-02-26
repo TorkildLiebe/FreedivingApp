@@ -187,6 +187,29 @@ describe('UsersController', () => {
       expect(result.bio).toBe('Updated bio');
       expect(result.avatarUrl).toBe('https://cdn.example.com/avatar.jpg');
     });
+
+    it('should update preferred language for current user', async () => {
+      usersService.updateMe.mockResolvedValue({
+        ...mockUser,
+        preferredLanguage: 'en',
+      });
+
+      const result = await controller.updateMe(
+        {
+          userId: 'uuid-1',
+          externalId: 'ext-1',
+          role: 'user',
+        },
+        {
+          preferredLanguage: 'en',
+        },
+      );
+
+      expect(usersService.updateMe).toHaveBeenCalledWith('uuid-1', {
+        preferredLanguage: 'en',
+      });
+      expect(result.preferredLanguage).toBe('en');
+    });
   });
 
   describe('createAvatarUploadUrl', () => {
