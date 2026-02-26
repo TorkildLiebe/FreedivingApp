@@ -154,6 +154,7 @@ const mockSpot: SpotDetail = {
   averageVisibilityMeters: null,
   averageRating: null,
   reportCount: 0,
+  ratingCount: 0,
   latestReportAt: null,
   diveLogs: [],
   shareUrl: null,

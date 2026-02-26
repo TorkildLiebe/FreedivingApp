@@ -17,6 +17,8 @@ import { DiveLogsRepository } from './dive-logs.repository';
 
 const MAX_PHOTOS_PER_DIVE_LOG = 5;
 const EDIT_WINDOW_MS = 48 * 60 * 60 * 1000;
+// Mobile submits YYYY-MM-DD values for date-only input. Parse these in local time
+// (not UTC) so "today" never fails validation for users in positive UTC offsets.
 const LOCAL_DATE_ONLY_REGEX = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 @Injectable()

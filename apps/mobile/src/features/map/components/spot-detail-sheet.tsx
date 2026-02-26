@@ -297,8 +297,8 @@ export const SpotDetailSheet = forwardRef<
                   const fill = Math.min(Math.max((spot.averageRating ?? 0) - index, 0), 1);
                   return <FractionalStar key={index} fill={fill} />;
                 })}
-                {spot.reportCount > 0 ? (
-                  <Text style={styles.ratingCount}>{spot.reportCount}</Text>
+                {spot.ratingCount > 0 ? (
+                  <Text style={styles.ratingCount}>{spot.ratingCount}</Text>
                 ) : null}
               </TouchableOpacity>
 

@@ -12,6 +12,11 @@ const SPOT_SUMMARY_SELECT = {
 const SPOT_DETAIL_INCLUDE = {
   parkingLocations: true,
   createdBy: { select: { alias: true } },
+  _count: {
+    select: {
+      spotRatings: true,
+    },
+  },
 } as const;
 
 const SPOT_DIVE_LOG_INCLUDE = {

@@ -329,6 +329,9 @@ export class SpotsService {
       averageVisibilityMeters: number | null;
       averageRating: number | null;
       reportCount: number;
+      _count: {
+        spotRatings: number;
+      };
       latestReportAt: Date | null;
       shareUrl: string | null;
       shareableAccessInfo: boolean | null;
@@ -372,6 +375,7 @@ export class SpotsService {
       averageVisibilityMeters: spot.averageVisibilityMeters,
       averageRating: spot.averageRating,
       reportCount: spot.reportCount,
+      ratingCount: spot._count.spotRatings,
       latestReportAt: spot.latestReportAt,
       diveLogs: diveLogs.map((diveLog) => this.toDiveLogPreview(diveLog)),
       shareUrl: spot.shareUrl,

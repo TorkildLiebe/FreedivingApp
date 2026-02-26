@@ -110,6 +110,11 @@ describe('SpotsRepository', () => {
         include: {
           parkingLocations: true,
           createdBy: { select: { alias: true } },
+          _count: {
+            select: {
+              spotRatings: true,
+            },
+          },
         },
       });
     });
@@ -147,6 +152,11 @@ describe('SpotsRepository', () => {
         include: {
           parkingLocations: true,
           createdBy: { select: { alias: true } },
+          _count: {
+            select: {
+              spotRatings: true,
+            },
+          },
         },
       });
     });
