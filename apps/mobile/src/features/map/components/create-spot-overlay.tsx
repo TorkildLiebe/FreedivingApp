@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   Image,
@@ -75,6 +76,7 @@ export function CreateSpotOverlay({
   onConfirmParkingPlacement,
   onRemoveParkingLocation,
 }: CreateSpotOverlayProps) {
+  const insets = useSafeAreaInsets();
   const snapPoints = useMemo(() => ['25%', '55%', '90%'], []);
   const [formSheetIndex, setFormSheetIndex] = useState(2);
 
@@ -120,7 +122,7 @@ export function CreateSpotOverlay({
       )}
 
       {showPlacementStep ? (
-        <View testID="create-spot-placement-step" style={styles.panel}>
+        <View testID="create-spot-placement-step" style={[styles.panel, { paddingBottom: 28 + insets.bottom }]}>
           <Text style={styles.panelTitle}>Create Dive Spot</Text>
           <Text style={styles.panelText}>Pan & zoom to position your spot</Text>
           {pinCoordinate ? (
@@ -312,7 +314,7 @@ export function CreateSpotOverlay({
       ) : null}
 
       {showParkingStep ? (
-        <View testID="create-spot-parking-step" style={styles.panel}>
+        <View testID="create-spot-parking-step" style={[styles.panel, { paddingBottom: 28 + insets.bottom }]}>
           <Text style={styles.panelTitle}>Parking Location</Text>
           <Text style={styles.panelText}>Pan & zoom to position parking</Text>
           {pinCoordinate ? (
