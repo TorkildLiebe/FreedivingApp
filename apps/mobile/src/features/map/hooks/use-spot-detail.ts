@@ -43,6 +43,7 @@ export function useSpotDetail(spotId: string | null) {
       } catch (err) {
         console.warn('Failed to fetch spot detail:', err);
         if (!cancelled) {
+          setSpot(null);
           setError('Failed to load spot details');
         }
       } finally {

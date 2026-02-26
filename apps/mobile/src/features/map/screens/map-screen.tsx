@@ -114,7 +114,12 @@ export default function MapScreen() {
     useState<string[]>([]);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const { spots, refresh: refreshSpots } = useSpots(bbox);
-  const { spot, isLoading: isSpotLoading, refresh } = useSpotDetail(selectedSpotId);
+  const {
+    spot,
+    isLoading: isSpotLoading,
+    error: spotDetailError,
+    refresh,
+  } = useSpotDetail(selectedSpotId);
   const {
     uploadPhoto,
     isUploading: isUploadingPhoto,
@@ -197,6 +202,32 @@ export default function MapScreen() {
       setLiveMapCenter(initialLiveMapCenter);
     }
   }, [createStep, initialLiveMapCenter]);
+
+  useEffect(() => {
+    if (!selectedSpotId || createStep !== 'idle') {
+      return;
+    }
+
+    if (isSpotLoading || spot || !spotDetailError) {
+      return;
+    }
+
+    clearPhotoUploadError();
+    clearDiveLogError();
+    setSelectedSpotId(null);
+    Alert.alert(
+      'Spot unavailable',
+      'Failed to load this dive spot. Please try another spot or retry.',
+    );
+  }, [
+    clearDiveLogError,
+    clearPhotoUploadError,
+    createStep,
+    isSpotLoading,
+    selectedSpotId,
+    spot,
+    spotDetailError,
+  ]);
 
   function handleCenterOnMe() {
     if (!location) {

@@ -265,6 +265,33 @@ describe('MapScreen', () => {
     expect(getByTestId('map-view').props.selectedSpotId).toBe('spot-123');
   });
 
+  it('clears selection and restores create button when spot detail fails to load', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(jest.fn());
+    mockUseSpotDetail.mockImplementation((spotId: string | null) => ({
+      spot: null,
+      isLoading: false,
+      error: spotId ? 'Failed to load spot details' : null,
+      refresh: jest.fn(),
+    }));
+
+    const { getByTestId, queryByTestId } = render(<MapScreen />);
+    const mapView = getByTestId('map-view');
+
+    act(() => {
+      mapView.props.onSpotPress('spot-123');
+    });
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith(
+        'Spot unavailable',
+        'Failed to load this dive spot. Please try another spot or retry.',
+      );
+    });
+
+    expect(queryByTestId('map-start-create-spot-button')).toBeTruthy();
+    alertSpy.mockRestore();
+  });
+
   it('renders SpotDetailSheet', () => {
     const { getByTestId } = render(<MapScreen />);
     expect(getByTestId('spot-detail-sheet')).toBeTruthy();

@@ -98,6 +98,31 @@ describe('useSpotDetail', () => {
     );
   });
 
+  it('clears stale spot when a new spot fetch fails', async () => {
+    mockApiFetch
+      .mockResolvedValueOnce(mockSpot)
+      .mockResolvedValueOnce(mockDiveLogsResponse)
+      .mockRejectedValueOnce(new Error('Network error'));
+
+    const { result, rerender } = renderHook(
+      ({ spotId }: { spotId: string | null }) => useSpotDetail(spotId),
+      { initialProps: { spotId: 'uuid-1' } },
+    );
+
+    await waitFor(() => {
+      expect(result.current.spot).toEqual(mockSpot);
+    });
+
+    rerender({ spotId: 'uuid-2' });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.spot).toBeNull();
+    expect(result.current.error).toBe('Failed to load spot details');
+  });
+
   it('clears spot when spotId becomes null', async () => {
     mockApiFetch
       .mockResolvedValueOnce(mockSpot)
