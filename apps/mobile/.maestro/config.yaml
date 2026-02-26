@@ -1,0 +1,5 @@
+# Maestro E2E configuration for DiveFreely mobile app
+# Docs: https://maestro.mobile.dev
+
+appId: com.anonymous.mobile
+name: DiveFreely E2E Tests

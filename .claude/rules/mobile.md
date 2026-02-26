@@ -39,4 +39,5 @@ Use risk escalation rules from `.claude/rules/testing.md` for final check scope.
 - Format: `<feature>-<element>-<type>` (e.g. `auth-email-input`, `map-center-on-me-button`)
 - Add testID to all interactive elements (buttons, inputs, sheets)
 - Used by iOS Simulator Skill for semantic element finding
-- Will be used by Maestro/Detox when added post-MVP
+- Used by Maestro E2E flows for element targeting (see `apps/mobile/.maestro/flows/`)
+- When adding new interactive elements, ensure testID follows convention and is referenced in relevant E2E flows

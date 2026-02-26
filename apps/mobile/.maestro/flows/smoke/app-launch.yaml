@@ -1,0 +1,42 @@
+appId: com.anonymous.mobile
+name: App Launch Smoke Test
+tags:
+  - smoke
+---
+# Verifies the app launches successfully and the map screen loads.
+# Auto-login env vars (EXPO_PUBLIC_AUTO_LOGIN_EMAIL) bypass the login screen.
+
+- stopApp
+
+- launchApp:
+    clearState: false
+
+# Dismiss any OS permission dialogs
+- runFlow:
+    when:
+      visible: "Allow While Using App"
+    commands:
+      - tapOn: "Allow While Using App"
+
+# Map screen should be the initial screen after auto-login
+- extendedWaitUntil:
+    visible:
+      id: "map-search-input"
+    timeout: 15000
+
+# Verify all floating action buttons are present
+- assertVisible:
+    id: "map-toggle-layer-button"
+
+- assertVisible:
+    id: "map-center-on-me-button"
+
+- assertVisible:
+    id: "map-start-create-spot-button"
+
+# Verify tab bar is present with both tabs
+- assertVisible:
+    id: "tab-index-button"
+
+- assertVisible:
+    id: "tab-profile-button"

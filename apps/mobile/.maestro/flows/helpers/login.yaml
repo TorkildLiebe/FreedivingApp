@@ -1,0 +1,29 @@
+appId: com.anonymous.mobile
+name: Login Helper
+tags:
+  - helper
+env:
+  EMAIL: ${EMAIL}
+  PASSWORD: ${PASSWORD}
+---
+# Reusable sub-flow: logs in via the auth form.
+# Call with: runFlow { file: helpers/login.yaml, env: { EMAIL: ..., PASSWORD: ... } }
+
+- tapOn:
+    id: "auth-email-input"
+
+- inputText: ${EMAIL}
+
+- tapOn:
+    id: "auth-password-input"
+
+- inputText: ${PASSWORD}
+
+- tapOn:
+    id: "auth-submit-button"
+
+# Wait for navigation to map screen after successful login
+- extendedWaitUntil:
+    visible:
+      id: "map-search-input"
+    timeout: 15000

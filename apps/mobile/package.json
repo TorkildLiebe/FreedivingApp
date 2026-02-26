@@ -11,6 +11,11 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:e2e": "maestro test ${MAESTRO_DEVICE:+--udid $MAESTRO_DEVICE} .maestro/flows/smoke/ && sleep 3 && maestro test ${MAESTRO_DEVICE:+--udid $MAESTRO_DEVICE} --exclude-tags requires-backend .maestro/flows/map/ && sleep 3 && maestro test ${MAESTRO_DEVICE:+--udid $MAESTRO_DEVICE} .maestro/flows/auth/",
+    "test:e2e:full": "maestro test ${MAESTRO_DEVICE:+--udid $MAESTRO_DEVICE} .maestro/flows/smoke/ && sleep 3 && maestro test ${MAESTRO_DEVICE:+--udid $MAESTRO_DEVICE} .maestro/flows/map/ && sleep 3 && maestro test ${MAESTRO_DEVICE:+--udid $MAESTRO_DEVICE} .maestro/flows/auth/",
+    "test:e2e:smoke": "maestro test .maestro/flows/smoke/",
+    "test:e2e:map": "maestro test .maestro/flows/map/",
+    "test:e2e:auth": "maestro test .maestro/flows/auth/",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

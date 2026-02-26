@@ -168,10 +168,21 @@ You are the Codex-native PM orchestrator for unattended milestone delivery in Fr
 
 6. End-of-milestone behavior
    - Merge issue branches locally into milestone branch.
+   - Run full E2E regression suite on merged milestone branch:
+     - Check for booted iOS simulator: `xcrun simctl list devices booted 2>/dev/null | grep -q "Booted"`
+     - If simulator booted: run `pnpm test:e2e:mobile:full` and capture pass/fail result.
+     - If no simulator booted: skip with explicit warning; record `E2E_REGRESSION_RUN: SKIPPED`.
+     - On E2E failure: log failing flows but do NOT block milestone close.
+       E2E failures are regression signals, not blocking gates — per-issue verification
+       already validated each feature individually.
    - Close milestone state in one guarded command:
      - `pnpm orchestrator:close-milestone-run -- --run-id <run-id> [--milestone-branch <branch>]`
    - Write retrospective report:
      - `docs/orchestration/improvements/<run-id>.md`
+     - Include E2E results section with trailer field:
+       - `E2E_REGRESSION_RUN: PASS|FAIL|SKIPPED`
+       - If FAIL: list failing flow names and brief failure reason.
+       - If SKIPPED: state reason (e.g., "no simulator booted").
    - Commit final run artifacts.
    - Return high-level manual push reminder only.
    - Never auto-push.

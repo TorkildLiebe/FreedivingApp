@@ -1,0 +1,52 @@
+appId: com.anonymous.mobile
+name: Tab Navigation Smoke Test
+tags:
+  - smoke
+---
+# Verifies tab switching works and the app remains functional.
+# Note: Profile screen overlay has a known rendering issue (animated overlay
+# does not appear over map). This test verifies tabs are interactive and
+# the app does not crash during navigation.
+
+- stopApp
+
+- launchApp:
+    clearState: false
+
+# Dismiss any OS permission dialogs
+- runFlow:
+    when:
+      visible: "Allow While Using App"
+    commands:
+      - tapOn: "Allow While Using App"
+
+# Wait for map screen
+- extendedWaitUntil:
+    visible:
+      id: "map-search-input"
+    timeout: 15000
+
+# Verify both tabs are present and tappable
+- tapOn:
+    id: "tab-profile-button"
+
+# App should not crash — tab bar remains visible
+- assertVisible:
+    id: "tab-index-button"
+
+- assertVisible:
+    id: "tab-profile-button"
+
+# Switch back to map tab
+- tapOn:
+    id: "tab-index-button"
+
+# Map screen elements should be present (lazy: false keeps map mounted)
+- assertVisible:
+    id: "map-search-input"
+
+- assertVisible:
+    id: "map-center-on-me-button"
+
+- assertVisible:
+    id: "map-start-create-spot-button"

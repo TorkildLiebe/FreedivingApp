@@ -1,0 +1,55 @@
+appId: com.anonymous.mobile
+name: Login Screen
+tags:
+  - auth
+---
+# Tests the login screen form elements and sign-in/sign-up toggle.
+# Launches with clearState to ensure we land on login (not auto-login).
+# Note: only runs meaningfully when auto-login env vars are absent.
+
+- stopApp
+
+- launchApp:
+    clearState: true
+
+# If auto-login kicks in and we land on map, this flow is not applicable
+- runFlow:
+    when:
+      visible:
+        id: "auth-screen-title"
+    commands:
+      # Verify all form elements are present
+      - assertVisible:
+          id: "auth-email-input"
+
+      - assertVisible:
+          id: "auth-password-input"
+
+      - assertVisible:
+          id: "auth-submit-button"
+
+      # Verify sign-in mode is default
+      - assertVisible: "Sign In"
+
+      # Toggle to sign-up mode
+      - tapOn:
+          id: "auth-toggle-mode-button"
+
+      - assertVisible: "Create Account"
+
+      # Toggle back to sign-in mode
+      - tapOn:
+          id: "auth-toggle-mode-button"
+
+      - assertVisible: "Sign In"
+
+      # Test input fields accept text
+      - tapOn:
+          id: "auth-email-input"
+
+      - inputText: "test@example.com"
+
+      - tapOn:
+          id: "auth-password-input"
+
+      - inputText: "testpassword"

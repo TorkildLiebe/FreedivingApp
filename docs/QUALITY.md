@@ -33,6 +33,7 @@ Implementation-focused quality attributes, operations, and compliance.
 - **Goal:** 80% code coverage for domain and use-case logic
 - **Unit tests:** Domain validations, invariants
 - **Integration tests:** Endpoints with test database (auth, CRUD, permissions)
+- **E2E tests:** Maestro flows on iOS Simulator for critical user paths (app launch, navigation, spot interactions)
 - **CI pipeline:** Lint, test, coverage on each commit/PR
 
 ---

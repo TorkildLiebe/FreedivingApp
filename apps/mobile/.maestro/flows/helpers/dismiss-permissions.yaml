@@ -1,0 +1,21 @@
+appId: com.anonymous.mobile
+name: Dismiss Permission Dialogs
+tags:
+  - helper
+---
+# Reusable sub-flow: dismisses OS-level permission dialogs.
+# Handles both iOS and Android location permission prompts.
+
+# iOS location permission dialog
+- runFlow:
+    when:
+      visible: "Allow While Using App"
+    commands:
+      - tapOn: "Allow While Using App"
+
+# Android location permission dialog
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
