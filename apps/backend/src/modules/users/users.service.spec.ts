@@ -37,6 +37,8 @@ describe('UsersService', () => {
             findActiveSpotById: jest.fn(),
             addFavoriteSpot: jest.fn(),
             removeFavoriteSpot: jest.fn(),
+            countDiveLogsByAuthor: jest.fn(),
+            countUniqueSpotsDivedByAuthor: jest.fn(),
           },
         },
       ],
@@ -161,6 +163,41 @@ describe('UsersService', () => {
       await expect(
         service.removeFavoriteSpot('missing-user', 'spot-1'),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getMyStats', () => {
+    it('returns stats for current user', async () => {
+      repository.findById.mockResolvedValue({
+        ...mockUser,
+        favoriteSpotIds: ['spot-1', 'spot-2'],
+      });
+      repository.countDiveLogsByAuthor.mockResolvedValue(4);
+      repository.countUniqueSpotsDivedByAuthor.mockResolvedValue(3);
+
+      const result = await service.getMyStats('uuid-1');
+
+      expect(repository.findById).toHaveBeenCalledWith('uuid-1');
+      expect(repository.countDiveLogsByAuthor).toHaveBeenCalledWith('uuid-1');
+      expect(repository.countUniqueSpotsDivedByAuthor).toHaveBeenCalledWith(
+        'uuid-1',
+      );
+      expect(result).toEqual({
+        totalReports: 4,
+        uniqueSpotsDived: 3,
+        favoritesCount: 2,
+        memberSince: mockUser.createdAt,
+      });
+    });
+
+    it('throws when user is missing', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(service.getMyStats('missing-user')).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(repository.countDiveLogsByAuthor).not.toHaveBeenCalled();
+      expect(repository.countUniqueSpotsDivedByAuthor).not.toHaveBeenCalled();
     });
   });
 });

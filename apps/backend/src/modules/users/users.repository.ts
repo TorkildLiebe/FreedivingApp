@@ -70,4 +70,25 @@ export class UsersRepository {
 
     return updatedUser.favoriteSpotIds;
   }
+
+  async countDiveLogsByAuthor(userId: string): Promise<number> {
+    return this.prisma.diveLog.count({
+      where: {
+        authorId: userId,
+        isDeleted: false,
+      },
+    });
+  }
+
+  async countUniqueSpotsDivedByAuthor(userId: string): Promise<number> {
+    const grouped = await this.prisma.diveLog.groupBy({
+      by: ['spotId'],
+      where: {
+        authorId: userId,
+        isDeleted: false,
+      },
+    });
+
+    return grouped.length;
+  }
 }

@@ -50,4 +50,29 @@ export class UsersService {
       user.favoriteSpotIds,
     );
   }
+
+  async getMyStats(userId: string): Promise<{
+    totalReports: number;
+    uniqueSpotsDived: number;
+    favoritesCount: number;
+    memberSince: Date;
+  }> {
+    const user = await this.usersRepository.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const [totalReports, uniqueSpotsDived] = await Promise.all([
+      this.usersRepository.countDiveLogsByAuthor(userId),
+      this.usersRepository.countUniqueSpotsDivedByAuthor(userId),
+    ]);
+
+    return {
+      totalReports,
+      uniqueSpotsDived,
+      favoritesCount: user.favoriteSpotIds.length,
+      memberSince: user.createdAt,
+    };
+  }
 }

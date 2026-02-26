@@ -7,4 +7,5 @@ export class GetMeResponseDto {
   role!: string;
   preferredLanguage!: string;
   favoriteSpotIds!: string[];
+  createdAt!: Date;
 }

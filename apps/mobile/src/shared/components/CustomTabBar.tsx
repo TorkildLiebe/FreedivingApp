@@ -50,13 +50,7 @@ export function CustomTabBar({
         const iconColor = isFocused ? colors.primary[500] : colors.neutral[500];
 
         function onPress() {
-          const event = navigation.emit({
-            type: "tabPress",
-            target: route.key,
-            canPreventDefault: true,
-          });
-
-          if (!isFocused && !event.defaultPrevented) {
+          if (!isFocused) {
             navigation.navigate(route.name);
           }
         }

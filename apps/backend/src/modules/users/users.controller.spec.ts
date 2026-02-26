@@ -33,6 +33,7 @@ describe('UsersController', () => {
           provide: UsersService,
           useValue: {
             findById: jest.fn(),
+            getMyStats: jest.fn(),
             getOrCreate: jest.fn(),
             addFavoriteSpot: jest.fn(),
             removeFavoriteSpot: jest.fn(),
@@ -70,6 +71,7 @@ describe('UsersController', () => {
         role: 'user',
         preferredLanguage: 'no',
         favoriteSpotIds: [],
+        createdAt: mockUser.createdAt,
       });
     });
 
@@ -83,6 +85,31 @@ describe('UsersController', () => {
           role: 'user',
         }),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getMyStats', () => {
+    it('should return activity stats for current user', async () => {
+      usersService.getMyStats.mockResolvedValue({
+        totalReports: 6,
+        uniqueSpotsDived: 3,
+        favoritesCount: 4,
+        memberSince: mockUser.createdAt,
+      });
+
+      const result = await controller.getMyStats({
+        userId: 'uuid-1',
+        externalId: 'ext-1',
+        role: 'user',
+      });
+
+      expect(usersService.getMyStats).toHaveBeenCalledWith('uuid-1');
+      expect(result).toEqual({
+        totalReports: 6,
+        uniqueSpotsDived: 3,
+        favoritesCount: 4,
+        memberSince: mockUser.createdAt,
+      });
     });
   });
 

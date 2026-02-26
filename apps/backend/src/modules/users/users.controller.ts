@@ -13,6 +13,7 @@ import type { AuthenticatedUser } from '../../common/auth';
 import { UsersService } from './users.service';
 import { GetMeResponseDto } from './dto/get-me-response.dto';
 import { FavoriteSpotsResponseDto } from './dto/favorite-spots-response.dto';
+import { GetMyStatsResponseDto } from './dto/get-my-stats-response.dto';
 
 @Controller('users')
 export class UsersController {
@@ -36,7 +37,16 @@ export class UsersController {
       role: dbUser.role,
       preferredLanguage: dbUser.preferredLanguage,
       favoriteSpotIds: dbUser.favoriteSpotIds,
+      createdAt: dbUser.createdAt,
     };
+  }
+
+  @Get('me/stats')
+  @UseGuards(AuthGuard)
+  async getMyStats(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<GetMyStatsResponseDto> {
+    return this.usersService.getMyStats(user.userId);
   }
 
   @Post('me/favorites/:spotId')

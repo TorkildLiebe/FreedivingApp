@@ -1,0 +1,56 @@
+appId: com.anonymous.mobile
+name: Profile Shell
+tags:
+  - auth
+  - profile
+---
+- stopApp
+
+- launchApp:
+    clearState: false
+
+- runFlow:
+    when:
+      visible: "Allow While Using App"
+    commands:
+      - tapOn: "Allow While Using App"
+
+- runFlow:
+    when:
+      visible: "Open in “mobile”?"
+    commands:
+      - tapOn: "Open"
+
+- extendedWaitUntil:
+    visible:
+      id: "map-search-input"
+    timeout: 15000
+
+- tapOn:
+    id: "tab-profile-button"
+
+- extendedWaitUntil:
+    visible:
+      id: "profile-screen-root"
+    timeout: 10000
+
+- assertVisible:
+    id: "profile-header-alias"
+
+- assertVisible:
+    id: "profile-row-reports"
+
+- assertVisible:
+    id: "profile-row-logout"
+
+- tapOn:
+    id: "profile-row-reports"
+
+- assertVisible:
+    id: "profile-view-title"
+
+- tapOn:
+    id: "profile-back-button"
+
+- assertVisible:
+    id: "profile-row-reports"

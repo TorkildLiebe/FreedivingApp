@@ -6,6 +6,7 @@ describe('UsersRepository', () => {
   let repository: UsersRepository;
   let prisma: {
     user: Record<string, jest.Mock>;
+    diveLog: Record<string, jest.Mock>;
     diveSpot: Record<string, jest.Mock>;
   };
 
@@ -31,6 +32,10 @@ describe('UsersRepository', () => {
         findFirst: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
+      },
+      diveLog: {
+        count: jest.fn(),
+        groupBy: jest.fn(),
       },
       diveSpot: {
         findFirst: jest.fn(),
@@ -181,6 +186,42 @@ describe('UsersRepository', () => {
         select: { favoriteSpotIds: true },
       });
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('countDiveLogsByAuthor', () => {
+    it('counts non-deleted dive logs by author', async () => {
+      prisma.diveLog.count.mockResolvedValue(5);
+
+      const result = await repository.countDiveLogsByAuthor('uuid-1');
+
+      expect(prisma.diveLog.count).toHaveBeenCalledWith({
+        where: {
+          authorId: 'uuid-1',
+          isDeleted: false,
+        },
+      });
+      expect(result).toBe(5);
+    });
+  });
+
+  describe('countUniqueSpotsDivedByAuthor', () => {
+    it('counts unique spot ids in non-deleted dive logs by author', async () => {
+      prisma.diveLog.groupBy.mockResolvedValue([
+        { spotId: 'spot-1' },
+        { spotId: 'spot-2' },
+      ]);
+
+      const result = await repository.countUniqueSpotsDivedByAuthor('uuid-1');
+
+      expect(prisma.diveLog.groupBy).toHaveBeenCalledWith({
+        by: ['spotId'],
+        where: {
+          authorId: 'uuid-1',
+          isDeleted: false,
+        },
+      });
+      expect(result).toBe(2);
     });
   });
 });
