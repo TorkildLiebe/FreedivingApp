@@ -2,13 +2,13 @@
 
 - Milestone: M4
 - Status: running
-- Current issue: 79
-- Updated at: 2026-02-26T14:13:50.734Z
+- Current issue: 81
+- Updated at: 2026-02-26T14:52:01.930Z
 
 | Issue | Title | Status | Attempts | Note |
 | --- | --- | --- | --- | --- |
-| #79 | Build auth screens (login, signup, forgot password) | verifying | 0 |  |
-| #80 | Build full profile page | pending | 0 |  |
+| #79 | Build auth screens (login, signup, forgot password) | committed | 0 | Issue #79 committed |
+| #80 | Build full profile page | committed | 0 | Issue #80 committed |
 | #81 | Add activity lists (dive reports, my spots, saved spots) | pending | 0 |  |
 | #82 | Enable inline profile editing | pending | 0 |  |
 | #83 | Add language picker and logout | pending | 0 |  |
