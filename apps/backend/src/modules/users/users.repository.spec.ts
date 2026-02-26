@@ -191,6 +191,35 @@ describe('UsersRepository', () => {
     });
   });
 
+  describe('updateProfile', () => {
+    it('updates alias, bio, and avatar url', async () => {
+      prisma.user.update.mockResolvedValue({
+        ...mockUser,
+        alias: 'New Alias',
+        bio: 'New bio',
+        avatarUrl: 'https://cdn.example.com/avatar.jpg',
+      });
+
+      const result = await repository.updateProfile('uuid-1', {
+        alias: 'New Alias',
+        bio: 'New bio',
+        avatarUrl: 'https://cdn.example.com/avatar.jpg',
+      });
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'uuid-1' },
+        data: {
+          alias: 'New Alias',
+          bio: 'New bio',
+          avatarUrl: 'https://cdn.example.com/avatar.jpg',
+        },
+      });
+      expect(result.alias).toBe('New Alias');
+      expect(result.bio).toBe('New bio');
+      expect(result.avatarUrl).toBe('https://cdn.example.com/avatar.jpg');
+    });
+  });
+
   describe('countDiveLogsByAuthor', () => {
     it('counts non-deleted dive logs by author', async () => {
       prisma.diveLog.count.mockResolvedValue(5);

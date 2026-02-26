@@ -1,10 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { SpotNotFoundOrDeletedError } from '../../common/errors';
 import { UsersRepository } from './users.repository';
+import { UserAvatarStorageService } from './user-avatar-storage.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly usersRepository: UsersRepository) {}
+  constructor(
+    private readonly usersRepository: UsersRepository,
+    private readonly userAvatarStorage: UserAvatarStorageService,
+  ) {}
 
   async getOrCreate(externalId: string, email?: string) {
     const existing = await this.usersRepository.findByExternalId(externalId);
@@ -117,5 +125,51 @@ export class UsersService {
       createdSpots,
       favorites,
     };
+  }
+
+  async updateMe(
+    userId: string,
+    payload: {
+      alias: string;
+      bio?: string | null;
+      avatarUrl?: string | null;
+    },
+  ) {
+    const user = await this.usersRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const normalizedAlias = payload.alias.trim();
+    if (normalizedAlias.length === 0) {
+      throw new BadRequestException('Alias is required');
+    }
+
+    const normalizedBio =
+      typeof payload.bio === 'string'
+        ? payload.bio.trim() || null
+        : (payload.bio ?? user.bio);
+
+    return this.usersRepository.updateProfile(userId, {
+      alias: normalizedAlias,
+      bio: normalizedBio,
+      avatarUrl: payload.avatarUrl,
+    });
+  }
+
+  async createAvatarUploadUrl(
+    userId: string,
+    mimeType?: string,
+  ): Promise<{
+    uploadUrl: string;
+    publicUrl: string;
+    expiresAt: string;
+  }> {
+    const user = await this.usersRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return this.userAvatarStorage.createUploadUrl(userId, mimeType);
   }
 }

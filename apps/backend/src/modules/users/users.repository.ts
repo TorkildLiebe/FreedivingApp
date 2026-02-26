@@ -94,6 +94,24 @@ export class UsersRepository {
     return grouped.length;
   }
 
+  async updateProfile(
+    userId: string,
+    data: {
+      alias: string;
+      bio: string | null;
+      avatarUrl?: string | null;
+    },
+  ) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        alias: data.alias,
+        bio: data.bio,
+        ...(data.avatarUrl !== undefined ? { avatarUrl: data.avatarUrl } : {}),
+      },
+    });
+  }
+
   async listMyDiveReports(userId: string): Promise<
     Array<{
       id: string;

@@ -48,4 +48,10 @@ export interface ProfileActivity {
   favorites: ProfileFavoriteSpot[];
 }
 
+export interface ProfileAvatarUploadUrl {
+  uploadUrl: string;
+  publicUrl: string;
+  expiresAt: string;
+}
+
 export type ProfileView = 'menu' | 'reports' | 'spots' | 'favorites';

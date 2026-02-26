@@ -1,9 +1,27 @@
 import React from 'react';
-import { fireEvent, render } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import ProfileScreen from '@/src/features/auth/screens/profile-screen';
+import { apiFetch } from '@/src/infrastructure/api/client';
 
 const mockUseProfileData = jest.fn();
+const refreshMock = jest.fn();
+
+jest.mock('expo-image-picker', () => ({
+  requestMediaLibraryPermissionsAsync: jest.fn(() =>
+    Promise.resolve({ status: 'granted' }),
+  ),
+  launchImageLibraryAsync: jest.fn(() => Promise.resolve({ canceled: true })),
+  MediaTypeOptions: {
+    Images: 'images',
+  },
+}));
+
+jest.mock('@/src/infrastructure/api/client', () => ({
+  apiFetch: jest.fn(),
+}));
+
+const mockApiFetch = apiFetch as jest.MockedFunction<typeof apiFetch>;
 
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaProvider: ({ children }: { children: React.ReactNode }) => children,
@@ -16,6 +34,8 @@ jest.mock('@/src/features/auth/hooks/use-profile-data', () => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
+  refreshMock.mockReset();
+  mockApiFetch.mockResolvedValue({} as never);
   mockUseProfileData.mockReturnValue({
     profile: {
       id: 'user-1',
@@ -64,7 +84,7 @@ beforeEach(() => {
     ],
     isLoading: false,
     error: null,
-    refresh: jest.fn(),
+    refresh: refreshMock,
   });
 });
 
@@ -191,5 +211,40 @@ describe('ProfileScreen', () => {
     rerender(<ProfileScreen />);
     expect(getByText('Profile unavailable')).toBeTruthy();
     expect(getByText('Boom')).toBeTruthy();
+  });
+
+  it('enters edit mode, validates alias, and saves profile', async () => {
+    const { getByTestId, queryByTestId } = renderProfileScreen();
+
+    fireEvent.press(getByTestId('profile-edit-button'));
+    expect(getByTestId('profile-edit-alias-input')).toBeTruthy();
+    expect(getByTestId('profile-edit-bio-count').props.children).toEqual([
+      19,
+      '/',
+      300,
+    ]);
+
+    fireEvent.changeText(getByTestId('profile-edit-alias-input'), '   ');
+    fireEvent.press(getByTestId('profile-save-button'));
+    expect(getByTestId('profile-edit-error').props.children).toBe(
+      'Alias is required.',
+    );
+
+    fireEvent.changeText(getByTestId('profile-edit-alias-input'), 'Updated Diver');
+    fireEvent.changeText(getByTestId('profile-edit-bio-input'), 'New bio');
+    fireEvent.press(getByTestId('profile-save-button'));
+
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledWith(
+        '/users/me',
+        expect.objectContaining({
+          method: 'PATCH',
+        }),
+      );
+    });
+    expect(refreshMock).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(queryByTestId('profile-edit-alias-input')).toBeNull();
+    });
   });
 });

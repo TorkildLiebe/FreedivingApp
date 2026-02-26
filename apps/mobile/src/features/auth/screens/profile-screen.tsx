@@ -6,12 +6,18 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useProfileData } from '@/src/features/auth/hooks/use-profile-data';
-import type { ProfileView } from '@/src/features/auth/types/profile';
+import { apiFetch } from '@/src/infrastructure/api/client';
+import type {
+  ProfileAvatarUploadUrl,
+  ProfileView,
+} from '@/src/features/auth/types/profile';
 import { colors, typography } from '@/src/shared/theme';
 
 function aliasInitials(alias: string | null, email: string | null): string {
@@ -62,6 +68,9 @@ const CURRENT_LABELS: Record<number, string> = {
   4: 'Strong',
   5: 'Very strong',
 };
+
+const MAX_ALIAS_LENGTH = 120;
+const MAX_BIO_LENGTH = 300;
 
 function ProfileRow({
   label,
@@ -122,6 +131,13 @@ export default function ProfileScreen() {
     refresh,
   } = useProfileData();
   const [view, setView] = useState<ProfileView>('menu');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editAlias, setEditAlias] = useState('');
+  const [editBio, setEditBio] = useState('');
+  const [editAvatarUrl, setEditAvatarUrl] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const profileAlias = useMemo(() => {
     if (!profile) {
@@ -130,6 +146,135 @@ export default function ProfileScreen() {
 
     return profile.alias?.trim() || profile.email?.split('@')[0] || 'Diver';
   }, [profile]);
+
+  function beginEdit(): void {
+    if (!profile) {
+      return;
+    }
+
+    setEditAlias(profile.alias ?? '');
+    setEditBio(profile.bio ?? '');
+    setEditAvatarUrl(profile.avatarUrl);
+    setEditError(null);
+    setIsEditing(true);
+  }
+
+  function cancelEdit(): void {
+    setIsEditing(false);
+    setEditError(null);
+  }
+
+  async function pickAvatar(): Promise<void> {
+    setEditError(null);
+    setIsUploadingAvatar(true);
+    try {
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permission.status !== 'granted') {
+        setEditError('Photo permission is required to update avatar.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.85,
+        allowsEditing: false,
+      });
+
+      if (
+        result.canceled ||
+        !Array.isArray(result.assets) ||
+        result.assets.length === 0
+      ) {
+        return;
+      }
+
+      const selectedAsset = result.assets.find(
+        (asset) =>
+          typeof asset.uri === 'string' && asset.uri.trim().length > 0,
+      );
+
+      if (!selectedAsset?.uri) {
+        setEditError('Failed to read selected image.');
+        return;
+      }
+
+      const mimeType = selectedAsset.mimeType ?? 'image/jpeg';
+      const uploadTarget = await apiFetch<ProfileAvatarUploadUrl>(
+        '/users/me/avatar/upload-url',
+        {
+          method: 'POST',
+          body: JSON.stringify({ mimeType }),
+        },
+      );
+
+      const assetResponse = await fetch(selectedAsset.uri);
+      if (!assetResponse.ok) {
+        throw new Error('Failed to read selected image.');
+      }
+      const assetBlob = await assetResponse.blob();
+
+      const uploadResponse = await fetch(uploadTarget.uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'content-type': mimeType,
+        },
+        body: assetBlob,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed: ${uploadResponse.status}`);
+      }
+
+      setEditAvatarUrl(uploadTarget.publicUrl);
+    } catch (uploadError) {
+      console.warn('Failed to upload avatar:', uploadError);
+      setEditError('Failed to upload avatar. Please try again.');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  }
+
+  async function saveEdit(): Promise<void> {
+    if (!profile) {
+      return;
+    }
+
+    const normalizedAlias = editAlias.trim();
+    if (!normalizedAlias) {
+      setEditError('Alias is required.');
+      return;
+    }
+    if (normalizedAlias.length > MAX_ALIAS_LENGTH) {
+      setEditError(`Alias must be ${MAX_ALIAS_LENGTH} characters or less.`);
+      return;
+    }
+    if (editBio.length > MAX_BIO_LENGTH) {
+      setEditError(`Bio must be ${MAX_BIO_LENGTH} characters or less.`);
+      return;
+    }
+
+    setEditError(null);
+    setIsSaving(true);
+    try {
+      await apiFetch('/users/me', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          alias: normalizedAlias,
+          bio: editBio.trim() ? editBio.trim() : null,
+          avatarUrl: editAvatarUrl,
+        }),
+      });
+
+      await refresh();
+      setIsEditing(false);
+    } catch (saveError) {
+      console.warn('Failed to save profile:', saveError);
+      setEditError('Failed to save profile. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -158,38 +303,134 @@ export default function ProfileScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(28, insets.bottom + 20) }]}
       >
         <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
-          <View style={styles.headerTopRow}>
-            <View style={styles.profileIdentityWrap}>
-              {profile.avatarUrl ? (
-                <Image source={{ uri: profile.avatarUrl }} style={styles.avatarImage} />
-              ) : (
-                <View style={styles.avatarFallback}>
-                  <Text testID="profile-avatar-initials" style={styles.avatarFallbackText}>
-                    {aliasInitials(profile.alias, profile.email)}
-                  </Text>
-                </View>
-              )}
+          {isEditing ? (
+            <View>
+              <View style={styles.editHeaderRow}>
+                <Pressable
+                  testID="profile-edit-avatar-button"
+                  onPress={() => void pickAvatar()}
+                  style={styles.editAvatarButton}
+                >
+                  {editAvatarUrl ? (
+                    <Image source={{ uri: editAvatarUrl }} style={styles.editAvatarImage} />
+                  ) : (
+                    <View style={styles.editAvatarFallback}>
+                      <Text style={styles.editAvatarFallbackText}>
+                        {aliasInitials(editAlias, profile.email)}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.editAvatarOverlay}>
+                    <Text style={styles.editAvatarOverlayText}>
+                      {isUploadingAvatar ? '...' : 'Edit'}
+                    </Text>
+                  </View>
+                </Pressable>
 
-              <View style={styles.identityTextWrap}>
-                <Text testID="profile-header-alias" numberOfLines={1} style={styles.aliasText}>
-                  {profileAlias}
+                {editAvatarUrl ? (
+                  <Pressable
+                    testID="profile-remove-avatar-button"
+                    style={styles.removeAvatarButton}
+                    onPress={() => setEditAvatarUrl(null)}
+                  >
+                    <Text style={styles.removeAvatarButtonText}>Remove</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+
+              <TextInput
+                testID="profile-edit-alias-input"
+                value={editAlias}
+                onChangeText={setEditAlias}
+                placeholder="Alias"
+                placeholderTextColor="rgba(245,245,244,0.35)"
+                style={styles.editInput}
+                maxLength={MAX_ALIAS_LENGTH}
+                autoCapitalize="words"
+              />
+
+              <TextInput
+                testID="profile-edit-bio-input"
+                value={editBio}
+                onChangeText={setEditBio}
+                placeholder="Short bio..."
+                placeholderTextColor="rgba(245,245,244,0.35)"
+                style={[styles.editInput, styles.editBioInput]}
+                multiline
+                maxLength={MAX_BIO_LENGTH}
+              />
+              <Text testID="profile-edit-bio-count" style={styles.editBioCount}>
+                {editBio.length}/{MAX_BIO_LENGTH}
+              </Text>
+
+              {editError ? (
+                <Text testID="profile-edit-error" style={styles.editErrorText}>
+                  {editError}
                 </Text>
-                {profile.email ? <Text style={styles.emailText}>{profile.email}</Text> : null}
+              ) : null}
+
+              <View style={styles.editActions}>
+                <Pressable
+                  testID="profile-cancel-button"
+                  style={styles.cancelButton}
+                  onPress={cancelEdit}
+                  disabled={isSaving}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  testID="profile-save-button"
+                  style={styles.saveButton}
+                  onPress={() => void saveEdit()}
+                  disabled={isSaving || isUploadingAvatar}
+                >
+                  <Text style={styles.saveButtonText}>
+                    {isSaving ? 'Saving...' : 'Save'}
+                  </Text>
+                </Pressable>
               </View>
             </View>
+          ) : (
+            <View>
+              <View style={styles.headerTopRow}>
+                <View style={styles.profileIdentityWrap}>
+                  {profile.avatarUrl ? (
+                    <Image source={{ uri: profile.avatarUrl }} style={styles.avatarImage} />
+                  ) : (
+                    <View style={styles.avatarFallback}>
+                      <Text testID="profile-avatar-initials" style={styles.avatarFallbackText}>
+                        {aliasInitials(profile.alias, profile.email)}
+                      </Text>
+                    </View>
+                  )}
 
-            <Pressable testID="profile-edit-button" style={styles.editButton}>
-              <Text style={styles.editButtonText}>Edit</Text>
-            </Pressable>
-          </View>
+                  <View style={styles.identityTextWrap}>
+                    <Text testID="profile-header-alias" numberOfLines={1} style={styles.aliasText}>
+                      {profileAlias}
+                    </Text>
+                    {profile.email ? <Text style={styles.emailText}>{profile.email}</Text> : null}
+                  </View>
+                </View>
 
-          {profile.bio ? (
-            <Text numberOfLines={3} style={styles.bioText}>
-              {profile.bio}
-            </Text>
-          ) : null}
+                <Pressable
+                  testID="profile-edit-button"
+                  style={styles.editButton}
+                  onPress={beginEdit}
+                >
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </Pressable>
+              </View>
+
+              {profile.bio ? (
+                <Text numberOfLines={3} style={styles.bioText}>
+                  {profile.bio}
+                </Text>
+              ) : null}
+            </View>
+          )}
         </View>
 
+        {!isEditing ? (
         <View style={styles.statsGrid}>
           <View style={styles.statCell}>
             <Text testID="profile-stats-total-reports" style={styles.statValue}>
@@ -216,8 +457,9 @@ export default function ProfileScreen() {
             <Text style={styles.statLabel}>Since</Text>
           </View>
         </View>
+        ) : null}
 
-        {view === 'menu' ? (
+        {!isEditing && view === 'menu' ? (
           <View>
             <Text style={styles.sectionLabel}>Activity</Text>
             <View style={styles.groupCard}>
@@ -273,7 +515,7 @@ export default function ProfileScreen() {
           </View>
         ) : null}
 
-        {view !== 'menu' ? (
+        {!isEditing && view !== 'menu' ? (
           <View style={styles.detailWrap}>
             <Pressable
               testID="profile-back-button"
@@ -489,6 +731,126 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: 'rgba(245,245,244,0.64)',
     marginTop: 12,
+  },
+  editHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+    gap: 12,
+  },
+  editAvatarButton: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  editAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  editAvatarFallback: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 42,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.42)',
+    backgroundColor: 'rgba(16, 185, 129, 0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editAvatarFallbackText: {
+    ...typography.h3,
+    color: colors.primary[400],
+    fontSize: 24,
+  },
+  editAvatarOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(12, 10, 9, 0.62)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+  },
+  editAvatarOverlayText: {
+    ...typography.bodySmall,
+    color: colors.neutral[50],
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  removeAvatarButton: {
+    borderWidth: 1,
+    borderColor: 'rgba(245,245,244,0.2)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  removeAvatarButtonText: {
+    ...typography.bodySmall,
+    color: 'rgba(245,245,244,0.72)',
+    fontWeight: '600',
+  },
+  editInput: {
+    borderWidth: 1,
+    borderColor: 'rgba(245,245,244,0.2)',
+    backgroundColor: 'rgba(28, 25, 23, 0.35)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: colors.neutral[50],
+    ...typography.body,
+    marginBottom: 10,
+  },
+  editBioInput: {
+    minHeight: 88,
+    textAlignVertical: 'top',
+  },
+  editBioCount: {
+    ...typography.bodySmall,
+    color: 'rgba(245,245,244,0.52)',
+    alignSelf: 'flex-end',
+    marginTop: -4,
+    marginBottom: 8,
+  },
+  editErrorText: {
+    ...typography.bodySmall,
+    color: '#fca5a5',
+    marginBottom: 8,
+  },
+  editActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 2,
+  },
+  cancelButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(245,245,244,0.2)',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+  },
+  cancelButtonText: {
+    ...typography.bodySmall,
+    color: 'rgba(245,245,244,0.72)',
+    fontWeight: '600',
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: colors.primary[500],
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+  },
+  saveButtonText: {
+    ...typography.bodySmall,
+    color: colors.neutral[50],
+    fontWeight: '700',
   },
   statsGrid: {
     backgroundColor: colors.neutral[50],

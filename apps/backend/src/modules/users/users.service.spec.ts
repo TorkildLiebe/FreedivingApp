@@ -1,12 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UsersRepository } from './users.repository';
 import { SpotNotFoundOrDeletedError } from '../../common/errors';
+import { UserAvatarStorageService } from './user-avatar-storage.service';
 
 describe('UsersService', () => {
   let service: UsersService;
   let repository: jest.Mocked<UsersRepository>;
+  let avatarStorage: jest.Mocked<UserAvatarStorageService>;
 
   const mockUser = {
     id: 'uuid-1',
@@ -39,9 +41,16 @@ describe('UsersService', () => {
             removeFavoriteSpot: jest.fn(),
             countDiveLogsByAuthor: jest.fn(),
             countUniqueSpotsDivedByAuthor: jest.fn(),
+            updateProfile: jest.fn(),
             listMyDiveReports: jest.fn(),
             listCreatedSpotsByUser: jest.fn(),
             listFavoriteSpots: jest.fn(),
+          },
+        },
+        {
+          provide: UserAvatarStorageService,
+          useValue: {
+            createUploadUrl: jest.fn(),
           },
         },
       ],
@@ -49,6 +58,7 @@ describe('UsersService', () => {
 
     service = module.get<UsersService>(UsersService);
     repository = module.get(UsersRepository);
+    avatarStorage = module.get(UserAvatarStorageService);
   });
 
   describe('getOrCreate', () => {
@@ -286,6 +296,78 @@ describe('UsersService', () => {
       expect(repository.listMyDiveReports).not.toHaveBeenCalled();
       expect(repository.listCreatedSpotsByUser).not.toHaveBeenCalled();
       expect(repository.listFavoriteSpots).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateMe', () => {
+    it('updates alias and bio for current user', async () => {
+      repository.findById.mockResolvedValue({
+        ...mockUser,
+        bio: 'Old bio',
+      });
+      repository.updateProfile.mockResolvedValue({
+        ...mockUser,
+        alias: 'New Alias',
+        bio: 'New bio',
+      });
+
+      const result = await service.updateMe('uuid-1', {
+        alias: '  New Alias  ',
+        bio: 'New bio',
+      });
+
+      expect(repository.updateProfile).toHaveBeenCalledWith('uuid-1', {
+        alias: 'New Alias',
+        bio: 'New bio',
+        avatarUrl: undefined,
+      });
+      expect(result.alias).toBe('New Alias');
+      expect(result.bio).toBe('New bio');
+    });
+
+    it('throws when alias is blank after trim', async () => {
+      repository.findById.mockResolvedValue(mockUser);
+
+      await expect(
+        service.updateMe('uuid-1', { alias: '   ' }),
+      ).rejects.toThrow(BadRequestException);
+      expect(repository.updateProfile).not.toHaveBeenCalled();
+    });
+
+    it('throws when user is missing', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(
+        service.updateMe('missing-user', { alias: 'Diver' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('createAvatarUploadUrl', () => {
+    it('creates signed upload url for existing user', async () => {
+      repository.findById.mockResolvedValue(mockUser);
+      avatarStorage.createUploadUrl.mockResolvedValue({
+        uploadUrl: 'https://upload.example.com/signed',
+        publicUrl: 'https://cdn.example.com/avatar.jpg',
+        expiresAt: '2026-03-01T00:00:00.000Z',
+      });
+
+      const result = await service.createAvatarUploadUrl('uuid-1', 'image/png');
+
+      expect(avatarStorage.createUploadUrl).toHaveBeenCalledWith(
+        'uuid-1',
+        'image/png',
+      );
+      expect(result.publicUrl).toBe('https://cdn.example.com/avatar.jpg');
+    });
+
+    it('throws when user is missing', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(
+        service.createAvatarUploadUrl('missing-user', 'image/png'),
+      ).rejects.toThrow(NotFoundException);
+      expect(avatarStorage.createUploadUrl).not.toHaveBeenCalled();
     });
   });
 });

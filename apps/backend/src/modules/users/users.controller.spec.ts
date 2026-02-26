@@ -35,6 +35,8 @@ describe('UsersController', () => {
             findById: jest.fn(),
             getMyStats: jest.fn(),
             getMyActivity: jest.fn(),
+            updateMe: jest.fn(),
+            createAvatarUploadUrl: jest.fn(),
             getOrCreate: jest.fn(),
             addFavoriteSpot: jest.fn(),
             removeFavoriteSpot: jest.fn(),
@@ -151,6 +153,70 @@ describe('UsersController', () => {
         '00000000-0000-0000-0000-000000000001',
       );
       expect(result).toEqual({ favoriteSpotIds: [] });
+    });
+  });
+
+  describe('updateMe', () => {
+    it('should update profile fields for current user', async () => {
+      usersService.updateMe.mockResolvedValue({
+        ...mockUser,
+        alias: 'Updated Alias',
+        bio: 'Updated bio',
+        avatarUrl: 'https://cdn.example.com/avatar.jpg',
+      });
+
+      const result = await controller.updateMe(
+        {
+          userId: 'uuid-1',
+          externalId: 'ext-1',
+          role: 'user',
+        },
+        {
+          alias: 'Updated Alias',
+          bio: 'Updated bio',
+          avatarUrl: 'https://cdn.example.com/avatar.jpg',
+        },
+      );
+
+      expect(usersService.updateMe).toHaveBeenCalledWith('uuid-1', {
+        alias: 'Updated Alias',
+        bio: 'Updated bio',
+        avatarUrl: 'https://cdn.example.com/avatar.jpg',
+      });
+      expect(result.alias).toBe('Updated Alias');
+      expect(result.bio).toBe('Updated bio');
+      expect(result.avatarUrl).toBe('https://cdn.example.com/avatar.jpg');
+    });
+  });
+
+  describe('createAvatarUploadUrl', () => {
+    it('should create signed upload url for current user avatar', async () => {
+      usersService.createAvatarUploadUrl.mockResolvedValue({
+        uploadUrl: 'https://upload.example.com/signed',
+        publicUrl: 'https://cdn.example.com/avatar.jpg',
+        expiresAt: '2026-03-01T00:00:00.000Z',
+      });
+
+      const result = await controller.createAvatarUploadUrl(
+        {
+          userId: 'uuid-1',
+          externalId: 'ext-1',
+          role: 'user',
+        },
+        {
+          mimeType: 'image/png',
+        },
+      );
+
+      expect(usersService.createAvatarUploadUrl).toHaveBeenCalledWith(
+        'uuid-1',
+        'image/png',
+      );
+      expect(result).toEqual({
+        uploadUrl: 'https://upload.example.com/signed',
+        publicUrl: 'https://cdn.example.com/avatar.jpg',
+        expiresAt: '2026-03-01T00:00:00.000Z',
+      });
     });
   });
 

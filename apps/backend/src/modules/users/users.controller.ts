@@ -1,9 +1,11 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
   NotFoundException,
   Param,
+  Patch,
   ParseUUIDPipe,
   Post,
   UseGuards,
@@ -15,6 +17,9 @@ import { GetMeResponseDto } from './dto/get-me-response.dto';
 import { FavoriteSpotsResponseDto } from './dto/favorite-spots-response.dto';
 import { GetMyStatsResponseDto } from './dto/get-my-stats-response.dto';
 import { GetMyActivityResponseDto } from './dto/get-my-activity-response.dto';
+import { UpdateMeDto } from './dto/update-me.dto';
+import { CreateAvatarUploadUrlDto } from './dto/create-avatar-upload-url.dto';
+import { AvatarUploadUrlResponseDto } from './dto/avatar-upload-url-response.dto';
 
 @Controller('users')
 export class UsersController {
@@ -56,6 +61,36 @@ export class UsersController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<GetMyActivityResponseDto> {
     return this.usersService.getMyActivity(user.userId);
+  }
+
+  @Patch('me')
+  @UseGuards(AuthGuard)
+  async updateMe(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateMeDto,
+  ): Promise<GetMeResponseDto> {
+    const updated = await this.usersService.updateMe(user.userId, dto);
+
+    return {
+      id: updated.id,
+      email: updated.email,
+      alias: updated.alias,
+      bio: updated.bio,
+      avatarUrl: updated.avatarUrl,
+      role: updated.role,
+      preferredLanguage: updated.preferredLanguage,
+      favoriteSpotIds: updated.favoriteSpotIds,
+      createdAt: updated.createdAt,
+    };
+  }
+
+  @Post('me/avatar/upload-url')
+  @UseGuards(AuthGuard)
+  async createAvatarUploadUrl(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CreateAvatarUploadUrlDto,
+  ): Promise<AvatarUploadUrlResponseDto> {
+    return this.usersService.createAvatarUploadUrl(user.userId, dto.mimeType);
   }
 
   @Post('me/favorites/:spotId')
