@@ -71,15 +71,16 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    const [totalReports, uniqueSpotsDived] = await Promise.all([
+    const [totalReports, uniqueSpotsDived, activeFavorites] = await Promise.all([
       this.usersRepository.countDiveLogsByAuthor(userId),
       this.usersRepository.countUniqueSpotsDivedByAuthor(userId),
+      this.usersRepository.listFavoriteSpots(user.favoriteSpotIds),
     ]);
 
     return {
       totalReports,
       uniqueSpotsDived,
-      favoritesCount: user.favoriteSpotIds.length,
+      favoritesCount: activeFavorites.length,
       memberSince: user.createdAt,
     };
   }

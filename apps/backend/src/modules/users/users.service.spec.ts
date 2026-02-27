@@ -187,6 +187,15 @@ describe('UsersService', () => {
       });
       repository.countDiveLogsByAuthor.mockResolvedValue(4);
       repository.countUniqueSpotsDivedByAuthor.mockResolvedValue(3);
+      repository.listFavoriteSpots.mockResolvedValue([
+        {
+          id: 'spot-1',
+          spotId: 'spot-1',
+          spotName: 'Oslofjord Wall',
+          latestVisibilityMeters: 12,
+          latestReportDate: mockUser.createdAt,
+        },
+      ]);
 
       const result = await service.getMyStats('uuid-1');
 
@@ -195,10 +204,14 @@ describe('UsersService', () => {
       expect(repository.countUniqueSpotsDivedByAuthor).toHaveBeenCalledWith(
         'uuid-1',
       );
+      expect(repository.listFavoriteSpots).toHaveBeenCalledWith([
+        'spot-1',
+        'spot-2',
+      ]);
       expect(result).toEqual({
         totalReports: 4,
         uniqueSpotsDived: 3,
-        favoritesCount: 2,
+        favoritesCount: 1,
         memberSince: mockUser.createdAt,
       });
     });
@@ -211,6 +224,7 @@ describe('UsersService', () => {
       );
       expect(repository.countDiveLogsByAuthor).not.toHaveBeenCalled();
       expect(repository.countUniqueSpotsDivedByAuthor).not.toHaveBeenCalled();
+      expect(repository.listFavoriteSpots).not.toHaveBeenCalled();
     });
   });
 
