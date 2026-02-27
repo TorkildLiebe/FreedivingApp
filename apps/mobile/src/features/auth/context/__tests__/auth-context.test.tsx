@@ -8,10 +8,17 @@ import {
 import { mockSession } from '@/src/__tests__/fixtures/users.fixture';
 
 import { AuthProvider, useAuth } from '@/src/features/auth/context/auth-context';
+import { apiFetch } from '@/src/infrastructure/api/client';
 
 function wrapper({ children }: { children: React.ReactNode }) {
   return <AuthProvider>{children}</AuthProvider>;
 }
+
+jest.mock('@/src/infrastructure/api/client', () => ({
+  apiFetch: jest.fn(),
+}));
+
+const mockApiFetch = apiFetch as jest.MockedFunction<typeof apiFetch>;
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -107,7 +114,7 @@ describe('AuthProvider + useAuth', () => {
     });
   });
 
-  it('signUp delegates to supabase with alias metadata', async () => {
+  it('signUp persists alias and avatar to backend when session is returned', async () => {
     mockSupabase.auth.signUp.mockResolvedValueOnce({
       data: { session: mockSession, user: mockSession.user },
       error: null,
@@ -139,6 +146,52 @@ describe('AuthProvider + useAuth', () => {
           avatarUrl: 'https://example.com/avatar.jpg',
         },
       },
+    });
+
+    expect(mockApiFetch).toHaveBeenCalledWith('/users/me', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        alias: 'deepwater',
+        avatarUrl: 'https://example.com/avatar.jpg',
+      }),
+    });
+  });
+
+
+  it('signUp defers backend profile persistence until auth state session arrives', async () => {
+    mockSupabase.auth.signUp.mockResolvedValueOnce({
+      data: { session: null, user: mockSession.user },
+      error: null,
+    });
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.signUp({
+        alias: 'deepwater',
+        email: 'new@example.com',
+        password: 'password',
+        avatarUrl: null,
+      });
+    });
+
+    expect(mockApiFetch).not.toHaveBeenCalled();
+
+    const callback = mockSupabase.auth.onAuthStateChange.mock.calls[0][0];
+    await act(async () => {
+      await callback('SIGNED_IN', mockSession);
+    });
+
+    expect(mockApiFetch).toHaveBeenCalledWith('/users/me', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        alias: 'deepwater',
+        avatarUrl: null,
+      }),
     });
   });
 

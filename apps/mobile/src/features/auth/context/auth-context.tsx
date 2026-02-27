@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Linking } from 'react-native';
 import { Session } from '@supabase/supabase-js';
+import { apiFetch } from '@/src/infrastructure/api/client';
 import { supabase } from '@/src/infrastructure/supabase/client';
 
 interface SignUpInput {
@@ -25,8 +26,21 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const pendingSignupProfileRef = useRef<Pick<SignUpInput, 'alias' | 'avatarUrl'> | null>(
+    null,
+  );
   const autoLoginEmail = process.env.EXPO_PUBLIC_AUTO_LOGIN_EMAIL;
   const autoLoginPassword = process.env.EXPO_PUBLIC_AUTO_LOGIN_PASSWORD;
+
+  const persistSignupProfile = async (profile: Pick<SignUpInput, 'alias' | 'avatarUrl'>) => {
+    await apiFetch('/users/me', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        alias: profile.alias,
+        avatarUrl: profile.avatarUrl ?? null,
+      }),
+    });
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
@@ -49,8 +63,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+    } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
       setSession(currentSession);
+
+      const pendingSignupProfile = pendingSignupProfileRef.current;
+      if (!currentSession || !pendingSignupProfile) {
+        return;
+      }
+
+      await persistSignupProfile(pendingSignupProfile);
+      pendingSignupProfileRef.current = null;
     });
 
     return () => subscription.unsubscribe();
@@ -58,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async ({ alias, email, password, avatarUrl }: SignUpInput) => {
     const trimmedAlias = alias.trim();
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
       options: {
@@ -68,7 +90,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       },
     });
-    return { error: error ? new Error(error.message) : null };
+
+    if (error) {
+      return { error: new Error(error.message) };
+    }
+
+    const signupProfile = {
+      alias: trimmedAlias,
+      avatarUrl: avatarUrl ?? null,
+    };
+
+    pendingSignupProfileRef.current = signupProfile;
+
+    if (data.session) {
+      await persistSignupProfile(signupProfile);
+      pendingSignupProfileRef.current = null;
+    }
+
+    return { error: null };
   };
 
   const signIn = async (email: string, password: string) => {
