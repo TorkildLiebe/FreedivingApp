@@ -1,0 +1,44 @@
+appId: com.anonymous.mobile
+name: Auth Signup And Forgot Views
+tags:
+  - auth
+---
+- stopApp
+
+- launchApp:
+    clearState: true
+
+- runFlow:
+    when:
+      visible:
+        id: "auth-screen-title"
+    commands:
+      - tapOn:
+          id: "auth-toggle-mode-button"
+
+      - assertVisible: "Create an account"
+      - assertVisible:
+          id: "auth-signup-avatar-button"
+      - assertVisible:
+          id: "auth-signup-alias-input"
+      - assertVisible:
+          id: "auth-email-input"
+      - assertVisible:
+          id: "auth-password-input"
+      - assertVisible: "Create account"
+
+      - tapOn:
+          id: "auth-toggle-mode-button"
+      - assertVisible: "Sign in to continue"
+
+      - tapOn:
+          id: "auth-toggle-forgot-button"
+      - assertVisible: "Reset password"
+      - assertVisible:
+          id: "auth-forgot-email-input"
+      - assertVisible:
+          id: "auth-forgot-submit-button"
+
+      - tapOn:
+          id: "auth-forgot-back-button"
+      - assertVisible: "Sign in to continue"

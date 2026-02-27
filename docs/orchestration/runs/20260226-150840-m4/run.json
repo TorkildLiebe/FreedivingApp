@@ -1,0 +1,193 @@
+{
+  "run_id": "20260226-150840-m4",
+  "milestone": "M4",
+  "status": "completed",
+  "started_at": "2026-02-26T14:08:56.850Z",
+  "updated_at": "2026-02-26T16:07:36.419Z",
+  "issue_order": [
+    79,
+    80,
+    81,
+    82,
+    83
+  ],
+  "current_issue": null,
+  "attempts_by_issue": {
+    "79": 0,
+    "80": 0,
+    "81": 0,
+    "82": 0,
+    "83": 0
+  },
+  "completed_issues": [
+    79,
+    80,
+    81,
+    82,
+    83
+  ],
+  "blocked_issue": null,
+  "stop_reason": null,
+  "issues": {
+    "79": {
+      "status": "merged_local",
+      "attempts": 0,
+      "note": "Issue #79 committed",
+      "commit_sha": "5fe46b6bbf4d6eff52d866038101ee66d78ef4a8",
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-26T14:08:56.850Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-26T14:09:29.681Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-26T14:10:03.888Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-26T14:13:50.734Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-26T14:19:38.655Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-26T16:07:36.419Z"
+        }
+      ]
+    },
+    "80": {
+      "status": "merged_local",
+      "attempts": 0,
+      "note": "Issue #80 committed",
+      "commit_sha": "78a612c",
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-26T14:08:56.850Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-26T14:20:43.246Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-26T14:20:58.457Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-26T14:25:26.822Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-26T14:52:01.930Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-26T16:07:36.419Z"
+        }
+      ]
+    },
+    "81": {
+      "status": "merged_local",
+      "attempts": 0,
+      "note": "Issue #81 committed",
+      "commit_sha": "84fc258",
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-26T14:08:56.850Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-26T15:03:49.015Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-26T15:04:38.537Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-26T15:05:38.200Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-26T15:17:57.386Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-26T16:07:36.419Z"
+        }
+      ]
+    },
+    "82": {
+      "status": "merged_local",
+      "attempts": 0,
+      "note": "Issue #82 committed",
+      "commit_sha": "f9e9d59",
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-26T14:08:56.850Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-26T15:28:59.798Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-26T15:29:56.844Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-26T15:46:22.441Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-26T15:48:11.509Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-26T16:07:36.419Z"
+        }
+      ]
+    },
+    "83": {
+      "status": "merged_local",
+      "attempts": 0,
+      "note": "Issue #83 committed",
+      "commit_sha": "b014b50",
+      "history": [
+        {
+          "status": "pending",
+          "at": "2026-02-26T14:08:56.850Z"
+        },
+        {
+          "status": "planning",
+          "at": "2026-02-26T15:52:38.247Z"
+        },
+        {
+          "status": "implementing",
+          "at": "2026-02-26T15:53:16.037Z"
+        },
+        {
+          "status": "verifying",
+          "at": "2026-02-26T16:03:57.029Z"
+        },
+        {
+          "status": "committed",
+          "at": "2026-02-26T16:06:22.736Z"
+        },
+        {
+          "status": "merged_local",
+          "at": "2026-02-26T16:07:36.419Z"
+        }
+      ]
+    }
+  }
+}

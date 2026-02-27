@@ -535,6 +535,61 @@ describe('SpotCard', () => {
 });
 ```
 
+## Design Tokens
+
+All visual constants must come from the token system. Never inline raw values in StyleSheets or inline styles.
+
+### Colors — `src/shared/theme/Colors.ts`
+
+| Scale | Use for |
+|-------|---------|
+| `colors.primary[*]` | Brand actions, CTAs, active states |
+| `colors.secondary[*]` | Supporting UI, secondary actions |
+| `colors.neutral[*]` | Text, borders, backgrounds, icons |
+
+**Rules:**
+- Never use raw hex values (e.g. `'#f59e0b'`) in StyleSheets or inline styles.
+- If the color you need does not exist in `Colors.ts` (e.g. amber for star ratings, red for errors), **add it to `Colors.ts` first**, then consume the token. Common additions: `colors.accent.amber`, `colors.semantic.error`, `colors.semantic.warning`.
+
+```typescript
+// ✅ token
+color: colors.primary[600]
+
+// ❌ magic hex — undiscoverable, unrefactorable
+color: '#f59e0b'
+```
+
+### Typography — `src/shared/theme/typography.ts`
+
+Eight role variants: `h1`, `h2`, `h3`, `body`, `bodySmall`, `bodyBold`, `mono`, `monoBold`.
+
+Each variant carries `fontFamily`, `fontSize`, `lineHeight`, and `fontWeight`. **Consume the full role — do not cherry-pick only `fontFamily` and hardcode the rest.**
+
+```typescript
+// ✅ full role spread — type scale enforced
+const style = {
+  ...typography.body,
+  color: colors.neutral[800],
+};
+
+// ❌ partial — fontFamily from token, fontSize hardcoded beside it
+const style = {
+  fontFamily: typography.body.fontFamily,
+  fontSize: 14,    // breaks the type scale contract
+};
+```
+
+If a design calls for a size not covered by existing roles, add a new role to `typography.ts` — do not introduce a one-off `fontSize`.
+
+### Spacing and Border Radius
+
+A dedicated spacing/radius token file does not yet exist. Until it does:
+- Prefer multiples of 4 for spacing (4, 8, 12, 16, 20, 24, 32).
+- Leave a short inline comment on non-obvious values: `borderRadius: 14, // half of avatar 28px`.
+- When a value appears in 3+ places, that is a signal to extract a named constant.
+
+---
+
 ## Critical Rules
 
 1. **No cross-feature imports** - Features are independent modules

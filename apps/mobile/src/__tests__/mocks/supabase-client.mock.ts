@@ -10,8 +10,16 @@ export const mockSupabase = {
       data: { session: null },
       error: null,
     }),
+    signInWithOAuth: jest.fn().mockResolvedValue({
+      data: { provider: 'google', url: null },
+      error: null,
+    }),
     signUp: jest.fn().mockResolvedValue({
       data: { session: null },
+      error: null,
+    }),
+    resetPasswordForEmail: jest.fn().mockResolvedValue({
+      data: {},
       error: null,
     }),
     signOut: jest.fn().mockResolvedValue({ error: null }),

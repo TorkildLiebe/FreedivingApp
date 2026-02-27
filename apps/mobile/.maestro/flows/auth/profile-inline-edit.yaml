@@ -1,0 +1,59 @@
+appId: com.anonymous.mobile
+name: Profile Inline Edit
+tags:
+  - auth
+  - profile
+---
+- stopApp
+
+- launchApp:
+    clearState: false
+
+- openLink: "mobile://profile"
+
+- runFlow:
+    when:
+      visible: "Open in “mobile”?"
+    commands:
+      - tapOn: "Open"
+
+- extendedWaitUntil:
+    visible:
+      id: "profile-edit-button"
+    timeout: 15000
+
+- tapOn:
+    id: "profile-edit-button"
+
+- extendedWaitUntil:
+    visible:
+      id: "profile-edit-alias-input"
+    timeout: 10000
+
+- takeScreenshot: "82-edit-mode"
+
+- tapOn:
+    id: "profile-edit-alias-input"
+
+- eraseText
+
+- tapOn:
+    id: "profile-save-button"
+
+- tapOn:
+    id: "profile-save-button"
+
+- assertVisible:
+    id: "profile-edit-error"
+
+- takeScreenshot: "82-edit-validation"
+
+- inputText:
+    id: "profile-edit-alias-input"
+    text: "Maestro Diver"
+
+- tapOn:
+    id: "profile-cancel-button"
+
+- assertVisible:
+    id: "profile-edit-button"
