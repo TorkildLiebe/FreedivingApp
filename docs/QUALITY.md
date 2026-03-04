@@ -7,7 +7,7 @@ Implementation-focused quality attributes, operations, and compliance.
 ## Security
 
 - **Authentication & Authorization:** JWT (bcrypt passwords), RBAC (admin/moderator/user), role + ownership checks on endpoints
-- **Input Validation:** class-validator DTOs, domain checks (no emoji in certain fields), prevent injection attacks
+- **Input Validation:** class-validator DTOs, shared validation decorators (including no-emoji checks on restricted text fields), prevent injection attacks
 - **Communication Security:** HTTPS in production, Authorization headers for JWT
 - **Security Testing:** Test auth guards, SQL injection attempts, ownership bypasses in test suite
 
@@ -53,6 +53,7 @@ Implementation-focused quality attributes, operations, and compliance.
 - **Mobile performance:** Small payloads, thumbnailed images
 - **Feedback:** Quick API responses, optimistic UI updates
 - **Favorites:** Lightweight, private bookmark mechanism
+- **Known product gaps:** Password and legal profile rows are present in UI but not wired to full flows yet
 
 ---
 
@@ -112,4 +113,4 @@ Implementation-focused quality attributes, operations, and compliance.
 - WCAG AA compliance baseline
 - Clear loading + error states
 
-*Last updated: February 2026*
+*Last updated: March 2026*

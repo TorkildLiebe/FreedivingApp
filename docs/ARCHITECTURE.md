@@ -1,24 +1,23 @@
 # DiveFreely – Architecture (MVP)
 
-**Status:** Draft for MVP
-**Focus:** Simple, feature-based backend and mobile architecture
-**Principle:** Keep dependencies replaceable (DB, Auth, Storage) without touching domain logic
+**Status:** Current implementation snapshot for MVP  
+**Principle:** Keep feature modules simple while preserving replaceable infrastructure boundaries.
 
 ---
 
 ## 1) Goals & Non-Goals
 
 ### Goals
-- Deliver a **mobile-first backend** with solid domain rules (Spots, Reports, Users, Photos).
-- Keep **layers** simple and swappable: DB, Auth, and Storage can be replaced via adapters (decoupled infrastructure).
-- Fast DX for **one developer**: pnpm, scripts, seeds, local Supabase, strong typing.
-- Produce **clear APIs** (OpenAPI), predictable errors, and light e2e tests.
+- Mobile-first backend with clear domain rules for spots, dive logs, users, uploads, and ratings.
+- Feature-oriented modules in backend and mobile.
+- Swappable infrastructure for DB, auth, and storage.
+- Fast iteration for a solo developer with strong typing and focused tests.
 
-### Non-Goals (MVP)
-- No microservices. Start **single service** (modular monolith).
-- No production deployment before MVP completion.
-- No heavy realtime; reports are **planned/logged**, not live tracking.
-- Social features, discovery feed, and advanced media pipeline are out of scope.
+### Non-Goals (Current MVP)
+- No microservices.
+- No standalone admin dashboard yet.
+- No realtime tracking.
+- No social feed or chat.
 
 ---
 
@@ -26,43 +25,22 @@
 
 - **Language:** TypeScript
 - **Package manager:** pnpm
-- **Runtime:** Node.js
-- **Framework:** NestJS (Fastify)
-- **Database:** Supabase Postgres (local via `supabase start`) with **PostGIS**
+- **Backend:** NestJS (Fastify)
+- **Database:** Supabase Postgres + PostGIS
 - **ORM:** Prisma
-- **Mobile:** React Native with Expo
-- **Auth:** Supabase Auth (JWT/OIDC) + backend JWT verification (jose/JWKS)
-- **Object storage:** Supabase Storage (pre-signed uploads)
-- **Maps (client):** MapLibre GL with Kartverket WMTS tiles
-- **Docs:** Swagger/OpenAPI
-- **Testing:** Jest (unit + light e2e with Supertest)
+- **Mobile:** Expo React Native
+- **Auth:** Supabase Auth with backend JWT verification
+- **Object storage:** Supabase Storage using feature-specific pre-signed upload URLs
+- **Maps:** MapLibre on mobile with Norwegian map tile sources
+- **Testing:** Jest (unit/integration style)
 
 ---
 
-## 3) Vertical Slice Architecture
+## 3) Backend Architecture
 
-Features organized by module (Spots, Reports, Users, Photos), not by layer. Each module self-contained.
+The backend is a modular monolith. Each feature module owns its controller, service, repository, and DTOs.
 
-**Each module includes:**
-- **Controllers:** HTTP routes with auth guards
-- **DTOs:** Request validation, enforce DOMAIN.md invariants
-- **Services:** Use-case logic, orchestrate domain rules
-- **Domain:** Entity types, validation (no external deps)
-- **Repositories:** Prisma queries, injected via interfaces
-
-Domain logic independent of NestJS/Prisma. Clear separation enables module evolution without cross-module impact.
-
----
-
-## 4) Replaceable Components (Swappability)
-
-DB/Auth/Storage replaceable via interfaces. No direct infrastructure imports in domain/use-case code.
-
-**Examples:** Supabase Postgres -> any Postgres | Supabase Auth -> OIDC JWT provider | Supabase Storage -> S3-compatible service
-
----
-
-## 5) Backend Module & Folder Structure
+### Current backend modules
 
 ```
 apps/backend/
@@ -72,158 +50,116 @@ apps/backend/
         health.controller.ts
         health.module.ts
       spots/
-        spots.controller.ts        # GET /spots (bbox), GET /spots/:id
+        spots.controller.ts
         spots.service.ts
         spots.repository.ts
-        spots.module.ts
+        spot-photo-storage.service.ts
         dto/
-          list-spots-by-bbox-query.dto.ts
-          list-spots-response.dto.ts
-          spot-detail-response.dto.ts
-          spot-summary-response.dto.ts
-          parking-location-response.dto.ts
+      dive-logs/
+        dive-logs.controller.ts
+        dive-logs.service.ts
+        dive-logs.repository.ts
+        dive-log-photo-storage.service.ts
+        dto/
       users/
-        users.controller.ts        # GET /users/me
+        users.controller.ts
         users.service.ts
         users.repository.ts
-        users.module.ts
+        user-avatar-storage.service.ts
         dto/
-          get-me-response.dto.ts
-      ratings/
-        ratings.controller.ts      # PUT /spots/:spotId/rating
-        ratings.service.ts
-        ratings.repository.ts
-        ratings.module.ts
-        dto/
-          upsert-rating.dto.ts
-          spot-rating-response.dto.ts
     common/
-      auth/                        # AuthGuard, JWT verifier, CurrentUser decorator
-      errors/                      # DomainError, InvalidBBoxError, SpotNotFoundError
-      filters/                     # DomainExceptionFilter
-    prisma/
-      prisma.service.ts
-      prisma.module.ts
-    main.ts
-    app.module.ts
-  prisma/
-    schema.prisma                  # Models: User, DiveSpot, ParkingLocation
-    migrations/
-    seed.ts
+      auth/
+      errors/
+      filters/
+      validation/
 ```
 
-> **Not yet implemented:** reports/, photos/, uploads/, ratings/ modules (see USECASE.md for specs).
+### Important implementation notes
+
+- Spot ratings are implemented inside the `spots` module, not a separate `ratings` module.
+- Photo upload URL generation is handled inside feature modules:
+  - spot photos in `spots`
+  - dive-log photos in `dive-logs`
+  - avatars in `users`
+- There is no standalone `photos/` or `uploads/` module.
+- Domain-style validation lives in DTOs and services; shared validators live under `common/validation/`.
 
 ---
 
-## 6) AuthN & AuthZ
+## 4) AuthN & AuthZ
 
-- **Authentication (AuthN):**
-  - Frontend gets a **Supabase access token**.
-  - Backend verifies JWT via **JWKS** (`jose`) using `AUTH_JWKS_URL`, `AUTH_ISSUER`.
-  - On first verified call: **getOrCreate User** (`sub` from JWT -> `User.externalId` in DB).
-
-- **Authorization (AuthZ):**
-  - Roles: `user`, `moderator`, `admin`.
-  - **Guard pattern:** `@UseGuards(AuthGuard, RolesGuard)` on controllers.
-  - Write ops (spots/reports/photos): only **owner**, **moderator**, or **admin** of the resource.
-  - Favorites (personal list) are only accessible to the owning user.
-
-- **Dev/CI Bypass:**
-  - `AUTH_DEV_BYPASS=true` (and `NODE_ENV` in {development,test}) -> accept `x-dev-user-id` / `x-dev-role` headers for local testing.
+- Mobile obtains a Supabase access token.
+- Backend verifies JWTs and maps the token to an application user.
+- Roles are `user`, `moderator`, and `admin`.
+- Write operations are restricted by ownership or privileged role where applicable.
+- Dive-log updates allow moderator/admin bypass for the normal 48-hour owner edit window.
+- Dev bypass supports explicit headers in development/test when enabled.
 
 ---
 
-## 7) Local Dev & Tooling (MVP)
+## 5) API Design
 
-- **Supabase local:**
-  - Start with: `supabase start`
-  - Services: Postgres (`54322`), Auth (`54321`), Storage (`54323`)
-- **Migrations:** `supabase db reset` or `pnpm prisma:migrate`
-- **Environment (.env):** see `.env.example`
-
----
-
-## 8) API Design
-
-- **Unversioned for MVP** (we will add `/v1` prefix when making it public).
-- **OpenAPI** documentation is auto-generated; DTOs reflect `DOMAIN.md` invariants.
-- Minimal payloads for map endpoints (e.g. BBOX listing returns only id/title/center).
+- Unversioned REST API for MVP.
+- Controllers enforce DTO validation at the transport boundary.
+- `GET /spots/:id` returns full spot detail including an initial embedded dive-log slice.
+- `GET /spots/:id/dive-logs` handles paginated dive-log retrieval.
+- `GET /users/me/activity` aggregates reports, created spots, and favorites into one payload.
 
 ---
 
-## 9) Mobile Architecture (Expo Router + Feature Modules)
+## 6) Mobile Architecture
 
-### 9.1 Mobile Principles
-- Use **Expo Router** for navigation and route composition only.
-- Keep route files in `app/` thin: compose screens, no heavy data logic.
-- Organize mobile code by **feature** under `src/features/*`.
-- Keep reusable/shared code in `src/shared/*`.
-- Platform details are adapter-like: `.ios.tsx` / `.android.tsx` at feature/shared boundaries when iOS/Android differences exist.
+Expo Router is used only for route composition. Feature code lives under `src/features`.
 
-### 9.2 Mobile Folder Structure
+### Current mobile structure
 
 ```
 apps/mobile/
-  app/                               # Expo Router routes only
-    _layout.tsx
+  app/
     (auth)/
-      _layout.tsx
       login.tsx
     (app)/
-      _layout.tsx
       (tabs)/
-        _layout.tsx
-        index.tsx                    # -> MapScreen
-        profile.tsx                  # -> ProfileScreen
-    +not-found.tsx
-
+        index.tsx
+        profile.tsx
   src/
     features/
       auth/
-        context/auth-context.tsx
-        screens/login-screen.tsx
-        screens/profile-screen.tsx
+        context/
+        hooks/
+        screens/
+        types/
       map/
-        screens/map-screen.tsx
-        components/map-view.tsx      # Native MapView (iOS + Android)
-        components/map-view-types.ts
-        components/map-floating-button.tsx
-        hooks/use-location.ts
-        hooks/use-spots.ts
-        constants/map.ts
-        types.ts
-      spots/                         # Spot detail, creation, favorites
         components/
+        constants/
         hooks/
+        screens/
         types.ts
-      reports/                       # Dive logging (AddDiveForm)
-        components/
-        hooks/
-        types.ts
-      ratings/                       # SpotRating (RatingSheet)
-        components/
-        hooks/
-        types.ts
-
-    shared/
-      theme/
-        colors.ts                    # Design tokens (emerald/teal/stone)
-        typography.ts                # Font families (Space Grotesk/Inter/IBM Plex Mono)
-        index.ts
-
+        utils/
     infrastructure/
-      api/client.ts                  # authenticated fetch wrapper
-      supabase/client.ts             # Supabase client setup
+      api/
+      supabase/
+    shared/
+      components/
+      theme/
 ```
 
-### 9.3 Dependency Rules (Mobile)
-- `app/*` can import from `src/features/*`, `src/shared/*`, `src/infrastructure/*`.
-- `src/features/*` can import from `src/shared/*` and `src/infrastructure/*`.
-- `src/shared/*` must not import from `src/features/*`.
-- `src/infrastructure/*` must not import from `app/*` or feature screen components.
-- Avoid cross-feature imports except through explicit shared contracts (types/utilities).
+### Important implementation notes
+
+- `auth` owns authentication and profile orchestration.
+- `map` currently contains map, spot detail, spot creation, favorites, dive-log, and spot-rating UI flows.
+- Separate `spots`, `reports`, and `ratings` feature folders are planned abstractions, but they are not split out yet.
 
 ---
 
-*Last updated: February 2026*
+## 7) Current Gaps Kept Out of Scope
+
+- Password change flow
+- Legal screen flow
+- Public profile endpoint
+- Standalone photo attachment model with captions
+- Duplicate recent report protection
+
+These remain product/documentation items until explicitly implemented.
+
+*Last updated: March 2026*

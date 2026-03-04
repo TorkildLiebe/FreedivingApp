@@ -44,7 +44,7 @@ The Map & Spots section is the home screen of the app. Users can browse dive spo
 
 ## Components Provided
 
-Copy from `product-plan/sections/map-and-spots/components/`:
+Copy from `docs/design-os-plan/sections/map-and-spots/components/`:
 
 - `MapAndSpots` — Main overlay managing FAB, detail sheet, and creation flow
 - `SpotDetailSheet` — Bottom sheet with spot info, ratings, and dive logs
@@ -132,7 +132,7 @@ interface DiveSpot {
 
 ## Testing
 
-See `product-plan/sections/map-and-spots/tests.md` for UI behavior test specs covering:
+See `docs/design-os-plan/sections/map-and-spots/tests.md` for UI behavior test specs covering:
 - Spot detail display (fresh vs stale vs no reports)
 - Favorite toggle
 - Star rating interaction
@@ -141,12 +141,12 @@ See `product-plan/sections/map-and-spots/tests.md` for UI behavior test specs co
 
 ## Files to Reference
 
-- `product-plan/sections/map-and-spots/README.md` — Feature overview
-- `product-plan/sections/map-and-spots/tests.md` — UI behavior test specs
-- `product-plan/sections/map-and-spots/components/` — React components
-- `product-plan/sections/map-and-spots/types.ts` — TypeScript interfaces
-- `product-plan/sections/map-and-spots/sample-data.json` — Test data
-- `product-plan/sections/map-and-spots/screenshot.png` — Visual reference
+- `docs/design-os-plan/sections/map-and-spots/README.md` — Feature overview
+- `docs/design-os-plan/sections/map-and-spots/tests.md` — UI behavior test specs
+- `docs/design-os-plan/sections/map-and-spots/components/` — React components
+- `docs/design-os-plan/sections/map-and-spots/types.ts` — TypeScript interfaces
+- `docs/design-os-plan/sections/map-and-spots/sample-data.json` — Test data
+- `docs/design-os-plan/sections/map-and-spots/screenshot.png` — Visual reference
 
 ## Done When
 

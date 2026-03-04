@@ -47,7 +47,7 @@ Auth & Profiles covers user authentication (email/password, Google OAuth, passwo
 
 ## Components Provided
 
-Copy from `product-plan/sections/auth-and-profiles/components/`:
+Copy from `docs/design-os-plan/sections/auth-and-profiles/components/`:
 
 - `AuthPage` — Full-screen auth page (login / signup / forgot password)
 - `ProfilePage` — Profile management page (rendered inside the shell)
@@ -143,7 +143,7 @@ The profile detail views all include empty states:
 
 ## Testing
 
-See `product-plan/sections/auth-and-profiles/tests.md` for UI behavior test specs covering:
+See `docs/design-os-plan/sections/auth-and-profiles/tests.md` for UI behavior test specs covering:
 - Auth form submission and validation
 - View switching (login ↔ signup ↔ forgot password)
 - Profile editing and cancellation
@@ -153,13 +153,13 @@ See `product-plan/sections/auth-and-profiles/tests.md` for UI behavior test spec
 
 ## Files to Reference
 
-- `product-plan/sections/auth-and-profiles/README.md` — Feature overview
-- `product-plan/sections/auth-and-profiles/tests.md` — UI behavior test specs
-- `product-plan/sections/auth-and-profiles/components/` — React components
-- `product-plan/sections/auth-and-profiles/types.ts` — TypeScript interfaces
-- `product-plan/sections/auth-and-profiles/sample-data.json` — Test data
-- `product-plan/sections/auth-and-profiles/screenshot-auth.png` — Auth page visual reference
-- `product-plan/sections/auth-and-profiles/screenshot-profile.png` — Profile page visual reference
+- `docs/design-os-plan/sections/auth-and-profiles/README.md` — Feature overview
+- `docs/design-os-plan/sections/auth-and-profiles/tests.md` — UI behavior test specs
+- `docs/design-os-plan/sections/auth-and-profiles/components/` — React components
+- `docs/design-os-plan/sections/auth-and-profiles/types.ts` — TypeScript interfaces
+- `docs/design-os-plan/sections/auth-and-profiles/sample-data.json` — Test data
+- `docs/design-os-plan/sections/auth-and-profiles/screenshot-auth.png` — Auth page visual reference
+- `docs/design-os-plan/sections/auth-and-profiles/screenshot-profile.png` — Profile page visual reference
 
 ## Done When
 

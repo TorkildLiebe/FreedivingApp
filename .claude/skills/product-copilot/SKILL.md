@@ -7,6 +7,9 @@ description: >
   asks "what's implemented?", "what's missing?", "does this make sense?", or needs pushback on an idea.
   Even if the user doesn't explicitly ask for a "copilot" — if they're thinking about the product
   rather than writing code, this skill applies.
+  Also trigger when the user wants to discuss how a feature works or should look: "how should X work?",
+  "walk me through the flow", "what states does this have?", "what should this look like?",
+  "let's design X", "how would a user do X?". In these cases, run the Feature Design Workshop.
 ---
 
 # Product Co-Pilot
@@ -151,6 +154,82 @@ When pushing back, be direct but not dismissive. Explain your reasoning. If the 
 3. Check what's built
 4. Propose a ROADMAP.md with milestones, deliverables, and dependencies
 5. Keep it high-level — detailed tracking belongs in GitHub Issues
+
+## Feature Design Workshop
+
+Use this pattern when the user wants to think through how a feature works or should look. All features are already implemented — the workshop grounds discussion in the running app, not design artifacts.
+
+### Phase 1 — Ground truth
+
+Before discussing anything, understand what actually exists:
+
+- Clarify: who does what, in what context, with what goal?
+- Read actual implemented code:
+  - `apps/mobile/src/` for screens and components
+  - `apps/backend/src/modules/` for API behavior
+- Build a concrete picture of the current state before discussing changes or additions
+
+### Phase 2 — Flow walkthrough
+
+Walk through the user action step-by-step:
+
+- trigger → action → feedback → result
+- Identify decision branches and alternate paths
+- Note any ambiguities in the current implementation
+
+### Phase 3 — State enumeration
+
+Enumerate all screen states:
+
+- empty, loading, success, error, edge cases
+- For each state: what triggers it, what the user sees, what they can do next
+- Output as a named state map (prose table or list)
+
+### Phase 4 — Visual alignment
+
+Reference `docs/UI_DESIGN.md` for applicable patterns:
+
+- Frosted glass, z-index hierarchy, design tokens
+- Identify which existing design system components apply (BlurView, bottom sheets, CTAs)
+- Flag anything that would require a new visual pattern not yet in the system
+
+### Phase 5 — Edge cases
+
+Prompt explicitly for scenarios that often get missed:
+
+- Offline behavior
+- Permission prompts (location, camera, notifications)
+- Empty / no-data states
+- Loading timeouts
+- Validation errors
+
+### Phase 6 — Summary
+
+Produce a concise design summary with:
+
+- **Intent**: what the feature is for and who it serves
+- **Flow**: the primary path in plain language
+- **States**: the named state map from Phase 3
+- **Visual approach**: which design system components apply
+- **Open questions**: anything unresolved that would block implementation
+
+Keep the summary actionable — concrete enough that implementation can start from it without further clarification.
+
+---
+
+## Design Artifact Reference Guide
+
+| What you need | Where to look |
+|---|---|
+| Actual implemented screens | `apps/mobile/src/` |
+| API behavior | `apps/backend/src/modules/` |
+| Design tokens (colors, typography) | `docs/UI_DESIGN.md` §1 |
+| App shell layout + z-index hierarchy | `docs/UI_DESIGN.md` §2 |
+| Component specs (sheets, nav, overlays) | `docs/UI_DESIGN.md` §3+ |
+| Domain rules and business invariants | `docs/DOMAIN.md` |
+| User flows and operations | `docs/USECASE.md` |
+
+---
 
 ## Working with Other Skills
 

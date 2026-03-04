@@ -14,7 +14,7 @@ Freedive App is a mobile-first tool for discovering and planning freediving in N
 - Interactive map with dive spot discovery and marker clustering
 - Spot creation with GPS position, description, parking/access info, and photos
 - Dive reports with visibility (meters), current rating (1–5), and overall rating (1–5)
-- Photo attachments on spots (up to 5) and reports (up to 5) with optional captions
+- URL-based photo attachments on spots (up to 5) and reports (up to 5); rich captions are planned
 - Favorites for quick access to preferred spots
 - User profiles with alias, avatar, and activity statistics
 - Multilingual UI — Norwegian and English
@@ -24,7 +24,7 @@ Freedive App is a mobile-first tool for discovering and planning freediving in N
 
 1. **Map & Spots** — Interactive map where users can discover, view, and create dive spots — with clustering, GPS positioning, descriptions, access info, and photos.
 2. **Dive Reports** — Post-dive logging with visibility in meters, current rating, overall rating, and up to five photos per report — visible inside each spot's detail view.
-3. **Auth & Profiles** — User authentication, editable profiles with alias and avatar, public profile views showing report authors, basic activity statistics, and a Favorites tab for quick access to saved dive spots.
+3. **Auth & Profiles** — User authentication, editable profiles with alias and avatar, basic activity statistics, and a Favorites tab for quick access to saved dive spots.
 
 ## Product Entities
 
@@ -56,4 +56,4 @@ Build this product in milestones:
 3. **Dive Reports** — Multi-step dive logging form and spot rating sheet
 4. **Auth & Profiles** — Authentication pages and user profile management
 
-Each milestone has a dedicated instruction document in `product-plan/instructions/`.
+Each milestone has a dedicated instruction document in `docs/design-os-plan/instructions/`.

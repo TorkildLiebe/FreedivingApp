@@ -26,7 +26,7 @@ The components are props-based — they accept data and fire callbacks. How you 
 Each section includes a `tests.md` file with UI behavior test specs. These are **framework-agnostic** — adapt them to your testing setup.
 
 **For each section:**
-1. Read `product-plan/sections/[section-id]/tests.md`
+1. Read `docs/design-os-plan/sections/[section-id]/tests.md`
 2. Write tests for key user flows (success and failure paths)
 3. Implement the feature to make tests pass
 4. Refactor while keeping tests green
@@ -63,9 +63,9 @@ Set up the design tokens and application shell — the persistent chrome that wr
 
 Configure your styling system:
 
-- See `product-plan/design-system/tokens.css` for CSS custom properties
-- See `product-plan/design-system/tailwind-colors.md` for Tailwind color usage
-- See `product-plan/design-system/fonts.md` for Google Fonts setup
+- See `docs/design-os-plan/design-system/tokens.css` for CSS custom properties
+- See `docs/design-os-plan/design-system/tailwind-colors.md` for Tailwind color usage
+- See `docs/design-os-plan/design-system/fonts.md` for Google Fonts setup
 
 **Key choices:** Primary: emerald | Secondary: teal | Neutral: stone | Fonts: Space Grotesk / Inter / IBM Plex Mono
 
@@ -75,7 +75,7 @@ npm install lucide-react
 
 ### 2. Application Shell
 
-Copy from `product-plan/shell/components/`:
+Copy from `docs/design-os-plan/shell/components/`:
 - `AppShell.tsx` — Fullscreen layout wrapper
 - `BottomNav.tsx` — Frosted glass bottom tab bar
 - `SearchBar.tsx` — Floating frosted glass search input
@@ -122,7 +122,7 @@ The home screen. Users browse spots on an interactive map, tap markers to view d
 
 ## Components Provided
 
-Copy from `product-plan/sections/map-and-spots/components/`:
+Copy from `docs/design-os-plan/sections/map-and-spots/components/`:
 - `MapAndSpots` — Overlay managing FAB, detail sheets, creation flow
 - `SpotDetailSheet` — Bottom sheet with spot data and dive logs
 - `SpotReportRow` — Individual dive log row
@@ -183,7 +183,7 @@ Two recording features: Dive Logs (repeatable per-spot condition records) and Sp
 
 ## Components Provided
 
-Copy from `product-plan/sections/dive-reports/components/`:
+Copy from `docs/design-os-plan/sections/dive-reports/components/`:
 - `AddDiveForm` — Multi-step bottom sheet for logging
 - `RatingSheet` — Follow-up rating sheet
 
@@ -238,7 +238,7 @@ Auth page: full-screen standalone with deep-ocean background. Supports email/pas
 
 ## Components Provided
 
-Copy from `product-plan/sections/auth-and-profiles/components/`:
+Copy from `docs/design-os-plan/sections/auth-and-profiles/components/`:
 - `AuthPage` — Full-screen auth page
 - `ProfilePage` — Profile management page
 

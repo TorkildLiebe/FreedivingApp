@@ -2,12 +2,17 @@
 
 Apply these rules when working in this repository root.
 
+## Output behaviour
+
+- Ask questions if anything is unclear or different solutions to a feature needs to be thought through
+- Questions should be clear, have context explanatory.
+
 ## Source of Truth
 
 - Canonical guidance remains in `.claude/`.
 - Core memory: `.claude/CLAUDE.md`
 - Rules: `.claude/rules/`
-- Skills: `.claude/skills/` and codex-native skills under `.agents/skills/`
+- Skills: `.claude/skills/` remains canonical, repo-local Codex wrappers live under `.codex/skills/`, and dedicated agent skills live under `.agents/skills/`
 
 ## Skills-First + MCP-When-Useful
 
@@ -24,16 +29,6 @@ Apply these rules when working in this repository root.
 - Dedicated agents:
   - `monitor-agent` via codex role config in `.codex/agents.toml`
   - `vertical-slice-implementor` in `.claude/agents/vertical-slice-implementor.md`
-
-## Mandatory Lifecycle
-
-Use this sequence for substantive tasks:
-
-1. Understand
-2. Plan
-3. Implement
-4. Verify
-5. Report
 
 ## Mandatory Final Report Sections
 

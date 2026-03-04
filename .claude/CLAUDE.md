@@ -2,6 +2,11 @@
 
 Project memory for Claude Code. Keep this file lean; detailed rules live in `.claude/rules/*.md`.
 
+## Output behaviour
+
+- Ask questions if anything is unclear or different solutions to a feature needs to be thought through
+- Questions should be clear, have context explanatory.
+
 ## Project Overview
 
 DiveFreely is a pnpm monorepo:

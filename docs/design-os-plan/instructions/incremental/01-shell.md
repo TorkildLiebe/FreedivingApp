@@ -34,9 +34,9 @@ Set up the design tokens and application shell — the persistent chrome that wr
 
 Configure your styling system with these tokens:
 
-- See `product-plan/design-system/tokens.css` for CSS custom properties
-- See `product-plan/design-system/tailwind-colors.md` for Tailwind color usage
-- See `product-plan/design-system/fonts.md` for Google Fonts setup
+- See `docs/design-os-plan/design-system/tokens.css` for CSS custom properties
+- See `docs/design-os-plan/design-system/tailwind-colors.md` for Tailwind color usage
+- See `docs/design-os-plan/design-system/fonts.md` for Google Fonts setup
 
 **Key choices:**
 - Primary: `emerald` (buttons, active states, CTAs)
@@ -53,7 +53,7 @@ npm install lucide-react
 
 ### 2. Application Shell
 
-Copy the shell components from `product-plan/shell/components/` to your project:
+Copy the shell components from `docs/design-os-plan/shell/components/` to your project:
 
 - `AppShell.tsx` — Main layout wrapper (fullscreen map + floating UI layers)
 - `BottomNav.tsx` — Frosted glass bottom tab bar with safe-area insets
@@ -94,13 +94,13 @@ const navItems = [
 
 **Map integration:** The shell accepts any map component via `mapContent`. Integrate your chosen map library (Leaflet, Mapbox, Google Maps, etc.) there. The `onSearch` prop from `MapAndSpots` should filter spot markers on the map.
 
-**Visual reference:** See `product-plan/shell/screenshot.png`
+**Visual reference:** See `docs/design-os-plan/shell/screenshot.png`
 
 ## Files to Reference
 
-- `product-plan/design-system/` — Design tokens
-- `product-plan/shell/README.md` — Shell design intent
-- `product-plan/shell/components/` — Shell React components
+- `docs/design-os-plan/design-system/` — Design tokens
+- `docs/design-os-plan/shell/README.md` — Shell design intent
+- `docs/design-os-plan/shell/components/` — Shell React components
 
 ## Done When
 

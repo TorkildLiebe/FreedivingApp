@@ -6,14 +6,14 @@ I need you to implement a complete web application based on detailed UI designs 
 
 Please carefully read and analyze the following files:
 
-1. **@product-plan/product-overview.md** — Product summary with sections and entity overview
-2. **@product-plan/instructions/one-shot-instructions.md** — Complete implementation instructions for all milestones
+1. **@docs/design-os-plan/product-overview.md** — Product summary with sections and entity overview
+2. **@docs/design-os-plan/instructions/one-shot-instructions.md** — Complete implementation instructions for all milestones
 
 After reading these, also review:
-- **@product-plan/design-system/** — Color and typography tokens
-- **@product-plan/data-shapes/** — UI data contracts (the shapes of data the components expect)
-- **@product-plan/shell/** — Application shell components
-- **@product-plan/sections/** — All section components, types, sample data, and test specs
+- **@docs/design-os-plan/design-system/** — Color and typography tokens
+- **@docs/design-os-plan/data-shapes/** — UI data contracts (the shapes of data the components expect)
+- **@docs/design-os-plan/shell/** — Application shell components
+- **@docs/design-os-plan/sections/** — All section components, types, sample data, and test specs
 
 ## Before You Begin
 

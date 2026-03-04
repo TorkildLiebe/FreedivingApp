@@ -14,15 +14,15 @@ I need you to implement the **SECTION_NAME** section of my application.
 
 Please carefully read and analyze the following files:
 
-1. **@product-plan/product-overview.md** — Product summary for overall context
-2. **@product-plan/instructions/incremental/NN-SECTION_ID.md** — Specific instructions for this section
+1. **@docs/design-os-plan/product-overview.md** — Product summary for overall context
+2. **@docs/design-os-plan/instructions/incremental/NN-SECTION_ID.md** — Specific instructions for this section
 
 Also review the section assets:
-- **@product-plan/sections/SECTION_ID/README.md** — Feature overview and design intent
-- **@product-plan/sections/SECTION_ID/tests.md** — UI behavior test specs
-- **@product-plan/sections/SECTION_ID/components/** — React components to integrate
-- **@product-plan/sections/SECTION_ID/types.ts** — TypeScript interfaces
-- **@product-plan/sections/SECTION_ID/sample-data.json** — Test data
+- **@docs/design-os-plan/sections/SECTION_ID/README.md** — Feature overview and design intent
+- **@docs/design-os-plan/sections/SECTION_ID/tests.md** — UI behavior test specs
+- **@docs/design-os-plan/sections/SECTION_ID/components/** — React components to integrate
+- **@docs/design-os-plan/sections/SECTION_ID/types.ts** — TypeScript interfaces
+- **@docs/design-os-plan/sections/SECTION_ID/sample-data.json** — Test data
 
 ## Before You Begin
 

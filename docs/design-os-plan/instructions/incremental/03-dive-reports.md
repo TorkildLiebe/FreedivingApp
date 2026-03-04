@@ -41,7 +41,7 @@ Dive Reports has two complementary features: **Dive Logs** (repeatable condition
 
 ## Components Provided
 
-Copy from `product-plan/sections/dive-reports/components/`:
+Copy from `docs/design-os-plan/sections/dive-reports/components/`:
 
 - `AddDiveForm` — Multi-step bottom sheet for logging a dive
 - `RatingSheet` — Follow-up bottom sheet for rating a spot after a dive
@@ -124,7 +124,7 @@ Copy from `product-plan/sections/dive-reports/components/`:
 
 ## Testing
 
-See `product-plan/sections/dive-reports/tests.md` for UI behavior test specs covering:
+See `docs/design-os-plan/sections/dive-reports/tests.md` for UI behavior test specs covering:
 - Step 1 and Step 2 submission flows
 - Navigation between steps (Back button)
 - Form dismiss flows
@@ -133,12 +133,12 @@ See `product-plan/sections/dive-reports/tests.md` for UI behavior test specs cov
 
 ## Files to Reference
 
-- `product-plan/sections/dive-reports/README.md` — Feature overview
-- `product-plan/sections/dive-reports/tests.md` — UI behavior test specs
-- `product-plan/sections/dive-reports/components/` — React components
-- `product-plan/sections/dive-reports/types.ts` — TypeScript interfaces
-- `product-plan/sections/dive-reports/sample-data.json` — Test data
-- `product-plan/sections/dive-reports/screenshot.png` — Visual reference
+- `docs/design-os-plan/sections/dive-reports/README.md` — Feature overview
+- `docs/design-os-plan/sections/dive-reports/tests.md` — UI behavior test specs
+- `docs/design-os-plan/sections/dive-reports/components/` — React components
+- `docs/design-os-plan/sections/dive-reports/types.ts` — TypeScript interfaces
+- `docs/design-os-plan/sections/dive-reports/sample-data.json` — Test data
+- `docs/design-os-plan/sections/dive-reports/screenshot.png` — Visual reference
 
 ## Done When
 

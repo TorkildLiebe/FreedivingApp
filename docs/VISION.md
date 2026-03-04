@@ -24,14 +24,14 @@ A living map of Norwegian freediving where:
 - **Automation for one developer** — scripts, CI, and seeds that make it easy to build, test, and ship.
 
 ## 5. MVP Scope
-- **Auth & profiles** (Supabase): `/me`, public profiles, edit my profile.
+- **Auth & profiles** (Supabase): `/me`, edit my profile, activity/stats, and favorites management.
 - **Dive spots**: create, update (center immutable), soft delete, list by BBOX, get by id.
 - **Dive reports**: create, update (within 48h) with visibility (0-30m), current strength, optional notes; list inside spot detail.
 - **Spot ratings**: 1-5 stars per user per spot (separate from dive reports, upsert semantics).
-- **Photos**: attachments on **spots** (≤5) and **reports** (≤5) via pre‑signed uploads; captions allowed; no emoji.
+- **Photos**: URL-based attachments on **spots** (≤5) and **reports** (≤5) via pre‑signed uploads; no emoji in restricted text fields. Rich captions are planned, not in the current implementation.
 - **Map**: Norgeskart tiles on client; clustering in frontend.
 - **Favorites**: users can mark/unmark dive spots as favorites for quick access (personal list).
 - **Multilingual UI**: interface supports English and Norwegian (user can choose preferred language).
-- **Out of scope**: social feed, chat, realtime tracking, global “latest” feed, admin UI.
+- **Out of scope**: social feed, chat, realtime tracking, global “latest” feed, admin UI, public profile browsing, password change flow.
 
-*Last updated: February 2026*
+*Last updated: March 2026*

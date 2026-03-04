@@ -8,6 +8,10 @@ config_file = ".codex/agents.toml"
 description = "Milestone orchestrator with autonomous and guided run modes; resumes from run artifacts and pauses on pending high-impact decisions in guided mode."
 config_file = ".codex/agents/monitor-agent.md"
 
+[agents.qa-assistant]
+description = "Exploratory QA auditor that derives runtime scope from ROADMAP.md, generates a fresh audit plan from docs and code, and writes a single report."
+config_file = ".codex/agents/qa-assistant.md"
+
 [agents.vertical-slice-implementor]
 description = "Issue implementation worker with mandatory verification and report contract."
 config_file = ".codex/agents/vertical-slice-implementor.md"

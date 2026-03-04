@@ -1,6 +1,6 @@
 # DOMAIN.md — DiveFreely (MVP)
 
-Domain entities, value objects, invariants, errors. See **USECASE.md** for operational flows.
+Domain entities, invariants, and business constraints for the currently implemented MVP.
 
 ---
 
@@ -8,125 +8,106 @@ Domain entities, value objects, invariants, errors. See **USECASE.md** for opera
 
 | Principle | Rule |
 |-----------|------|
-| Domain independence | No DB/Auth/Storage deps in domain code |
-| Auth source | JWT `sub` authoritative |
-| Soft delete | Deleted = not found (404) |
-| Text normalization | Trim, collapse spaces |
-| Coordinates | WGS84, 6 decimals |
-| Character policy | No emoji in user text |
-| Errors→HTTP | 400: Invalid* \| 401: auth \| 403: Forbidden \| 404: *NotFound* \| 409: Conflict |
+| Domain independence | Core rules should remain decoupled from DB/Auth/Storage details |
+| Auth source | JWT `sub` is authoritative for identity |
+| Soft delete | Deleted resources are treated as not found |
+| Text normalization | Services trim text; blank optional text becomes `null` where applicable |
+| Coordinates | WGS84 latitude/longitude ranges |
+| Character policy | Restricted user-facing text fields must not contain emoji |
+| Errors→HTTP | 400 validation, 401 auth, 403 forbidden, 404 not found, 409 conflict |
 
 ---
 
 ## 2) Entities & Value Objects
 
 ### 2.1 User
-- **Fields**: `id`, `externalId (sub)`, `email?`, `alias?`, `bio?`, `avatarUrl?`, `role ∈ {user,moderator,admin}`, `preferredLanguage ∈ {"en","no"}`, `favoriteSpotIds: String[]`, timestamps.
+- **Fields**: `id`, `externalId`, `email?`, `alias?`, `bio?`, `avatarUrl?`, `role`, `preferredLanguage`, `favoriteSpotIds`, timestamps.
 - **Rules**:
   - `alias`: 1..120, no emoji.
   - `bio`: 0..300, no emoji; null if blank.
-  - `avatarUrl`: https-only; null if blank.
-  - New users: role=user, language="no".
-  - `favoriteSpotIds`: unique, only valid spot IDs.
+  - `avatarUrl`: nullable.
+  - New users default to `role = user` and `preferredLanguage = "no"`.
+  - `favoriteSpotIds` contains unique active spot IDs after application-level filtering.
 
 ### 2.2 DiveSpot
-- **Fields**:  
-  `id`, `title`, `description`, `centerLat`, `centerLon`, `createdById`,  
-  `accessInfo?`, `parkingLocations: ParkingLocation[0..5]`,  
-  `isDeleted`, `deletedAt?`, timestamps,  
-  `shareUrl?`, `shareableAccessInfo?`.
-- **Invariants**:
-  - `title`: 1..80  
-  - `description`: 0..2000  
-  - `accessInfo`: 0..1000; null if blank  
-  - `centerLat ∈ [-90,90]`, `centerLon ∈ [-180,180]` (immutable)  
-  - `parkingLocations`: each within 5000 m of center; **max 5**; reject near-duplicate (<2 m).  
-  - **Proximity uniqueness**: reject create if any non-deleted spot center within 1000 m.  
-- **Share metadata**:
-  - `shareUrl?`: canonical public URL (if available).  
-  - `shareableAccessInfo?`: boolean; true if `accessInfo` can be included in shares.
+- **Fields**:
+  `id`, `title`, `description`, `centerLat`, `centerLon`, `createdById`,
+  `accessInfo?`, `parkingLocations`, `photoUrls`, `averageVisibilityMeters?`,
+  `averageRating?`, `reportCount`, `latestReportAt?`, `shareUrl?`,
+  `shareableAccessInfo?`, soft-delete fields, timestamps.
+- **Rules**:
+  - `title`: 1..80, no emoji.
+  - `description`: 0..2000, no emoji.
+  - `accessInfo`: 0..1000, no emoji; null if blank.
+  - `centerLat ∈ [-90,90]`, `centerLon ∈ [-180,180]` and immutable after create.
+  - `parkingLocations`: max 5; each within 5000m of center; reject near-duplicate parking entries closer than 2m.
+  - Reject create if another non-deleted spot exists within 1000m.
+  - `photoUrls`: max 5, HTTPS URLs, duplicate URLs rejected case-insensitively.
 
-### 2.3 ParkingLocation (value object)
-- **Fields**:  
-  - `id?` UUID v4  
-  - `lat`, `lon`  
-  - `label?` (0..100) e.g. “Parking by pier”.
-- **Rules**:  
-  - valid lat/lon; WGS84; round 6 decimals.  
-  - within 5000 m of parent spot center.  
-  - max 5 per spot.
+### 2.3 ParkingLocation
+- **Fields**: `id`, `lat`, `lon`, `label?`
+- **Rules**:
+  - valid lat/lon
+  - `label`: 0..100
+  - must be within 5000m of the parent spot center
 
-### 2.4 DiveReport
-- **Fields**: `id`, `spotId`, `authorId`, `visibilityMeters`, `currentStrength`, `notes?`, `divedAt`, `isDeleted`, `deletedAt?`, timestamps.
-- **Invariants**:
+### 2.4 DiveLog
+- **Fields**: `id`, `spotId`, `authorId`, `visibilityMeters`, `currentStrength`, `notes?`, `photoUrls`, `divedAt`, soft-delete fields, timestamps.
+- **Rules**:
   - `visibilityMeters ∈ [0,30]`
   - `currentStrength ∈ [1,5]`
   - `notes`: 0..500, no emoji; null if blank.
-  - `divedAt`: not future
-  - `spotId` references existing spot
-  - `authorId` immutable
-  - Edit window 48 h (mod/admin bypass)
+  - `photoUrls`: max 5, valid URLs.
+  - `divedAt`: not in the future.
+  - Author may edit within 48h.
+  - Moderator/admin may edit beyond 48h.
 
-### 2.5 PhotoAttachment
-- **Fields**: `id`, `attachedTo {'report'|'spot'}`, `attachedToId`, `uploadedById`, `url`, `caption?`, timestamps, `isDeleted`, `deletedAt?`.
+### 2.5 SpotRating
+- **Fields**: `id`, `spotId`, `userId`, `rating`, `createdAt`, `updatedAt`
 - **Rules**:
-  - ≤5 per report, ≤5 per spot.
-  - `url`: https:// only, dedupe case-insensitive.
-  - `caption`: 0..140, no emoji.
+  - `rating ∈ [1,5]`
+  - one rating per `(userId, spotId)`
+  - upsert semantics on repeated submissions
 
-### 2.6 SpotRating
-- **Fields**: `id`, `spotId`, `userId`, `rating ∈ [1,5]`, `createdAt`, `updatedAt`.
-- **Invariants**:
-  - `rating ∈ [1,5]` (integer).
-  - Unique constraint: `(userId, spotId)` — one rating per user per spot.
-  - **Upsert semantics**: creating a rating when one exists updates the existing record.
-  - `spotId` references existing spot.
-  - `userId` references existing user.
-
-### 2.7 Geo Utilities
-- `distanceMeters(lat1,lon1,lat2,lon2)`
-- `isWithinRadius(centerLat,centerLon,lat,lon,radiusMeters)`
-- `validateBBox(latMin,latMax,lonMin,lonMax)` — rejects antimeridian.
+### 2.6 Geo Utilities
+- Bounding boxes reject antimeridian-spanning queries.
+- Distance checks back spot proximity and parking validation.
 
 ---
 
 ## 3) Error Taxonomy
 
 Validation:
-`InvalidTitleError`, `InvalidDescriptionError`, `InvalidAccessInfoError`,
-`InvalidCoordinatesError`, `InvalidParkingLocationError`,
-`InvalidVisibilityError`, `InvalidCurrentStrengthError`, `InvalidDiveTimeError`, `InvalidNotesError`,
-`InvalidPhotoUrlError`, `TooManyPhotosError`, `EmojiNotAllowedError`,
-`InvalidAliasError`, `InvalidBioError`, `InvalidPreferredLanguageError`,
-`InvalidRatingError` (SpotRating context),
-`InvalidBBoxError`, `InvalidPaginationCursorError`.
+`InvalidBBoxError`, `InvalidParkingLocationError`, `InvalidPhotoUrlError`,
+`InvalidDiveLogError`, `TooManyPhotosError`
 
-Ownership/permissions: `ForbiddenError`.  
-Existence: `SpotNotFoundOrDeletedError`, `ReportNotFoundOrDeletedError`.  
-Conflicts: `TooCloseToExistingSpotError`, `DuplicateRecentReportError`.
+Ownership/permissions:
+`ForbiddenError`
 
----
+Existence:
+`SpotNotFoundOrDeletedError`, `DiveLogNotFoundError`
 
-## 4) Ports (Domain Interfaces)
+Conflicts:
+`TooCloseToExistingSpotError`, duplicate spot-photo URL, duplicate parking location
 
-Repository interfaces abstract persistence. Key methods:
-- `UserRepository`: `findByExternalId`, `create`, `update`, `addFavorite`, `removeFavorite`, `listFavoriteSpots`
-- `DiveSpotRepository`: `create`, `update`, `softDelete`, `findById`, `findCentersWithinRadius`, `listByBBox`, `listByCreator`
-- `DiveReportRepository`: `create`, `update`, `findById`, `listRecentByAuthorAndSpot`, `listByAuthor`
-- `SpotRatingRepository`: `upsert`, `findByUserAndSpot`, `averageBySpot`
-- `PhotoAttachmentRepository`: `create`, `listByReport`, `listBySpot`, `countByReport`, `countBySpot`
-
-*Actual interfaces live in module code.*
+Note:
+- No-emoji validation is enforced through DTO validation and returns standard validation errors rather than a dedicated domain error class.
+- Duplicate recent report protection is planned but not implemented.
 
 ---
 
-## 5) Use-Case Mapping
+## 4) Use-Case Mapping
 
-Operational flows in **USECASE.md**:
-- Spots: Create, Update, SoftDelete, ListByBBox, GetById, GetWithReports, AddPhotoToSpot
-- Reports: Create, Update, AddPhoto
-- Ratings: UpsertSpotRating, GetSpotAverageRating
-- Favorites: Add, Remove, List
-- Profiles: GetMe, GetUserProfile, UpdateMyProfile, ListMyReports, ListMySpots, GetMyStats, CreateUploadUrl
+Current operational flows in **USECASE.md**:
+- Profiles: `GetMe`, `UpdateMe`, `CreateAvatarUploadUrl`, `GetMyStats`, `GetMyActivity`
+- Favorites: `AddFavoriteSpot`, `RemoveFavoriteSpot`
+- Spots: `ListSpotsByBBox`, `GetSpotById`, `ListDiveLogsBySpot`, `CreateDiveSpot`, `UpdateDiveSpot`, `CreateSpotPhotoUploadUrl`, `AddPhotoToSpot`, `UpsertSpotRating`, `SoftDeleteDiveSpot`
+- Dive logs: `CreateDiveLog`, `CreateDiveLogPhotoUploadUrl`, `UpdateDiveLog`
 
-*Last updated: February 2026*
+Deferred / planned, not part of the current implemented contract:
+- public user profile endpoint
+- password change flow
+- standalone photo attachment model with captions
+- duplicate recent report protection
+
+*Last updated: March 2026*

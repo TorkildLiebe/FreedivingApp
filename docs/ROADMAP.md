@@ -3,6 +3,8 @@
 Quick status of what's built and what's next. `[x]` = done, `[ ]` = not yet.
 See DOMAIN.md for business rules, USECASE.md for flows, UI_DESIGN.md for component specs.
 
+Core MVP flows are implemented and moving through final test sign-off. The next milestone below only tracks the remaining MVP backlog items that still fit the current product docs.
+
 ---
 
 ## M0: Foundation
@@ -18,53 +20,56 @@ See DOMAIN.md for business rules, USECASE.md for flows, UI_DESIGN.md for compone
 
 ## M1: Design System & App Shell
 
-- [ ] Design tokens (emerald/teal/stone colors, Space Grotesk/Inter fonts)
-- [ ] Frosted glass components (nav bar, search bar, bottom sheets)
-- [ ] Styled tab bar with icons and safe area insets
-- [ ] Floating search bar on map view
-- [ ] Profile page as full-page layer above map
+- [x] Design tokens (emerald/teal/stone colors, Space Grotesk/Inter fonts)
+- [x] Frosted glass components (nav bar, search bar, bottom sheets)
+- [x] Styled tab bar with icons and safe area insets
+- [x] Floating search bar on map view
+- [x] Profile page as full-page layer above map
 
 ---
 
 ## M2: Map & Spots
 
-- [ ] Marker clustering and spot name search
-- [ ] Spot detail sheet (description, access info, conditions, dive log list)
-- [ ] Spot photos (upload and display, up to 5)
-- [ ] Spot creation flow (pin on map, then form)
-- [ ] Favorites (save/unsave spots, persisted per user)
-- [ ] Ratings summary on spot detail (average + latest visibility)
+- [x] Marker clustering and spot name search
+- [x] Spot detail sheet (description, access info, conditions, dive log list)
+- [x] Spot photos (upload and display, up to 5 URL-based attachments)
+- [x] Spot creation flow (pin on map, then form)
+- [x] Favorites (save/unsave spots, persisted per user)
+- [x] Ratings summary on spot detail (average + latest visibility)
 
 ---
 
 ## M3: Dive Reports & Ratings
 
-- [ ] Dive log form (visibility, current, notes, photos)
-- [ ] Dive log list on spot detail (newest first)
-- [ ] Edit dive log (within 48h of creation)
-- [ ] Star rating sheet (auto-prompted after first dive at a spot)
+- [x] Dive log form (visibility, current, notes, photos)
+- [x] Dive log list on spot detail (newest first)
+- [x] Edit dive log (within 48h of creation)
+- [x] Star rating sheet (auto-prompted after first dive at a spot)
 
 ---
 
 ## M4: Auth & Profiles
 
-- [ ] Auth screens (email/password login + signup, Google OAuth, forgot password)
-- [ ] Profile page (avatar, alias, bio, activity stat strip)
-- [ ] My lists (dive reports, created spots, saved spots)
-- [ ] Inline profile editing (alias, bio, avatar upload)
-- [ ] Language picker (English / Norsk) and logout
+- [x] Auth screens (email/password login + signup, Google OAuth, forgot password)
+- [x] Profile page (avatar, alias, bio, activity stat strip)
+- [x] My lists (dive reports, created spots, saved spots)
+- [x] Inline profile editing (alias, bio, avatar upload)
+- [x] Language picker (English / Norsk) and logout
+- [ ] Password change flow (row exists in profile UI, not wired yet)
+- [ ] Legal flow (row exists in profile UI, not wired yet)
+
 
 ---
 
 ## Post-MVP
 
-- Password change flow
 - Offline support and local caching
 - Social features (follow divers, activity feed, dive buddy matching)
 - Admin moderation dashboard
 - Weather and tide integration
 - Discovery feed (global latest reports and spots)
+- Rich photo attachments (captions / separate photo records)
 
 ---
 
-*Last updated: February 2026*
+*Last updated: March 2026*

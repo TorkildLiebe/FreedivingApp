@@ -25,7 +25,7 @@ This folder contains everything needed to implement Freedive App.
 
 Build your app milestone by milestone for better control:
 
-1. Copy the `product-plan/` folder to your codebase
+1. Copy the `docs/design-os-plan/` folder to your codebase
 2. Start with Shell (`instructions/incremental/01-shell.md`) — includes design tokens and application shell
 3. For each section:
    - Open `prompts/section-prompt.md`
@@ -38,7 +38,7 @@ Build your app milestone by milestone for better control:
 
 Build the entire app in one session:
 
-1. Copy the `product-plan/` folder to your codebase
+1. Copy the `docs/design-os-plan/` folder to your codebase
 2. Open `prompts/one-shot-prompt.md`
 3. Add any additional notes to the prompt
 4. Copy/paste the prompt into your coding agent

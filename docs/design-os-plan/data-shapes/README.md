@@ -24,7 +24,6 @@ How you model, store, and fetch this data on the backend is an implementation de
 - **FavoriteSpot** — Saved dive spot on user's profile (used in: auth-and-profiles)
 - **ActivityStats** — Aggregate stats for user profile header (used in: auth-and-profiles)
 - **EditProfilePayload** — Data submitted when editing user profile (used in: auth-and-profiles)
-- **ChangePasswordPayload** — Data submitted when changing password (used in: auth-and-profiles)
 
 ## Per-Section Types
 

@@ -1,212 +1,217 @@
 # USECASE.md — DiveFreely (MVP)
 
-Operational flows. Validation in **DOMAIN.md §2**. Errors in **DOMAIN.md §3**.
+Operational flows for the currently implemented backend. Validation rules live in **DOMAIN.md**.
 
 **Conventions:**
-- **IDs**: UUID v4 | **Timestamps**: ISO 8601 UTC
-- **Auth**: JWT via guards; `actor.userId`/`actor.role` from token
-- **Storage**: Pre-signed upload via `CreateUploadUrl`
+- **IDs**: UUID v4
+- **Timestamps**: ISO 8601 UTC
+- **Auth**: JWT via guards; `actor.userId` and `actor.role` come from the verified token
+- **Storage**: feature-specific pre-signed upload endpoints for avatars, spot photos, and dive-log photos
 
 ---
 
 ## 1) Auth & Profiles
 
 ### 1.1 GetMe
-**Intent**: Return current authenticated user profile & role.
-**Input**: *(none)* — uses JWT from Authorization header.
-**Rules**: Auth required.
-**Output**: `{ id, alias?, bio?, avatarUrl?, email?, role, preferredLanguage }`
-**Errors**: 401 if no/invalid token.
+**Route**: `GET /users/me`  
+**Intent**: Return the authenticated user's current profile.  
+**Rules**: Auth required.  
+**Output**: `{ id, email?, alias?, bio?, avatarUrl?, role, preferredLanguage, favoriteSpotIds, createdAt }`
 
-### 1.2 GetUserProfile
-**Intent**: Public profile lookup by `userId`.
-**Input**: `{ userId }`
-**Rules**: Public; returns only non-sensitive fields.
-**Output**: `{ id, alias, avatarUrl, bio?, createdAt }`
-**Errors**: `UserNotFoundError` → 404
-
-### 1.3 UpdateMyProfile
-**Intent**: Let a user edit their alias, bio, avatar, or language preference.
-**Input**: `{ alias?, bio?, avatarUrl?, preferredLanguage? }`
+### 1.2 UpdateMe
+**Route**: `PATCH /users/me`  
+**Intent**: Update profile fields for the authenticated user.  
+**Input**: `{ alias?, bio?, avatarUrl?, preferredLanguage? }`  
 **Rules**:
-- Auth required; user can only edit their own profile.
-- Apply `DOMAIN.md` §2.1 rules (alias, bio, avatarUrl normalization, preferredLanguage must be "en" or "no").
-**Output**: updated user profile.
-**Errors**: `InvalidAliasError`, `InvalidBioError`, `InvalidPhotoUrlError`, `InvalidPreferredLanguageError`
+1. Auth required.
+2. At least one field must be provided.
+3. `alias` and `bio` follow `DOMAIN.md` length and no-emoji rules.
+4. `preferredLanguage` must be `"en"` or `"no"`.
+**Output**: updated profile payload matching `GetMe`.
 
-### 1.4 CreateUploadUrl
-**Intent**: Get a pre-signed upload URL + a final public URL for client-side uploads.  
-**Input**: `{ purpose: "reportPhoto" | "spotPhoto" | "avatar" }`  
+### 1.3 CreateAvatarUploadUrl
+**Route**: `POST /users/me/avatar/upload-url`  
+**Intent**: Create a pre-signed upload target for avatar uploads.  
+**Input**: `{ mimeType? }`  
 **Rules**:
-- Auth required.
-- Server responds with `{ uploadUrl, publicUrl, expiresAt }`.
-- Ensure the upload purpose maps to the correct storage bucket (per bucket policy).
-**Output**: `{ uploadUrl, publicUrl, expiresAt }`  
-**Errors**: `InvalidUploadPurposeError`
+1. Auth required.
+2. Upload is scoped to the authenticated user.
+**Output**: `{ uploadUrl, publicUrl, expiresAt }`
 
-### 1.5 ListMyReports
-**Intent**: Return the current user's dive reports with spot names.
-**Input**: *(none)* — uses JWT for authentication.
-**Rules**: Auth required.
-**Output**: array of `{ id, spotId, spotName, divedAt, visibilityMeters, currentStrength, notes?, photos }` ordered by `divedAt DESC`.
-**Errors**: 401 if no/invalid token.
-
-### 1.6 ListMySpots
-**Intent**: Return spots created by the current user.
-**Input**: *(none)* — uses JWT for authentication.
-**Rules**: Auth required.
-**Output**: array of `{ id, title, createdAt, reportCount }` ordered by `createdAt DESC`.
-**Errors**: 401 if no/invalid token.
-
-### 1.7 GetMyStats
-**Intent**: Return activity statistics for the current user.
-**Input**: *(none)* — uses JWT for authentication.
-**Rules**: Auth required.
+### 1.4 GetMyStats
+**Route**: `GET /users/me/stats`  
+**Intent**: Return aggregate stats for the authenticated user.  
+**Rules**: Auth required.  
 **Output**: `{ totalReports, uniqueSpotsDived, favoritesCount, memberSince }`
-**Errors**: 401 if no/invalid token.
+
+### 1.5 GetMyActivity
+**Route**: `GET /users/me/activity`  
+**Intent**: Return the authenticated user's activity collections in one response.  
+**Rules**: Auth required.  
+**Output**:
+- `diveReports`: array of `{ id, spotId, spotName, date, visibilityMeters, currentStrength, notesPreview? }`
+- `createdSpots`: array of `{ id, name, createdAt, reportCount }`
+- `favorites`: array of `{ id, spotId, spotName, latestVisibilityMeters?, latestReportDate? }`
+
+### 1.6 AddFavoriteSpot
+**Route**: `POST /users/me/favorites/:spotId`  
+**Intent**: Add a spot to the authenticated user's favorites.  
+**Rules**:
+1. Auth required.
+2. Spot must exist and not be soft-deleted.
+3. Operation is idempotent.
+**Output**: `{ favoriteSpotIds }`
+
+### 1.7 RemoveFavoriteSpot
+**Route**: `DELETE /users/me/favorites/:spotId`  
+**Intent**: Remove a spot from the authenticated user's favorites.  
+**Rules**:
+1. Auth required.
+2. Operation is idempotent.
+**Output**: `{ favoriteSpotIds }`
+
+**Planned, not implemented in the current API:**
+- Public user profile lookup endpoint
+- Generic upload-purpose endpoint
+- Password change endpoint
 
 ---
 
 ## 2) Dive Spots
 
-### 2.1 CreateDiveSpot
-**Input**: `{ title, description, centerLat, centerLon, accessInfo?, parkingLocations? }`  
-**Preconditions**: Auth required; server sets `createdById = actor.userId`.  
-**Steps**:
-1. Normalize text fields; validate all fields per `DOMAIN.md` §2.2/§2.3.
-2. Validate `parkingLocations` (0..5 entries, each within 5000 m of center).
-3. Proximity guard: if any non-deleted spot’s center is within 1000 m → 409 Conflict.
-4. Persist new spot and return the full spot.
-
-### 2.2 UpdateDiveSpot
-**Input**: `{ spotId, title?, description?, accessInfo?, parkingLocations? }`  
-**Preconditions**: Spot exists & not deleted; user is owner or a moderator/admin.  
-**Steps**:
-1. Reject attempts to change `centerLat`/`centerLon` (they are immutable).
-2. Re-validate text and parking fields; update spot; set `updatedAt = now`.
-
-### 2.3 SoftDeleteDiveSpot
-**Input**: `{ spotId }`  
-**Preconditions**: Spot exists; user is owner or moderator/admin.  
-**Steps**: Mark the spot as soft-deleted. Operation is idempotent; after deletion the spot is treated as not found (404 on access).
-
-### 2.4 ListSpotsByBBox
+### 2.1 ListSpotsByBBox
+**Route**: `GET /spots`  
+**Intent**: Return spots within a bounding box for map rendering.  
 **Input**: `{ latMin, latMax, lonMin, lonMax, maxResults? }`  
-**Steps**:
-1. Validate bounding box (`DOMAIN.md` §2.6); reject if it spans the antimeridian.
-2. Use default and max limits for results (default 300, cap 1000).
-3. Query spots within BBOX (excluding deleted); return `{ items, count, truncated }` with minimal spot info.
+**Rules**:
+1. Auth required.
+2. Reject antimeridian-spanning bounding boxes.
+3. Default result limit is 300; hard cap is 1000.
+**Output**: `{ items, count, truncated }`
 
-### 2.5 GetSpotById
-**Input**: `{ spotId }`  
-**Steps**: Load the spot by ID (ensure not deleted) and return it, or 404 if not found.
+### 2.2 GetSpotById
+**Route**: `GET /spots/:id`  
+**Intent**: Return spot detail for a single spot.  
+**Rules**:
+1. Auth required.
+2. Spot must exist and not be soft-deleted.
+3. Response includes an initial embedded slice of recent dive logs.
+**Output**: full spot detail including rating aggregates and recent dive logs.
 
-### 2.6 GetSpotWithReports
-**Input**: `{ spotId, limit? (default 10; max 50) }`  
-**Steps**:
-1. Load spot or return 404 if not found/deleted.
-2. Load recent reports for that spot (exclude deleted, order by `divedAt DESC`, apply limit).
-3. Return `{ spot, reports: { items, count, truncated } }`.
+### 2.3 ListDiveLogsBySpot
+**Route**: `GET /spots/:id/dive-logs`  
+**Intent**: Return paginated dive logs for a spot.  
+**Input**: `{ page?, limit? }`  
+**Rules**:
+1. Auth required.
+2. Spot must exist and not be soft-deleted.
+3. Default page is 1; default limit is 20; max limit is 50.
+**Output**: `{ items, page, limit, total }`
+
+### 2.4 CreateDiveSpot
+**Route**: `POST /spots`  
+**Intent**: Create a new dive spot owned by the authenticated user.  
+**Input**: `{ title, description?, centerLat, centerLon, accessInfo?, parkingLocations? }`  
+**Rules**:
+1. Auth required.
+2. Title, description, and access info follow `DOMAIN.md` text rules.
+3. Max 5 parking locations; each must be within 5000m of the spot center.
+4. Reject create if a non-deleted spot exists within 1000m.
+**Output**: full spot detail.
+
+### 2.5 UpdateDiveSpot
+**Route**: `PATCH /spots/:id`  
+**Intent**: Update mutable spot fields.  
+**Input**: `{ title?, description?, accessInfo?, parkingLocations? }`  
+**Rules**:
+1. Auth required.
+2. Only owner, moderator, or admin may update.
+3. Spot center coordinates are immutable and not accepted by the DTO.
+4. Provided text fields re-run validation.
+**Output**: updated full spot detail.
+
+### 2.6 CreateSpotPhotoUploadUrl
+**Route**: `POST /spots/:id/photos/upload-url`  
+**Intent**: Create a pre-signed upload target for a spot photo.  
+**Input**: `{ mimeType? }`  
+**Rules**:
+1. Auth required.
+2. Spot must exist and not be soft-deleted.
+3. Reject if the spot already has 5 photos.
+**Output**: `{ uploadUrl, publicUrl, expiresAt }`
 
 ### 2.7 AddPhotoToSpot
-**Input**: `{ spotId, url, caption? }`  
-**Preconditions**: Spot exists & not deleted; user is owner or moderator/admin.  
-**Steps**:
-1. Validate `url` and `caption` per `DOMAIN.md` §2.5.
-2. Enforce max 5 photos per spot and prevent duplicate URL (case-insensitive) for this spot.
-3. Persist the photo attachment record and return it.
+**Route**: `POST /spots/:id/photos`  
+**Intent**: Persist a spot photo URL on the spot record.  
+**Input**: `{ url }`  
+**Rules**:
+1. Auth required.
+2. Spot must exist and not be soft-deleted.
+3. URL must be valid and HTTPS.
+4. Max 5 photos per spot; duplicate URLs are rejected case-insensitively.
+**Output**: updated full spot detail.
+
+### 2.8 UpsertSpotRating
+**Route**: `POST /spots/:id/ratings`  
+**Intent**: Create or update the current user's star rating for a spot.  
+**Input**: `{ rating }` where `rating ∈ [1,5]`  
+**Rules**:
+1. Auth required.
+2. Spot must exist and not be soft-deleted.
+3. One rating per `(userId, spotId)` with upsert semantics.
+**Output**: `{ id, spotId, userId, rating, averageRating, ratingCount, createdAt, updatedAt }`
+
+### 2.9 SoftDeleteDiveSpot
+**Route**: `DELETE /spots/:id`  
+**Intent**: Soft-delete a spot.  
+**Rules**:
+1. Auth required.
+2. Only owner, moderator, or admin may delete.
+3. Operation is idempotent.
+**Output**: `204 No Content`
+
+**Planned, not implemented as separate endpoints:**
+- Standalone `GET` endpoint for average rating
 
 ---
 
-## 3) Dive Reports
+## 3) Dive Logs
 
-### 3.1 CreateDiveReport
-**Input**: `{ spotId, visibilityMeters, currentStrength, divedAt, notes? }`
-**Preconditions**: Spot exists & not deleted; auth required.
-**Steps**:
-1. Validate ranges (`visibilityMeters ∈ [0,30]`, `currentStrength ∈ [1,5]`), validate `notes` if provided (0-500 chars, no emoji), and ensure `divedAt` is not in the future (per `DOMAIN.md` §2.4).
-2. Anti-duplication check: if the same user posted a report for the same spot within the last ~2 hours with a similar visibility (Δ ≤ 1.0) and identical `currentStrength` → 409 Conflict.
-3. Persist the new report with `authorId = actor.userId` and return the report.
+### 3.1 CreateDiveLog
+**Route**: `POST /dive-logs`  
+**Intent**: Create a dive log for a spot.  
+**Input**: `{ spotId, visibilityMeters, currentStrength, divedAt?, notes?, photoUrls? }`  
+**Rules**:
+1. Auth required.
+2. Spot must exist and not be soft-deleted.
+3. `visibilityMeters ∈ [0,30]`, `currentStrength ∈ [1,5]`.
+4. `notes` follows length and no-emoji rules.
+5. `photoUrls` accepts up to 5 URLs.
+6. `divedAt` cannot be in the future.
+**Output**: `{ diveLog, shouldPromptRating }`
 
-### 3.2 UpdateDiveReport
-**Input**: `{ reportId, visibilityMeters?, currentStrength?, divedAt?, notes? }`
-**Preconditions**: Report exists & not deleted; user is author (within 48h of creation) or a moderator/admin.
-**Steps**:
-1. Validate all provided fields per `DOMAIN.md` §2.4 (including `notes` if present); ensure immutable fields (`spotId`, `authorId`) are not changed.
-2. Re-run the anti-duplication check if any key values (visibility, currentStrength, divedAt) have changed.
-3. Persist the changes (`updatedAt = now`) and return the updated report.
+### 3.2 CreateDiveLogPhotoUploadUrl
+**Route**: `POST /dive-logs/photos/upload-url`  
+**Intent**: Create a pre-signed upload target for a dive-log photo.  
+**Input**: `{ spotId, mimeType? }`  
+**Rules**:
+1. Auth required.
+2. Spot must exist and not be soft-deleted.
+**Output**: `{ uploadUrl, publicUrl, expiresAt }`
 
-### 3.3 AddPhotoToReport
-**Input**: `{ reportId, url, caption? }`  
-**Preconditions**: Report exists & not deleted; user is author or moderator/admin.  
-**Steps**:
-1. Validate `url` and `caption` per `DOMAIN.md` §2.5.
-2. Enforce max 5 photos per report and prevent duplicate URL (case-insensitive) for this report.
-3. Persist the photo attachment and return it.
+### 3.3 UpdateDiveLog
+**Route**: `PATCH /dive-logs/:id`  
+**Intent**: Update mutable fields on an existing dive log.  
+**Input**: `{ visibilityMeters?, currentStrength?, divedAt?, notes?, photoUrls? }`  
+**Rules**:
+1. Auth required.
+2. Author may edit within 48 hours of creation.
+3. Moderator and admin roles may edit regardless of the 48-hour window.
+4. Other users are rejected.
+5. Provided fields re-run the same validation used during creation.
+**Output**: updated dive-log payload.
 
----
+**Deferred documentation debt:**
+- Duplicate recent report protection is planned but not enforced in the current implementation.
 
-## 4) Favorites
-
-### 4.1 AddFavoriteSpot
-**Intent**: Mark a dive spot as a favorite for the current user.  
-**Input**: `{ spotId }`  
-**Preconditions**: Spot exists & not deleted; auth required.  
-**Steps**:
-1. Ensure the spot exists and is not soft-deleted (if not, throw `SpotNotFoundOrDeletedError`).
-2. If the spot is already in the user’s favorites list, do nothing (idempotent).
-3. Otherwise, add the spot’s ID to the user’s favorites list.
-4. Persist the updated user record (favoriteSpotIds).
-5. Return success.
-
-### 4.2 RemoveFavoriteSpot
-**Intent**: Remove a dive spot from the current user’s favorites.  
-**Input**: `{ spotId }`  
-**Preconditions**: Auth required.  
-**Steps**:
-1. If the spotId is in the user’s favorites list, remove it.
-2. If it’s not in the list, do nothing (idempotent).
-3. Persist the updated user record.
-4. Return success.
-
-### 4.3 ListMyFavoriteSpots
-**Intent**: Retrieve the current user’s favorite dive spots with latest conditions.
-**Input**: *(none)* — uses JWT for authentication.
-**Preconditions**: Auth required.
-**Steps**:
-1. Read the user’s `favoriteSpotIds` list.
-2. Fetch each corresponding spot (ignore any that are deleted or missing).
-3. For each spot, include `latestVisibilityMeters` and `latestReportDate` from the most recent dive report (null if no reports).
-4. Return the enriched list of favorite spots.
-
-**Output**: array of `{ id, spotId, spotName, latestVisibilityMeters?, latestReportDate? }`
-
----
-
-## 5) Spot Ratings
-
-### 5.1 UpsertSpotRating
-**Intent**: Set or update the current user’s quality rating for a spot.
-**Input**: `{ spotId, rating ∈ [1,5] }`
-**Preconditions**: Spot exists & not deleted; auth required.
-**Steps**:
-1. Validate `rating ∈ [1,5]` (integer).
-2. Upsert: if a SpotRating exists for `(userId, spotId)`, update it; otherwise create a new one.
-3. Return the saved SpotRating.
-
-**Output**: `{ id, spotId, userId, rating, updatedAt }`
-**Errors**: `SpotNotFoundOrDeletedError`, `InvalidRatingError`
-
-### 5.2 GetSpotAverageRating
-**Intent**: Get the average star rating for a spot across all users.
-**Input**: `{ spotId }`
-**Preconditions**: Spot exists & not deleted.
-**Steps**:
-1. Query all SpotRatings for the spot.
-2. Calculate average (null if no ratings).
-3. Return average and count.
-
-**Output**: `{ spotId, averageRating: number | null, ratingCount: number }`
-**Errors**: `SpotNotFoundOrDeletedError`
-
-*Last updated: February 2026*
+*Last updated: March 2026*

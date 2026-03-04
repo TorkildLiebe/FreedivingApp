@@ -12,10 +12,10 @@ Authentication and personal profile management for the freediving app. Covers si
 - Logged-in user views their profile page (inside the app shell via `pageContent`)
 - Profile shows header (avatar, alias, bio), stat strip (reports, spots, saved, member since), and an iOS-settings-style grouped list
 - User edits their profile inline (alias, bio, avatar)
-- User navigates to detail views: Dive Reports, My Spots, Saved Spots, Language, Password, Legal
+- User navigates to detail views: Dive Reports, My Spots, Saved Spots, Language
 - User changes their preferred language (English / Norsk)
-- User changes their password via a dedicated form
 - User logs out from the "More" section
+- Password and Legal rows are visible in the current profile UI but act as placeholders only
 
 ## Design Decisions
 
@@ -28,7 +28,7 @@ Authentication and personal profile management for the freediving app. Covers si
 
 ## Data Shapes
 
-**Entities used:** `AuthUser`, `DiveReportSummary`, `CreatedSpot`, `FavoriteSpot`, `ActivityStats`, `EditProfilePayload`, `ChangePasswordPayload`
+**Entities used:** `AuthUser`, `DiveReportSummary`, `CreatedSpot`, `FavoriteSpot`, `ActivityStats`, `EditProfilePayload`
 
 ## Visual Reference
 
@@ -56,6 +56,5 @@ See `screenshot-profile.png` for the profile page design.
 | Callback | Triggered When |
 |----------|----------------|
 | `onEditProfile` | User saves profile edits |
-| `onChangePassword` | User submits password change |
 | `onLogout` | User taps "Log out" |
 | `onChangeLanguage` | User selects a language |
