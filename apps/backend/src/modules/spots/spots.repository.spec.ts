@@ -60,6 +60,22 @@ describe('SpotsRepository', () => {
     repository = module.get<SpotsRepository>(SpotsRepository);
   });
 
+  describe('listSummaries', () => {
+    it('should list all active spot summaries ordered for stable responses', async () => {
+      prisma.diveSpot.findMany.mockResolvedValue([]);
+
+      await repository.listSummaries();
+
+      expect(prisma.diveSpot.findMany).toHaveBeenCalledWith({
+        where: {
+          isDeleted: false,
+        },
+        select: { id: true, title: true, centerLat: true, centerLon: true },
+        orderBy: [{ title: 'asc' }, { id: 'asc' }],
+      });
+    });
+  });
+
   describe('listByBBox', () => {
     it('should query with correct where clause and isDeleted=false', async () => {
       prisma.diveSpot.findMany.mockResolvedValue([]);

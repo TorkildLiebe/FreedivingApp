@@ -124,10 +124,12 @@ Mobile touched:
 - Targeted: `pnpm --filter mobile test -- <pattern>`
 - Medium/high: `pnpm test:mobile`
 - Static checks: `pnpm lint:mobile`, `pnpm --filter mobile run type-check`
-- Before UI runtime verification, run auth preflight: `pnpm orchestrator:mobile-auth-check`
+- Runtime readiness is mandatory before any iOS simulator capture or semantic navigation:
+  - `pnpm orchestrator:mobile-runtime-ready`
+  - This preflight must fail on API URL/port mismatch, backend listen mismatch, `/health` reachability failure, or auth preflight failure.
 - UI changes: capture iOS screenshot evidence before declaring success.
 - For M2 map/spots runtime evidence capture, use deterministic command when applicable:
-  - `pnpm orchestrator:capture-ios-m2-core -- --run-id <run-id> --issue-number <n> [--device "<name>"]`
+  - `pnpm orchestrator:capture-ios-m2-core --run-id <run-id> --issue-number <n> [--device "<name>"]`
 - Android verification is currently non-blocking and must be called out in `Risk notes` when not run.
 - UI changes: compare screenshots against the matching Design OS screenshot references and record parity outcome.
 - UI changes: deviations are allowed only when explicitly justified and listed in report sections.
@@ -147,6 +149,14 @@ Failure policy:
 - Diagnose and fix (or document blocker).
 - Rerun affected commands.
 - Report residual risk explicitly if unresolved.
+- Baseline blocker rule:
+  - If repo-wide lint/type-check fails outside touched scope in strict mode, keep `VERIFICATION: FAIL`.
+  - Report blocker files explicitly in `Verification run`.
+
+Strict gate decision table:
+- Preflight `pnpm orchestrator:mobile-runtime-ready` fails => `VERIFICATION: FAIL`
+- `MOBILE_UI_TOUCHED: true` and iOS evidence missing => `VERIFICATION: FAIL`
+- Required tests/lint/type-check fail (including baseline blockers in strict mode) => `VERIFICATION: FAIL`
 
 ## Report
 
@@ -162,6 +172,10 @@ For mobile/UI-impacting issues, include these labeled lines inside the sections 
 - `Component mapping:`
 - `Design parity evidence:`
 - `Approved deviations:`
+- `Evidence manifest:`
+  - screenshot paths (initial, retry, post-pan where applicable)
+  - log artifact path
+  - proof of retry recovery (error state removed after retry)
 
 Before returning final output, append the current run's section to:
 - `docs/orchestration/vertical-slice-improvements/<issue-number>.md`

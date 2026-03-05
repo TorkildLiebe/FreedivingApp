@@ -79,7 +79,16 @@ Operational flows for the currently implemented backend. Validation rules live i
 
 ## 2) Dive Spots
 
-### 2.1 ListSpotsByBBox
+### 2.1 ListSpotSummaries
+**Route**: `GET /spots/summaries`  
+**Intent**: Return lightweight spot summaries for session-cached map rendering.  
+**Rules**:
+1. Auth required.
+2. Return only non-deleted spots.
+3. Payload is limited to marker summary fields: `id`, `title`, `centerLat`, `centerLon`.
+**Output**: `SpotSummary[]`
+
+### 2.2 ListSpotsByBBox
 **Route**: `GET /spots`  
 **Intent**: Return spots within a bounding box for map rendering.  
 **Input**: `{ latMin, latMax, lonMin, lonMax, maxResults? }`  
@@ -89,7 +98,7 @@ Operational flows for the currently implemented backend. Validation rules live i
 3. Default result limit is 300; hard cap is 1000.
 **Output**: `{ items, count, truncated }`
 
-### 2.2 GetSpotById
+### 2.3 GetSpotById
 **Route**: `GET /spots/:id`  
 **Intent**: Return spot detail for a single spot.  
 **Rules**:
@@ -98,7 +107,7 @@ Operational flows for the currently implemented backend. Validation rules live i
 3. Response includes an initial embedded slice of recent dive logs.
 **Output**: full spot detail including rating aggregates and recent dive logs.
 
-### 2.3 ListDiveLogsBySpot
+### 2.4 ListDiveLogsBySpot
 **Route**: `GET /spots/:id/dive-logs`  
 **Intent**: Return paginated dive logs for a spot.  
 **Input**: `{ page?, limit? }`  
@@ -108,7 +117,7 @@ Operational flows for the currently implemented backend. Validation rules live i
 3. Default page is 1; default limit is 20; max limit is 50.
 **Output**: `{ items, page, limit, total }`
 
-### 2.4 CreateDiveSpot
+### 2.5 CreateDiveSpot
 **Route**: `POST /spots`  
 **Intent**: Create a new dive spot owned by the authenticated user.  
 **Input**: `{ title, description?, centerLat, centerLon, accessInfo?, parkingLocations? }`  
@@ -119,7 +128,7 @@ Operational flows for the currently implemented backend. Validation rules live i
 4. Reject create if a non-deleted spot exists within 1000m.
 **Output**: full spot detail.
 
-### 2.5 UpdateDiveSpot
+### 2.6 UpdateDiveSpot
 **Route**: `PATCH /spots/:id`  
 **Intent**: Update mutable spot fields.  
 **Input**: `{ title?, description?, accessInfo?, parkingLocations? }`  
@@ -130,7 +139,7 @@ Operational flows for the currently implemented backend. Validation rules live i
 4. Provided text fields re-run validation.
 **Output**: updated full spot detail.
 
-### 2.6 CreateSpotPhotoUploadUrl
+### 2.7 CreateSpotPhotoUploadUrl
 **Route**: `POST /spots/:id/photos/upload-url`  
 **Intent**: Create a pre-signed upload target for a spot photo.  
 **Input**: `{ mimeType? }`  
@@ -140,7 +149,7 @@ Operational flows for the currently implemented backend. Validation rules live i
 3. Reject if the spot already has 5 photos.
 **Output**: `{ uploadUrl, publicUrl, expiresAt }`
 
-### 2.7 AddPhotoToSpot
+### 2.8 AddPhotoToSpot
 **Route**: `POST /spots/:id/photos`  
 **Intent**: Persist a spot photo URL on the spot record.  
 **Input**: `{ url }`  
@@ -151,7 +160,7 @@ Operational flows for the currently implemented backend. Validation rules live i
 4. Max 5 photos per spot; duplicate URLs are rejected case-insensitively.
 **Output**: updated full spot detail.
 
-### 2.8 UpsertSpotRating
+### 2.9 UpsertSpotRating
 **Route**: `POST /spots/:id/ratings`  
 **Intent**: Create or update the current user's star rating for a spot.  
 **Input**: `{ rating }` where `rating ∈ [1,5]`  
@@ -161,7 +170,7 @@ Operational flows for the currently implemented backend. Validation rules live i
 3. One rating per `(userId, spotId)` with upsert semantics.
 **Output**: `{ id, spotId, userId, rating, averageRating, ratingCount, createdAt, updatedAt }`
 
-### 2.9 SoftDeleteDiveSpot
+### 2.10 SoftDeleteDiveSpot
 **Route**: `DELETE /spots/:id`  
 **Intent**: Soft-delete a spot.  
 **Rules**:

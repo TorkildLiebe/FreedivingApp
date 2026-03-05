@@ -32,6 +32,16 @@ const SPOT_DIVE_LOG_INCLUDE = {
 export class SpotsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  async listSummaries() {
+    return this.prisma.diveSpot.findMany({
+      where: {
+        isDeleted: false,
+      },
+      select: SPOT_SUMMARY_SELECT,
+      orderBy: [{ title: 'asc' }, { id: 'asc' }],
+    });
+  }
+
   async listByBBox(
     latMin: number,
     latMax: number,

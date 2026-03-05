@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRouter } from 'expo-router';
 import { ApiError, apiFetch } from '@/src/infrastructure/api/client';
@@ -30,7 +30,6 @@ import { AddDiveFormSheet } from '@/src/features/map/components/add-dive-form-sh
 import { RatingSheet } from '@/src/features/map/components/rating-sheet';
 import { CreateSpotOverlay } from '@/src/features/map/components/create-spot-overlay';
 import type {
-  BBox,
   DiveLogPreview,
   ParkingLocation,
   SpotDetail,
@@ -59,7 +58,6 @@ export default function MapScreen() {
   const mapRef = useRef<MapViewHandle>(null);
   const sheetRef = useRef<SpotDetailSheetHandle>(null);
   const [activeLayer, setActiveLayer] = useState<MapLayer>('topo');
-  const [bbox, setBbox] = useState<BBox | null>(null);
   const devSelectedSpotId =
     process.env.NODE_ENV === 'development'
       ? process.env.EXPO_PUBLIC_DEV_SELECTED_SPOT_ID
@@ -113,7 +111,13 @@ export default function MapScreen() {
   const [dismissedRatingPromptSpotIds, setDismissedRatingPromptSpotIds] =
     useState<string[]>([]);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
-  const { spots, refresh: refreshSpots } = useSpots(bbox);
+  const {
+    spots,
+    isLoading: areSpotsLoading,
+    error: spotsError,
+    refresh: refreshSpots,
+    upsertSpotSummary,
+  } = useSpots();
   const {
     spot,
     isLoading: isSpotLoading,
@@ -143,7 +147,6 @@ export default function MapScreen() {
   } = useDiveLogSubmit({
     onSubmitted: async () => {
       await refresh();
-      refreshSpots();
     },
   });
 
@@ -411,7 +414,12 @@ export default function MapScreen() {
       });
 
       resetCreateForm();
-      refreshSpots();
+      upsertSpotSummary({
+        id: createdSpot.id,
+        title: createdSpot.title,
+        centerLat: createdSpot.centerLat,
+        centerLon: createdSpot.centerLon,
+      });
       setSelectedSpotId(createdSpot.id);
       mapRef.current?.flyTo(
         {
@@ -439,8 +447,8 @@ export default function MapScreen() {
     createSpot,
     createTitle,
     liveMapCenter,
-    refreshSpots,
     resetCreateForm,
+    upsertSpotSummary,
   ]);
 
   const handleAddDive = useCallback(
@@ -541,9 +549,8 @@ export default function MapScreen() {
         body: JSON.stringify({ rating }),
       });
       await refresh();
-      refreshSpots();
     },
-    [refresh, refreshSpots],
+    [refresh],
   );
 
   const handleRateAfterDive = useCallback(
@@ -614,7 +621,6 @@ export default function MapScreen() {
         parkingLocations={spot?.parkingLocations}
         draftSpotCoordinate={shouldShowDraftMarkers ? createPinnedCoordinate : null}
         draftParkingLocations={shouldShowDraftMarkers ? createParkingLocations : []}
-        onRegionDidChange={setBbox}
         onMapCenterDidChange={setLiveMapCenter}
         onSpotPress={handleSpotPress}
         onParkingPress={handleParkingPress}
@@ -622,6 +628,31 @@ export default function MapScreen() {
       <View style={styles.attribution}>
         <Text style={styles.attributionText}>{'\u00A9'} Kartverket</Text>
       </View>
+      {spots.length === 0 && areSpotsLoading ? (
+        <View style={styles.summaryStatusContainer} pointerEvents="box-none">
+          <FrostedGlass style={styles.summaryStatusCard}>
+            <Text testID="map-spots-loading-state" style={styles.summaryStatusText}>
+              Loading dive spots...
+            </Text>
+          </FrostedGlass>
+        </View>
+      ) : null}
+      {spots.length === 0 && spotsError ? (
+        <View style={styles.summaryStatusContainer} pointerEvents="box-none">
+          <FrostedGlass style={styles.summaryStatusCard}>
+            <Text testID="map-spots-error-state" style={styles.summaryStatusText}>
+              Failed to load dive spots.
+            </Text>
+            <Pressable
+              testID="map-retry-spots-button"
+              onPress={refreshSpots}
+              style={styles.summaryStatusButton}
+            >
+              <Text style={styles.summaryStatusButtonText}>Retry</Text>
+            </Pressable>
+          </FrostedGlass>
+        </View>
+      ) : null}
       <MapFloatingButton
         testID="map-toggle-layer-button"
         onPress={handleToggleLayer}
@@ -815,6 +846,38 @@ const styles = StyleSheet.create({
   attributionText: {
     fontSize: 11,
     color: '#333',
+  },
+  summaryStatusContainer: {
+    position: 'absolute',
+    top: 112,
+    left: 16,
+    right: 16,
+    zIndex: 19,
+  },
+  summaryStatusCard: {
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  summaryStatusText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.neutral[800],
+  },
+  summaryStatusButton: {
+    borderRadius: 999,
+    backgroundColor: colors.primary[500],
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  summaryStatusButtonText: {
+    color: colors.neutral[50],
+    fontSize: 13,
+    fontWeight: '600',
   },
   layerButton: {
     position: 'absolute',

@@ -16,6 +16,7 @@ import { AuthGuard, CurrentUser } from '../../common/auth';
 import { SpotsService } from './spots.service';
 import { ListSpotsByBBoxQueryDto } from './dto/list-spots-by-bbox-query.dto';
 import { ListSpotsResponseDto } from './dto/list-spots-response.dto';
+import { SpotSummaryResponseDto } from './dto/spot-summary-response.dto';
 import { SpotDetailResponseDto } from './dto/spot-detail-response.dto';
 import { CreateSpotDto } from './dto/create-spot.dto';
 import { UpdateSpotDto } from './dto/update-spot.dto';
@@ -32,6 +33,11 @@ import type { AuthenticatedUser } from '../../common/auth';
 @UseGuards(AuthGuard)
 export class SpotsController {
   constructor(private readonly spotsService: SpotsService) {}
+
+  @Get('summaries')
+  async listSummaries(): Promise<SpotSummaryResponseDto[]> {
+    return this.spotsService.listSummaries();
+  }
 
   @Get()
   async listByBBox(

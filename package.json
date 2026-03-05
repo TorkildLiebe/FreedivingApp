@@ -10,6 +10,7 @@
     "qa:ios:ensure-app": "node scripts/qa/ensure-ios-app.mjs",
     "qa:smoke:ios": "node scripts/qa/smoke-ios.mjs",
     "orchestrator:mobile-auth-check": "node scripts/orchestrator/check-mobile-auth.mjs",
+    "orchestrator:mobile-runtime-ready": "node scripts/orchestrator/mobile-runtime-ready.mjs",
     "orchestrator:capture-ios-m2-core": "node scripts/orchestrator/capture-ios-m2-core.mjs",
     "orchestrator:transition-issue-commit": "node scripts/orchestrator/transition-issue-commit.mjs",
     "orchestrator:close-milestone-run": "node scripts/orchestrator/close-milestone-run.mjs",

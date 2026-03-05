@@ -18,6 +18,8 @@ const mockApiFetch = jest.fn();
 const mockPush = jest.fn();
 const mockSetOptions = jest.fn();
 const mockToggleFavoriteSpot = jest.fn();
+const mockRefreshSpots = jest.fn();
+const mockUpsertSpotSummary = jest.fn();
 
 jest.mock('@/src/features/map/hooks/use-location', () => ({
   useLocation: (...args: unknown[]) => mockUseLocation(...args),
@@ -166,6 +168,8 @@ const mockSpot: SpotDetail = {
 beforeEach(() => {
   jest.clearAllMocks();
   mockApiFetch.mockResolvedValue({} as never);
+  mockRefreshSpots.mockReset();
+  mockUpsertSpotSummary.mockReset();
 
   mockUseLocation.mockReturnValue({
     location: null,
@@ -177,7 +181,9 @@ beforeEach(() => {
     spots: [],
     isLoading: false,
     error: null,
-    refresh: jest.fn(),
+    refresh: mockRefreshSpots,
+    upsertSpotSummary: mockUpsertSpotSummary,
+    removeSpotSummary: jest.fn(),
   });
 
   mockUseSpotDetail.mockReturnValue({
@@ -238,6 +244,37 @@ describe('MapScreen', () => {
     expect(mapView.props.tileUrl).toContain('kartverket');
     expect(mapView.props.zoom).toBe(10);
     expect(mapView.props.center).toEqual({ lat: 59.9139, lng: 10.7522 });
+  });
+
+  it('shows a loading state while summaries are loading and no spots are cached', () => {
+    mockUseSpots.mockReturnValue({
+      spots: [],
+      isLoading: true,
+      error: null,
+      refresh: mockRefreshSpots,
+      upsertSpotSummary: mockUpsertSpotSummary,
+      removeSpotSummary: jest.fn(),
+    });
+
+    const { getByTestId } = render(<MapScreen />);
+
+    expect(getByTestId('map-spots-loading-state')).toBeTruthy();
+  });
+
+  it('shows a retry state when summary loading fails', () => {
+    mockUseSpots.mockReturnValue({
+      spots: [],
+      isLoading: false,
+      error: 'Failed to load spots',
+      refresh: mockRefreshSpots,
+      upsertSpotSummary: mockUpsertSpotSummary,
+      removeSpotSummary: jest.fn(),
+    });
+
+    const { getByTestId } = render(<MapScreen />);
+
+    fireEvent.press(getByTestId('map-retry-spots-button'));
+    expect(mockRefreshSpots).toHaveBeenCalledWith();
   });
 
   it('uses Design OS search placeholder copy', () => {
@@ -583,6 +620,44 @@ describe('MapScreen', () => {
           centerLon: 11.5,
         }),
       );
+    });
+  });
+
+  it('adds a newly created spot summary to the in-memory map cache', async () => {
+    const createSpot = jest.fn().mockResolvedValue({
+      ...mockSpot,
+      id: 'spot-new',
+      title: 'Fresh Spot',
+      centerLat: 60.25,
+      centerLon: 11.25,
+    });
+    mockUseCreateSpot.mockReturnValue({
+      createSpot,
+      isSubmitting: false,
+      error: null,
+      clearError: jest.fn(),
+    });
+
+    const { getByTestId } = render(<MapScreen />);
+
+    fireEvent.press(getByTestId('map-start-create-spot-button'));
+    act(() => {
+      getByTestId('create-spot-overlay').props.onConfirmPin();
+    });
+    act(() => {
+      getByTestId('create-spot-overlay').props.onTitleChange('Fresh Spot');
+    });
+    await act(async () => {
+      await getByTestId('create-spot-overlay').props.onSubmit();
+    });
+
+    await waitFor(() => {
+      expect(mockUpsertSpotSummary).toHaveBeenCalledWith({
+        id: 'spot-new',
+        title: 'Fresh Spot',
+        centerLat: 60.25,
+        centerLon: 11.25,
+      });
     });
   });
 

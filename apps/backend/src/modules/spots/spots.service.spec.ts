@@ -74,6 +74,7 @@ describe('SpotsService', () => {
         {
           provide: SpotsRepository,
           useValue: {
+            listSummaries: jest.fn(),
             listByBBox: jest.fn(),
             findById: jest.fn(),
             findByIdAnyState: jest.fn(),
@@ -92,6 +93,21 @@ describe('SpotsService', () => {
     service = module.get<SpotsService>(SpotsService);
     repository = module.get(SpotsRepository);
     spotPhotoStorage = module.get(SpotPhotoStorageService);
+  });
+
+  describe('listSummaries', () => {
+    it('should return all non-deleted spot summaries', async () => {
+      const spots = [
+        { id: '1', title: 'A', centerLat: 60, centerLon: 5 },
+        { id: '2', title: 'B', centerLat: 60.1, centerLon: 5.1 },
+      ];
+      repository.listSummaries.mockResolvedValue(spots);
+
+      const result = await service.listSummaries();
+
+      expect(repository.listSummaries).toHaveBeenCalledWith();
+      expect(result).toEqual(spots);
+    });
   });
 
   describe('listByBBox', () => {
@@ -256,6 +272,7 @@ describe('SpotsService', () => {
             visibilityMeters: 9,
             currentStrength: 3,
             notes: 'Very clear',
+            observations: [],
             photoUrls: [],
             divedAt: firstDiveDate,
             isDeleted: false,
