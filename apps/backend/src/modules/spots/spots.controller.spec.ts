@@ -60,6 +60,7 @@ describe('SpotsController', () => {
         {
           provide: SpotsService,
           useValue: {
+            listSummaries: jest.fn(),
             listByBBox: jest.fn(),
             getById: jest.fn(),
             listDiveLogs: jest.fn(),
@@ -82,6 +83,17 @@ describe('SpotsController', () => {
 
     controller = module.get<SpotsController>(SpotsController);
     spotsService = module.get(SpotsService);
+  });
+
+  describe('listSummaries', () => {
+    it('should call service and return spot summaries', async () => {
+      spotsService.listSummaries.mockResolvedValue(mockListResponse.items);
+
+      const result = await controller.listSummaries();
+
+      expect(spotsService.listSummaries).toHaveBeenCalledWith();
+      expect(result).toEqual(mockListResponse.items);
+    });
   });
 
   describe('listByBBox', () => {

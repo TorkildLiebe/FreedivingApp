@@ -101,7 +101,7 @@ Note:
 Current operational flows in **USECASE.md**:
 - Profiles: `GetMe`, `UpdateMe`, `CreateAvatarUploadUrl`, `GetMyStats`, `GetMyActivity`
 - Favorites: `AddFavoriteSpot`, `RemoveFavoriteSpot`
-- Spots: `ListSpotsByBBox`, `GetSpotById`, `ListDiveLogsBySpot`, `CreateDiveSpot`, `UpdateDiveSpot`, `CreateSpotPhotoUploadUrl`, `AddPhotoToSpot`, `UpsertSpotRating`, `SoftDeleteDiveSpot`
+- Spots: `ListSpotSummaries`, `ListSpotsByBBox`, `GetSpotById`, `ListDiveLogsBySpot`, `CreateDiveSpot`, `UpdateDiveSpot`, `CreateSpotPhotoUploadUrl`, `AddPhotoToSpot`, `UpsertSpotRating`, `SoftDeleteDiveSpot`
 - Dive logs: `CreateDiveLog`, `CreateDiveLogPhotoUploadUrl`, `UpdateDiveLog`
 
 Deferred / planned, not part of the current implemented contract:

@@ -12,6 +12,7 @@ import {
   TooCloseToExistingSpotError,
 } from '../../common/errors';
 import { ListSpotsResponseDto } from './dto/list-spots-response.dto';
+import { SpotSummaryResponseDto } from './dto/spot-summary-response.dto';
 import { SpotDetailResponseDto } from './dto/spot-detail-response.dto';
 import type { AuthenticatedUser } from '../../common/auth';
 import type { CreateSpotDto } from './dto/create-spot.dto';
@@ -39,6 +40,10 @@ export class SpotsService {
     private readonly spotsRepository: SpotsRepository,
     private readonly spotPhotoStorage: SpotPhotoStorageService,
   ) {}
+
+  async listSummaries(): Promise<SpotSummaryResponseDto[]> {
+    return this.spotsRepository.listSummaries();
+  }
 
   async listByBBox(
     latMin: number,

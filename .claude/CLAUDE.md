@@ -49,7 +49,7 @@ Skill types currently available in `.claude/skills/`:
 - Development: `backend-dev`, `frontend-dev`
 - Testing and verification: `test-backend`, `test-mobile`, `ios-simulator-skill`
 - Quality and policy: `audit-rules`, `security`
-- Product and documentation: `product-copilot`, `sync-docs`
+- Product and documentation: `product-copilot`, `feature-planning`, `sync-docs`
 
 Dedicated agents in `.claude/agents/`:
 

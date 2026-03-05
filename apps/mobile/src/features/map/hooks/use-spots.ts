@@ -1,65 +1,123 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '@/src/infrastructure/api/client';
-import type { BBox, ListSpotsResponse, SpotSummary } from '@/src/features/map/types';
+import type { SpotSummary } from '@/src/features/map/types';
 
-function bboxToKey(bbox: BBox): string {
-  return `${bbox.latMin.toFixed(4)},${bbox.latMax.toFixed(4)},${bbox.lonMin.toFixed(4)},${bbox.lonMax.toFixed(4)}`;
+let cachedSpotSummaries: SpotSummary[] | null = null;
+let inFlightSpotSummariesRequest: Promise<SpotSummary[]> | null = null;
+
+const spotSummarySubscribers = new Set<(spots: SpotSummary[]) => void>();
+
+function setCachedSpotSummaries(spots: SpotSummary[]) {
+  cachedSpotSummaries = spots;
+  spotSummarySubscribers.forEach((subscriber) => subscriber(spots));
 }
 
-export function useSpots(bbox: BBox | null) {
-  const [spots, setSpots] = useState<SpotSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+async function loadSpotSummaries(forceRefresh = false): Promise<SpotSummary[]> {
+  if (!forceRefresh && cachedSpotSummaries !== null) {
+    return cachedSpotSummaries;
+  }
+
+  if (!forceRefresh && inFlightSpotSummariesRequest) {
+    return inFlightSpotSummariesRequest;
+  }
+
+  const request = apiFetch<SpotSummary[]>('/spots/summaries');
+  inFlightSpotSummariesRequest = request;
+
+  try {
+    const spots = await request;
+    setCachedSpotSummaries(spots);
+    return spots;
+  } finally {
+    if (inFlightSpotSummariesRequest === request) {
+      inFlightSpotSummariesRequest = null;
+    }
+  }
+}
+
+export function resetSpotSummariesCacheForTests() {
+  cachedSpotSummaries = null;
+  inFlightSpotSummariesRequest = null;
+  spotSummarySubscribers.clear();
+}
+
+export function useSpots() {
+  const [spots, setSpots] = useState<SpotSummary[]>(cachedSpotSummaries ?? []);
+  const [isLoading, setIsLoading] = useState(cachedSpotSummaries === null);
   const [error, setError] = useState<string | null>(null);
-  const [refreshTick, setRefreshTick] = useState(0);
-  const lastKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!bbox) return;
-
-    const key = `${bboxToKey(bbox)}::${refreshTick}`;
-    if (key === lastKeyRef.current) return;
-    lastKeyRef.current = key;
-
     let cancelled = false;
+    spotSummarySubscribers.add(setSpots);
 
-    async function fetchSpots() {
-      setIsLoading(true);
+    if (cachedSpotSummaries !== null) {
+      setSpots(cachedSpotSummaries);
+      setIsLoading(false);
       setError(null);
-      try {
-        const params = new URLSearchParams({
-          latMin: String(bbox!.latMin),
-          latMax: String(bbox!.latMax),
-          lonMin: String(bbox!.lonMin),
-          lonMax: String(bbox!.lonMax),
+    } else {
+      void loadSpotSummaries()
+        .catch((err) => {
+          console.warn('Failed to fetch spots:', err);
+          if (!cancelled) {
+            setError('Failed to load spots');
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setIsLoading(false);
+          }
         });
-        const data = await apiFetch<ListSpotsResponse>(
-          `/spots?${params.toString()}`,
-        );
-        if (!cancelled) {
-          setSpots(data.items);
-        }
-      } catch (err) {
-        console.warn('Failed to fetch spots:', err);
-        if (!cancelled) {
-          setError('Failed to load spots');
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
     }
-
-    void fetchSpots();
 
     return () => {
       cancelled = true;
+      spotSummarySubscribers.delete(setSpots);
     };
-  }, [bbox, refreshTick]);
-
-  const refresh = useCallback(() => {
-    setRefreshTick((current) => current + 1);
   }, []);
 
-  return { spots, isLoading, error, refresh };
+  const refresh = useCallback(() => {
+    setIsLoading(true);
+    setError(null);
+    void loadSpotSummaries(true)
+      .catch((err) => {
+        console.warn('Failed to fetch spots:', err);
+        setError('Failed to load spots');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
+
+  const upsertSpotSummary = useCallback((nextSpot: SpotSummary) => {
+    const currentSpots = cachedSpotSummaries ?? [];
+    const existingIndex = currentSpots.findIndex((spot) => spot.id === nextSpot.id);
+
+    if (existingIndex === -1) {
+      setCachedSpotSummaries([...currentSpots, nextSpot]);
+      return;
+    }
+
+    const nextSpots = [...currentSpots];
+    nextSpots[existingIndex] = nextSpot;
+    setCachedSpotSummaries(nextSpots);
+  }, []);
+
+  const removeSpotSummary = useCallback((spotId: string) => {
+    if (cachedSpotSummaries === null) {
+      return;
+    }
+
+    setCachedSpotSummaries(
+      cachedSpotSummaries.filter((spot) => spot.id !== spotId),
+    );
+  }, []);
+
+  return {
+    spots,
+    isLoading,
+    error,
+    refresh,
+    upsertSpotSummary,
+    removeSpotSummary,
+  };
 }

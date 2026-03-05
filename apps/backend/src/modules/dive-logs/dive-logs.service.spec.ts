@@ -14,6 +14,7 @@ describe('DiveLogsService', () => {
   let service: DiveLogsService;
   let repository: jest.Mocked<DiveLogsRepository>;
   let photoStorage: jest.Mocked<DiveLogPhotoStorageService>;
+  type CreateDiveLogInput = Parameters<DiveLogsRepository['createDiveLog']>[0];
 
   const actor: AuthenticatedUser = {
     userId: 'user-1',
@@ -62,6 +63,7 @@ describe('DiveLogsService', () => {
       currentStrength: 2,
       notes: 'Clear water',
       photoUrls: ['https://example.com/photo-1.jpg'],
+      observations: [],
       divedAt: now,
       isDeleted: false,
       deletedAt: null,
@@ -129,7 +131,6 @@ describe('DiveLogsService', () => {
     ).rejects.toThrow(InvalidDiveLogError);
   });
 
-
   it('accepts local date-only values for today without timezone false future errors', async () => {
     repository.findActiveSpotById.mockResolvedValue({ id: 'spot-1' });
     repository.hasExistingRating.mockResolvedValue(true);
@@ -137,24 +138,27 @@ describe('DiveLogsService', () => {
     const now = new Date();
     const localDateOnly = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-    repository.createDiveLog.mockImplementation(async (input) => ({
-      id: 'log-1',
-      spotId: input.spotId,
-      authorId: input.authorId,
-      visibilityMeters: input.visibilityMeters,
-      currentStrength: input.currentStrength,
-      notes: input.notes,
-      photoUrls: input.photoUrls,
-      divedAt: input.divedAt,
-      isDeleted: false,
-      deletedAt: null,
-      createdAt: now,
-      updatedAt: now,
-      author: {
-        alias: null,
-        avatarUrl: null,
-      },
-    }));
+    repository.createDiveLog.mockImplementation((input: CreateDiveLogInput) =>
+      Promise.resolve({
+        id: 'log-1',
+        spotId: input.spotId,
+        authorId: input.authorId,
+        visibilityMeters: input.visibilityMeters,
+        currentStrength: input.currentStrength,
+        notes: input.notes,
+        photoUrls: input.photoUrls,
+        observations: [],
+        divedAt: input.divedAt,
+        isDeleted: false,
+        deletedAt: null,
+        createdAt: now,
+        updatedAt: now,
+        author: {
+          alias: null,
+          avatarUrl: null,
+        },
+      }),
+    );
 
     await expect(
       service.create(
@@ -168,11 +172,9 @@ describe('DiveLogsService', () => {
       ),
     ).resolves.toBeDefined();
 
-    expect(repository.createDiveLog).toHaveBeenCalledWith(
-      expect.objectContaining({
-        divedAt: expect.any(Date),
-      }),
-    );
+    const createdPayload = repository.createDiveLog.mock.calls.at(0)?.[0];
+    expect(createdPayload).toBeDefined();
+    expect(createdPayload?.divedAt).toBeInstanceOf(Date);
   });
 
   it('rejects impossible local date-only values', async () => {
@@ -203,6 +205,7 @@ describe('DiveLogsService', () => {
       currentStrength: 3,
       notes: null,
       photoUrls: [],
+      observations: [],
       divedAt: now,
       isDeleted: false,
       deletedAt: null,
@@ -260,6 +263,7 @@ describe('DiveLogsService', () => {
       currentStrength: 3,
       notes: 'Original',
       photoUrls: [],
+      observations: [],
       divedAt: createdAt,
       isDeleted: false,
       deletedAt: null,
@@ -278,6 +282,7 @@ describe('DiveLogsService', () => {
       currentStrength: 4,
       notes: 'Updated',
       photoUrls: ['https://example.com/photo.jpg'],
+      observations: [],
       divedAt: updatedAt,
       isDeleted: false,
       deletedAt: null,
@@ -337,6 +342,7 @@ describe('DiveLogsService', () => {
       currentStrength: 3,
       notes: null,
       photoUrls: [],
+      observations: [],
       divedAt: createdAt,
       isDeleted: false,
       deletedAt: null,
@@ -369,6 +375,7 @@ describe('DiveLogsService', () => {
       currentStrength: 3,
       notes: null,
       photoUrls: [],
+      observations: [],
       divedAt: createdAt,
       isDeleted: false,
       deletedAt: null,

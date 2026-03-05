@@ -25,7 +25,7 @@ Apply these rules when working in this repository root.
 - Development: `backend-dev`, `frontend-dev`
 - Testing and verification: `test-backend`, `test-mobile`, `ios-simulator-skill`
 - Quality and policy: `audit-rules`, `security`
-- Product and documentation: `product-copilot`, `sync-docs`
+- Product and documentation: `product-copilot`, `feature-planning`, `sync-docs`
 - Dedicated agents:
   - `monitor-agent` via codex role config in `.codex/agents.toml`
   - `vertical-slice-implementor` in `.claude/agents/vertical-slice-implementor.md`
